@@ -86,8 +86,9 @@ export function MuscleMap() {
 
           {/* Körper-Silhouette mit weicher Plastizität */}
           <g filter="url(#weich)">
-            <ellipse cx="100" cy="46" rx="21" ry="24" fill="url(#skin)" />
-            <path d="M88 66 h24 v14 c-8 6 -16 6 -24 0 z" fill="url(#skin)" />
+            <ellipse cx="100" cy="40" rx="19" ry="22" fill="url(#skin)" />
+            <path d="M90 56 h20 v18 c-7 6 -13 6 -20 0 z" fill="url(#skin)" />
+
             <g>{halbe("url(#skin)", 1)}</g>
             <g transform="translate(200,0) scale(-1,1)">{halbe("url(#skin)", 1)}</g>
           </g>
