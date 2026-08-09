@@ -14,7 +14,153 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      health_samples: {
+        Row: {
+          created_at: string
+          id: string
+          measured_at: string
+          meta: Json
+          metric: string
+          priority: number
+          quality: string
+          source: string
+          unit: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          measured_at: string
+          meta?: Json
+          metric: string
+          priority?: number
+          quality?: string
+          source: string
+          unit?: string
+          user_id: string
+          value: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          measured_at?: string
+          meta?: Json
+          metric?: string
+          priority?: number
+          quality?: string
+          source?: string
+          unit?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: []
+      }
+      health_sources: {
+        Row: {
+          auto_sync_minutes: number
+          connected: boolean
+          created_at: string
+          id: string
+          last_status: string | null
+          last_sync_at: string | null
+          permissions: string[]
+          source: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_sync_minutes?: number
+          connected?: boolean
+          created_at?: string
+          id?: string
+          last_status?: string | null
+          last_sync_at?: string | null
+          permissions?: string[]
+          source: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_sync_minutes?: number
+          connected?: boolean
+          created_at?: string
+          id?: string
+          last_status?: string | null
+          last_sync_at?: string | null
+          permissions?: string[]
+          source?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ingest_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          last_used_at: string | null
+          revoked: boolean
+          token_hash: string
+          token_prefix: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string
+          last_used_at?: string | null
+          revoked?: boolean
+          token_hash: string
+          token_prefix: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          last_used_at?: string | null
+          revoked?: boolean
+          token_hash?: string
+          token_prefix?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sync_runs: {
+        Row: {
+          created_at: string
+          id: string
+          inserted: number
+          message: string | null
+          received: number
+          source: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          inserted?: number
+          message?: string | null
+          received?: number
+          source: string
+          status: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          inserted?: number
+          message?: string | null
+          received?: number
+          source?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
