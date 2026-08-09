@@ -48,7 +48,12 @@ export const Route = createFileRoute("/")({
         property: "og:description",
         content: "Was soll ich heute tun? Mache ich Fortschritte? Bin ich bereit? Alles auf einem Screen.",
       },
+      { property: "og:image", content: "https://fitness-cockpit-pro.lovable.app/og-image.jpg" },
+      { name: "twitter:image", content: "https://fitness-cockpit-pro.lovable.app/og-image.jpg" },
+      { property: "og:url", content: "https://fitness-cockpit-pro.lovable.app/" },
     ],
+    links: [{ rel: "canonical", href: "https://fitness-cockpit-pro.lovable.app/" }],
+
   }),
   component: Cockpit,
 });
