@@ -70,13 +70,16 @@ function Cockpit() {
     <div className="space-y-8">
       {/* HERO */}
       <header className="hero-glow surface relative overflow-hidden p-6">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
+        <div className="space-y-4">
           <div className="min-w-0">
-            <p className="label-xs">Guten Morgen, {profile.name}</p>
-            <h1 className="mt-1 break-words font-display text-2xl font-extrabold leading-tight">
+            <p className="label-xs truncate whitespace-nowrap">Guten Morgen, {profile.name}</p>
+            <h1 className="mt-1 truncate whitespace-nowrap font-display text-lg font-extrabold leading-tight sm:text-xl md:text-2xl">
               Ziel: {goalLabels[profile.goal]}
             </h1>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Ring value={score} label={String(score)} sub="Goal Score" />
+            <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-full bg-primary/15 px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary">
                 Auf Kurs
               </span>
@@ -88,7 +91,6 @@ function Cockpit() {
               </span>
             </div>
           </div>
-          <Ring value={score} label={String(score)} sub="Goal Score" />
         </div>
         <ScoreErklaerung parts={parts} score={score} />
       </header>
