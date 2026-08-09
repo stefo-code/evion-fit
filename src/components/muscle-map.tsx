@@ -12,22 +12,33 @@ const farbe: Record<MuscleStatus, string> = {
 
 type Shape = { key: MuscleKey; d: string };
 
+/** Halbkörper-Formen (rechte Seite, Mittelachse x = 100) – werden gespiegelt gerendert. */
 const vorne: Shape[] = [
-  { key: "schultern", d: "M40 62 q-14 2 -17 18 q10 6 19 3 z M100 62 q14 2 17 18 q-10 6 -19 3 z" },
-  { key: "brust", d: "M46 62 q24 -8 48 0 l-3 26 q-21 8 -42 0 z" },
-  { key: "bauch", d: "M56 92 q14 5 28 0 l-3 40 q-11 4 -22 0 z" },
-  { key: "bizeps", d: "M28 84 q-8 18 -6 34 l12 3 q4 -20 8 -33 z M112 84 q8 18 6 34 l-12 3 q-4 -20 -8 -33 z" },
-  { key: "quadrizeps", d: "M53 136 q11 4 22 0 l-2 62 q-11 4 -21 0 z M65 136 q0 0 0 0 z M78 136 q10 4 20 0 l0 62 q-11 4 -21 0 z" },
+  { key: "schultern", d: "M134 92 C146 96 152 108 152 122 C146 128 136 128 130 122 C128 110 129 100 134 92 Z" },
+  { key: "brust", d: "M104 95 C115 92 126 96 133 103 C136 113 134 124 129 130 C119 134 110 133 104 129 C102 118 102 105 104 95 Z" },
+  { key: "bauch", d: "M104 138 C111 140 117 138 121 135 C120 152 118 170 114 186 C110 189 106 189 104 186 Z" },
+  { key: "bizeps", d: "M140 120 C148 130 152 146 152 162 C152 168 147 170 144 166 C140 150 137 134 135 122 Z" },
+  { key: "quadrizeps", d: "M106 218 C115 222 122 220 126 216 C126 246 123 274 119 296 C117 304 112 306 109 300 C105 276 103 246 104 218 Z" },
 ];
 
 const hinten: Shape[] = [
-  { key: "schultern", d: "M40 62 q-14 2 -17 18 q10 6 19 3 z M100 62 q14 2 17 18 q-10 6 -19 3 z" },
-  { key: "ruecken", d: "M45 62 q25 -8 50 0 l-5 42 q-20 7 -40 0 z" },
-  { key: "trizeps", d: "M27 84 q-9 18 -7 34 l12 3 q4 -20 9 -33 z M113 84 q9 18 7 34 l-12 3 q-4 -20 -9 -33 z" },
-  { key: "gesaess", d: "M52 108 q18 8 36 0 l2 28 q-20 8 -40 0 z" },
-  { key: "beinbeuger", d: "M53 140 q11 4 21 0 l-2 46 q-10 4 -19 0 z M79 140 q10 4 21 0 l-2 46 q-10 4 -19 0 z" },
-  { key: "waden", d: "M56 192 q9 3 17 0 l-2 32 q-8 3 -14 0 z M81 192 q9 3 17 0 l-2 32 q-8 3 -14 0 z" },
+  { key: "schultern", d: "M134 92 C146 96 152 108 152 122 C146 128 136 128 130 122 C128 110 129 100 134 92 Z" },
+  { key: "ruecken", d: "M104 93 C117 92 128 99 134 111 C137 127 134 146 128 158 C119 164 110 163 104 159 Z" },
+  { key: "trizeps", d: "M140 118 C148 128 152 144 152 160 C152 166 147 168 144 164 C140 148 137 132 135 120 Z" },
+  { key: "gesaess", d: "M104 177 C115 174 124 181 127 192 C128 204 123 212 114 214 C109 215 106 213 104 210 Z" },
+  { key: "beinbeuger", d: "M106 222 C115 226 121 224 125 220 C124 248 121 272 117 292 C115 300 110 301 108 295 C105 272 103 248 104 222 Z" },
+  { key: "waden", d: "M107 312 C114 315 119 314 122 311 C122 332 119 352 114 366 C111 371 108 369 107 364 C105 348 105 330 107 312 Z" },
 ];
+
+const silhouette = [
+  // Rumpf
+  "M100 78 C120 78 136 84 141 100 C145 118 143 140 136 158 C128 176 122 192 124 210 C118 214 108 216 100 214 Z",
+  // Arm
+  "M138 94 C152 100 158 116 158 138 C158 165 163 200 165 232 C165 240 160 243 156 240 C150 214 146 190 142 168 C137 145 132 118 133 100 Z",
+  // Bein
+  "M104 210 C116 214 124 212 128 214 C130 250 126 280 124 302 C122 330 120 360 119 392 C119 398 114 400 110 398 C108 366 106 336 105 306 C104 274 102 240 104 210 Z",
+];
+
 
 export function MuscleMap() {
   const [seite, setSeite] = useState<"vorne" | "hinten">("vorne");
@@ -35,6 +46,14 @@ export function MuscleMap() {
   const shapes = seite === "vorne" ? vorne : hinten;
   const m = muskelStatus[sel];
   const rest = Math.max(0, m.ziel - m.saetze);
+
+  const halbe = (fill: string, opacity: number) => (
+    <>
+      {silhouette.map((d, i) => (
+        <path key={i} d={d} fill={fill} opacity={opacity} />
+      ))}
+    </>
+  );
 
   return (
     <div className="grid gap-5 sm:grid-cols-[auto_minmax(0,1fr)]">
@@ -47,32 +66,64 @@ export function MuscleMap() {
             Hinten
           </Chip>
         </div>
-        <svg viewBox="0 0 140 240" className="h-72 w-auto">
-          {/* Silhouette */}
-          <g fill="var(--muted)" opacity="0.55">
-            <circle cx="70" cy="30" r="16" />
-            <path d="M44 54 q26 -10 52 0 l8 26 q-6 8 -12 6 l-4 -14 l-4 62 q-20 7 -40 0 l-4 -62 l-4 14 q-6 2 -12 -6 z" />
-            <path d="M30 82 q-10 22 -8 44 l14 4 q4 -26 12 -42 z" />
-            <path d="M110 82 q10 22 8 44 l-14 4 q-4 -26 -12 -42 z" />
-            <path d="M50 132 q20 8 40 0 l-4 96 q-12 4 -16 0 l-2 -60 l-2 60 q-4 4 -16 0 z" />
+
+        <svg viewBox="0 0 200 420" className="h-80 w-auto">
+          <defs>
+            <linearGradient id="skin" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="var(--muted)" />
+              <stop offset="45%" stopColor="var(--secondary)" />
+              <stop offset="100%" stopColor="var(--muted)" />
+            </linearGradient>
+            <radialGradient id="plastik" cx="35%" cy="28%" r="80%">
+              <stop offset="0%" stopColor="#fff" stopOpacity="0.55" />
+              <stop offset="55%" stopColor="#fff" stopOpacity="0.05" />
+              <stop offset="100%" stopColor="#000" stopOpacity="0.22" />
+            </radialGradient>
+            <filter id="weich" x="-25%" y="-25%" width="150%" height="150%">
+              <feDropShadow dx="0" dy="3" stdDeviation="4" floodColor="#0f2a1c" floodOpacity="0.16" />
+            </filter>
+          </defs>
+
+          {/* Körper-Silhouette mit weicher Plastizität */}
+          <g filter="url(#weich)">
+            <ellipse cx="100" cy="40" rx="19" ry="22" fill="url(#skin)" />
+            <path d="M90 56 h20 v18 c-7 6 -13 6 -20 0 z" fill="url(#skin)" />
+
+            <g>{halbe("url(#skin)", 1)}</g>
+            <g transform="translate(200,0) scale(-1,1)">{halbe("url(#skin)", 1)}</g>
           </g>
-          {shapes.map((s) => {
-            const st = muskelStatus[s.key];
-            const aktiv = sel === s.key;
-            return (
-              <path
-                key={s.key + seite}
-                d={s.d}
-                fill={farbe[st.status]}
-                opacity={aktiv ? 1 : 0.72}
-                stroke={aktiv ? "var(--foreground)" : "transparent"}
-                strokeWidth={1.4}
-                className="cursor-pointer transition-opacity hover:opacity-100"
-                onClick={() => setSel(s.key)}
-              />
-            );
-          })}
+
+          {/* Muskelgruppen */}
+          {[false, true].map((mirror) => (
+            <g key={String(mirror)} transform={mirror ? "translate(200,0) scale(-1,1)" : undefined}>
+              {shapes.map((s) => {
+                const st = muskelStatus[s.key];
+                const aktiv = sel === s.key;
+                return (
+                  <g
+                    key={s.key + seite}
+                    className="cursor-pointer transition-opacity hover:opacity-100"
+                    opacity={aktiv ? 1 : 0.82}
+                    onClick={() => setSel(s.key)}
+                  >
+                    <path
+                      d={s.d}
+                      fill={farbe[st.status]}
+                      stroke={aktiv ? "var(--foreground)" : "color-mix(in oklab, #000 18%, transparent)"}
+                      strokeWidth={aktiv ? 1.6 : 0.8}
+                      strokeLinejoin="round"
+                    />
+                    <path d={s.d} fill="url(#plastik)" style={{ pointerEvents: "none" }} />
+                  </g>
+                );
+              })}
+            </g>
+          ))}
+
+          {/* Mittelachse für Tiefe */}
+          <line x1="100" y1="92" x2="100" y2="300" stroke="#000" strokeOpacity="0.07" strokeWidth="1.5" />
         </svg>
+
         <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
           {(Object.keys(muscleStatusLabel) as MuscleStatus[]).map((k) => (
             <span key={k} className="inline-flex items-center gap-1.5">
@@ -88,7 +139,7 @@ export function MuscleMap() {
           <h3 className="truncate font-display text-lg font-bold">{m.name}</h3>
           <span
             className="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider"
-            style={{ background: `color-mix(in oklab, ${farbe[m.status]} 22%, transparent)`, color: farbe[m.status] }}
+            style={{ background: `color-mix(in oklab, ${farbe[m.status]} 18%, transparent)`, color: farbe[m.status] }}
           >
             {muscleStatusLabel[m.status]}
           </span>
