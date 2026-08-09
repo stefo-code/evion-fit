@@ -1,6 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
-  Activity,
   Apple,
   Dumbbell,
   Home,
@@ -12,6 +11,7 @@ import {
   Watch,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { EvionLogo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 
 const main = [
