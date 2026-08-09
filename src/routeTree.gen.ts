@@ -10,7 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CoachRouteImport } from './routes/coach'
 import { Route as ErnaehrungRouteImport } from './routes/ernaehrung'
+import { Route as FortschrittRouteImport } from './routes/fortschritt'
 import { Route as TrainingIndexRouteImport } from './routes/training.index'
 import { Route as TrainingWorkoutRouteImport } from './routes/training.workout'
 
@@ -19,9 +21,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CoachRoute = CoachRouteImport.update({
+  id: '/coach',
+  path: '/coach',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ErnaehrungRoute = ErnaehrungRouteImport.update({
   id: '/ernaehrung',
   path: '/ernaehrung',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FortschrittRoute = FortschrittRouteImport.update({
+  id: '/fortschritt',
+  path: '/fortschritt',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TrainingIndexRoute = TrainingIndexRouteImport.update({
@@ -37,34 +49,61 @@ const TrainingWorkoutRoute = TrainingWorkoutRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/coach': typeof CoachRoute
   '/ernaehrung': typeof ErnaehrungRoute
+  '/fortschritt': typeof FortschrittRoute
   '/training/workout': typeof TrainingWorkoutRoute
   '/training/': typeof TrainingIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/coach': typeof CoachRoute
   '/ernaehrung': typeof ErnaehrungRoute
+  '/fortschritt': typeof FortschrittRoute
   '/training/workout': typeof TrainingWorkoutRoute
   '/training': typeof TrainingIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/coach': typeof CoachRoute
   '/ernaehrung': typeof ErnaehrungRoute
+  '/fortschritt': typeof FortschrittRoute
   '/training/workout': typeof TrainingWorkoutRoute
   '/training/': typeof TrainingIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/ernaehrung' | '/training/workout' | '/training/'
+  fullPaths:
+    | '/'
+    | '/coach'
+    | '/ernaehrung'
+    | '/fortschritt'
+    | '/training/workout'
+    | '/training/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/ernaehrung' | '/training/workout' | '/training'
-  id: '__root__' | '/' | '/ernaehrung' | '/training/workout' | '/training/'
+  to:
+    | '/'
+    | '/coach'
+    | '/ernaehrung'
+    | '/fortschritt'
+    | '/training/workout'
+    | '/training'
+  id:
+    | '__root__'
+    | '/'
+    | '/coach'
+    | '/ernaehrung'
+    | '/fortschritt'
+    | '/training/workout'
+    | '/training/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CoachRoute: typeof CoachRoute
   ErnaehrungRoute: typeof ErnaehrungRoute
+  FortschrittRoute: typeof FortschrittRoute
   TrainingWorkoutRoute: typeof TrainingWorkoutRoute
   TrainingIndexRoute: typeof TrainingIndexRoute
 }
@@ -78,11 +117,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/coach': {
+      id: '/coach'
+      path: '/coach'
+      fullPath: '/coach'
+      preLoaderRoute: typeof CoachRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ernaehrung': {
       id: '/ernaehrung'
       path: '/ernaehrung'
       fullPath: '/ernaehrung'
       preLoaderRoute: typeof ErnaehrungRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/fortschritt': {
+      id: '/fortschritt'
+      path: '/fortschritt'
+      fullPath: '/fortschritt'
+      preLoaderRoute: typeof FortschrittRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/training/': {
@@ -104,7 +157,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CoachRoute: CoachRoute,
   ErnaehrungRoute: ErnaehrungRoute,
+  FortschrittRoute: FortschrittRoute,
   TrainingWorkoutRoute: TrainingWorkoutRoute,
   TrainingIndexRoute: TrainingIndexRoute,
 }
