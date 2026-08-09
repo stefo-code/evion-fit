@@ -21,6 +21,7 @@ import { Route as SupplementsRouteImport } from './routes/supplements'
 import { Route as WochenrueckblickRouteImport } from './routes/wochenrueckblick'
 import { Route as TrainingIndexRouteImport } from './routes/training.index'
 import { Route as TrainingWorkoutRouteImport } from './routes/training.workout'
+import { Route as ApiPublicHealthIngestRouteImport } from './routes/api/public/health-ingest'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -82,6 +83,11 @@ const TrainingWorkoutRoute = TrainingWorkoutRouteImport.update({
   path: '/training/workout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHealthIngestRoute = ApiPublicHealthIngestRouteImport.update({
+  id: '/api/public/health-ingest',
+  path: '/api/public/health-ingest',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/wochenrueckblick': typeof WochenrueckblickRoute
   '/training/workout': typeof TrainingWorkoutRoute
   '/training/': typeof TrainingIndexRoute
+  '/api/public/health-ingest': typeof ApiPublicHealthIngestRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/wochenrueckblick': typeof WochenrueckblickRoute
   '/training/workout': typeof TrainingWorkoutRoute
   '/training': typeof TrainingIndexRoute
+  '/api/public/health-ingest': typeof ApiPublicHealthIngestRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/wochenrueckblick': typeof WochenrueckblickRoute
   '/training/workout': typeof TrainingWorkoutRoute
   '/training/': typeof TrainingIndexRoute
+  '/api/public/health-ingest': typeof ApiPublicHealthIngestRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/wochenrueckblick'
     | '/training/workout'
     | '/training/'
+    | '/api/public/health-ingest'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
     | '/wochenrueckblick'
     | '/training/workout'
     | '/training'
+    | '/api/public/health-ingest'
   id:
     | '__root__'
     | '/'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/wochenrueckblick'
     | '/training/workout'
     | '/training/'
+    | '/api/public/health-ingest'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -184,6 +196,7 @@ export interface RootRouteChildren {
   WochenrueckblickRoute: typeof WochenrueckblickRoute
   TrainingWorkoutRoute: typeof TrainingWorkoutRoute
   TrainingIndexRoute: typeof TrainingIndexRoute
+  ApiPublicHealthIngestRoute: typeof ApiPublicHealthIngestRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -272,6 +285,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TrainingWorkoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/health-ingest': {
+      id: '/api/public/health-ingest'
+      path: '/api/public/health-ingest'
+      fullPath: '/api/public/health-ingest'
+      preLoaderRoute: typeof ApiPublicHealthIngestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -288,17 +308,8 @@ const rootRouteChildren: RootRouteChildren = {
   WochenrueckblickRoute: WochenrueckblickRoute,
   TrainingWorkoutRoute: TrainingWorkoutRoute,
   TrainingIndexRoute: TrainingIndexRoute,
+  ApiPublicHealthIngestRoute: ApiPublicHealthIngestRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
