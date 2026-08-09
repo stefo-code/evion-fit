@@ -36,7 +36,7 @@ const rekorde = [
   { uebung: "Klimmzüge", wert: "+20 kg × 6", e1rm: "—", datum: "vor 6 Tagen" },
 ];
 
-export default function TrainingPage() {
+function TrainingPage() {
   const [zeit, setZeit] = useState(60);
   const modus = zeitModi.find((m) => m.minuten === zeit)!;
   const anzahl =
