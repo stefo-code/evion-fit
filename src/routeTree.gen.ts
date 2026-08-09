@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CoachRouteImport } from './routes/coach'
 import { Route as DatenschutzRouteImport } from './routes/datenschutz'
 import { Route as EinstellungenRouteImport } from './routes/einstellungen'
@@ -21,10 +22,16 @@ import { Route as SupplementsRouteImport } from './routes/supplements'
 import { Route as WochenrueckblickRouteImport } from './routes/wochenrueckblick'
 import { Route as TrainingIndexRouteImport } from './routes/training.index'
 import { Route as TrainingWorkoutRouteImport } from './routes/training.workout'
+import { Route as ApiPublicHealthIngestRouteImport } from './routes/api/public/health-ingest'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CoachRoute = CoachRouteImport.update({
@@ -82,9 +89,15 @@ const TrainingWorkoutRoute = TrainingWorkoutRouteImport.update({
   path: '/training/workout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHealthIngestRoute = ApiPublicHealthIngestRouteImport.update({
+  id: '/api/public/health-ingest',
+  path: '/api/public/health-ingest',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/coach': typeof CoachRoute
   '/datenschutz': typeof DatenschutzRoute
   '/einstellungen': typeof EinstellungenRoute
@@ -96,9 +109,11 @@ export interface FileRoutesByFullPath {
   '/wochenrueckblick': typeof WochenrueckblickRoute
   '/training/workout': typeof TrainingWorkoutRoute
   '/training/': typeof TrainingIndexRoute
+  '/api/public/health-ingest': typeof ApiPublicHealthIngestRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/coach': typeof CoachRoute
   '/datenschutz': typeof DatenschutzRoute
   '/einstellungen': typeof EinstellungenRoute
@@ -110,10 +125,12 @@ export interface FileRoutesByTo {
   '/wochenrueckblick': typeof WochenrueckblickRoute
   '/training/workout': typeof TrainingWorkoutRoute
   '/training': typeof TrainingIndexRoute
+  '/api/public/health-ingest': typeof ApiPublicHealthIngestRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/coach': typeof CoachRoute
   '/datenschutz': typeof DatenschutzRoute
   '/einstellungen': typeof EinstellungenRoute
@@ -125,11 +142,13 @@ export interface FileRoutesById {
   '/wochenrueckblick': typeof WochenrueckblickRoute
   '/training/workout': typeof TrainingWorkoutRoute
   '/training/': typeof TrainingIndexRoute
+  '/api/public/health-ingest': typeof ApiPublicHealthIngestRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
     | '/coach'
     | '/datenschutz'
     | '/einstellungen'
@@ -141,9 +160,11 @@ export interface FileRouteTypes {
     | '/wochenrueckblick'
     | '/training/workout'
     | '/training/'
+    | '/api/public/health-ingest'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth'
     | '/coach'
     | '/datenschutz'
     | '/einstellungen'
@@ -155,9 +176,11 @@ export interface FileRouteTypes {
     | '/wochenrueckblick'
     | '/training/workout'
     | '/training'
+    | '/api/public/health-ingest'
   id:
     | '__root__'
     | '/'
+    | '/auth'
     | '/coach'
     | '/datenschutz'
     | '/einstellungen'
@@ -169,10 +192,12 @@ export interface FileRouteTypes {
     | '/wochenrueckblick'
     | '/training/workout'
     | '/training/'
+    | '/api/public/health-ingest'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRoute
   CoachRoute: typeof CoachRoute
   DatenschutzRoute: typeof DatenschutzRoute
   EinstellungenRoute: typeof EinstellungenRoute
@@ -184,6 +209,7 @@ export interface RootRouteChildren {
   WochenrueckblickRoute: typeof WochenrueckblickRoute
   TrainingWorkoutRoute: typeof TrainingWorkoutRoute
   TrainingIndexRoute: typeof TrainingIndexRoute
+  ApiPublicHealthIngestRoute: typeof ApiPublicHealthIngestRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -193,6 +219,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/coach': {
@@ -272,11 +305,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TrainingWorkoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/health-ingest': {
+      id: '/api/public/health-ingest'
+      path: '/api/public/health-ingest'
+      fullPath: '/api/public/health-ingest'
+      preLoaderRoute: typeof ApiPublicHealthIngestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRoute,
   CoachRoute: CoachRoute,
   DatenschutzRoute: DatenschutzRoute,
   EinstellungenRoute: EinstellungenRoute,
@@ -288,17 +329,8 @@ const rootRouteChildren: RootRouteChildren = {
   WochenrueckblickRoute: WochenrueckblickRoute,
   TrainingWorkoutRoute: TrainingWorkoutRoute,
   TrainingIndexRoute: TrainingIndexRoute,
+  ApiPublicHealthIngestRoute: ApiPublicHealthIngestRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
