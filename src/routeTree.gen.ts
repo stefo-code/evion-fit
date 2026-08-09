@@ -11,10 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CoachRouteImport } from './routes/coach'
+import { Route as EinstellungenRouteImport } from './routes/einstellungen'
 import { Route as ErnaehrungRouteImport } from './routes/ernaehrung'
 import { Route as FortschrittRouteImport } from './routes/fortschritt'
 import { Route as GeraeteRouteImport } from './routes/geraete'
 import { Route as SupplementsRouteImport } from './routes/supplements'
+import { Route as WochenrueckblickRouteImport } from './routes/wochenrueckblick'
 import { Route as TrainingIndexRouteImport } from './routes/training.index'
 import { Route as TrainingWorkoutRouteImport } from './routes/training.workout'
 
@@ -26,6 +28,11 @@ const IndexRoute = IndexRouteImport.update({
 const CoachRoute = CoachRouteImport.update({
   id: '/coach',
   path: '/coach',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EinstellungenRoute = EinstellungenRouteImport.update({
+  id: '/einstellungen',
+  path: '/einstellungen',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ErnaehrungRoute = ErnaehrungRouteImport.update({
@@ -48,6 +55,11 @@ const SupplementsRoute = SupplementsRouteImport.update({
   path: '/supplements',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WochenrueckblickRoute = WochenrueckblickRouteImport.update({
+  id: '/wochenrueckblick',
+  path: '/wochenrueckblick',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TrainingIndexRoute = TrainingIndexRouteImport.update({
   id: '/training/',
   path: '/training/',
@@ -62,20 +74,24 @@ const TrainingWorkoutRoute = TrainingWorkoutRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/coach': typeof CoachRoute
+  '/einstellungen': typeof EinstellungenRoute
   '/ernaehrung': typeof ErnaehrungRoute
   '/fortschritt': typeof FortschrittRoute
   '/geraete': typeof GeraeteRoute
   '/supplements': typeof SupplementsRoute
+  '/wochenrueckblick': typeof WochenrueckblickRoute
   '/training/workout': typeof TrainingWorkoutRoute
   '/training/': typeof TrainingIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/coach': typeof CoachRoute
+  '/einstellungen': typeof EinstellungenRoute
   '/ernaehrung': typeof ErnaehrungRoute
   '/fortschritt': typeof FortschrittRoute
   '/geraete': typeof GeraeteRoute
   '/supplements': typeof SupplementsRoute
+  '/wochenrueckblick': typeof WochenrueckblickRoute
   '/training/workout': typeof TrainingWorkoutRoute
   '/training': typeof TrainingIndexRoute
 }
@@ -83,10 +99,12 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/coach': typeof CoachRoute
+  '/einstellungen': typeof EinstellungenRoute
   '/ernaehrung': typeof ErnaehrungRoute
   '/fortschritt': typeof FortschrittRoute
   '/geraete': typeof GeraeteRoute
   '/supplements': typeof SupplementsRoute
+  '/wochenrueckblick': typeof WochenrueckblickRoute
   '/training/workout': typeof TrainingWorkoutRoute
   '/training/': typeof TrainingIndexRoute
 }
@@ -95,30 +113,36 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/coach'
+    | '/einstellungen'
     | '/ernaehrung'
     | '/fortschritt'
     | '/geraete'
     | '/supplements'
+    | '/wochenrueckblick'
     | '/training/workout'
     | '/training/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/coach'
+    | '/einstellungen'
     | '/ernaehrung'
     | '/fortschritt'
     | '/geraete'
     | '/supplements'
+    | '/wochenrueckblick'
     | '/training/workout'
     | '/training'
   id:
     | '__root__'
     | '/'
     | '/coach'
+    | '/einstellungen'
     | '/ernaehrung'
     | '/fortschritt'
     | '/geraete'
     | '/supplements'
+    | '/wochenrueckblick'
     | '/training/workout'
     | '/training/'
   fileRoutesById: FileRoutesById
@@ -126,10 +150,12 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CoachRoute: typeof CoachRoute
+  EinstellungenRoute: typeof EinstellungenRoute
   ErnaehrungRoute: typeof ErnaehrungRoute
   FortschrittRoute: typeof FortschrittRoute
   GeraeteRoute: typeof GeraeteRoute
   SupplementsRoute: typeof SupplementsRoute
+  WochenrueckblickRoute: typeof WochenrueckblickRoute
   TrainingWorkoutRoute: typeof TrainingWorkoutRoute
   TrainingIndexRoute: typeof TrainingIndexRoute
 }
@@ -148,6 +174,13 @@ declare module '@tanstack/react-router' {
       path: '/coach'
       fullPath: '/coach'
       preLoaderRoute: typeof CoachRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/einstellungen': {
+      id: '/einstellungen'
+      path: '/einstellungen'
+      fullPath: '/einstellungen'
+      preLoaderRoute: typeof EinstellungenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ernaehrung': {
@@ -178,6 +211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SupplementsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/wochenrueckblick': {
+      id: '/wochenrueckblick'
+      path: '/wochenrueckblick'
+      fullPath: '/wochenrueckblick'
+      preLoaderRoute: typeof WochenrueckblickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/training/': {
       id: '/training/'
       path: '/training'
@@ -198,10 +238,12 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CoachRoute: CoachRoute,
+  EinstellungenRoute: EinstellungenRoute,
   ErnaehrungRoute: ErnaehrungRoute,
   FortschrittRoute: FortschrittRoute,
   GeraeteRoute: GeraeteRoute,
   SupplementsRoute: SupplementsRoute,
+  WochenrueckblickRoute: WochenrueckblickRoute,
   TrainingWorkoutRoute: TrainingWorkoutRoute,
   TrainingIndexRoute: TrainingIndexRoute,
 }
