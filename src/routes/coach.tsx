@@ -7,12 +7,12 @@ import { Send, Sparkles, User } from "lucide-react";
 export const Route = createFileRoute("/coach")({
   head: () => ({
     meta: [
-      { title: "KI-Coach – Vektor" },
+      { title: "KI-Coach – EVION" },
       {
         name: "description",
         content: "Proaktive Empfehlungen zu Training, Ernährung, Regeneration und Supplements.",
       },
-      { property: "og:title", content: "KI-Coach – Vektor" },
+      { property: "og:title", content: "KI-Coach – EVION" },
       { property: "og:description", content: "Ein Coach, der deine Daten kennt – und daraus Handlungen ableitet." },
     ],
   }),

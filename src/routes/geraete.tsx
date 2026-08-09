@@ -39,13 +39,13 @@ import {
 export const Route = createFileRoute("/geraete")({
   head: () => ({
     meta: [
-      { title: "Geräte & Health-Sync – Vektor" },
+      { title: "Geräte & Health-Sync – EVION" },
       {
         name: "description",
         content:
           "Samsung Health, Galaxy Watch 6 und Beurer HealthManager Pro automatisch synchronisieren – mit Sync-Protokoll und klarer Quellenkennzeichnung.",
       },
-      { property: "og:title", content: "Geräte & Health-Sync – Vektor" },
+      { property: "og:title", content: "Geräte & Health-Sync – EVION" },
       { property: "og:description", content: "Automatische Health-Synchronisation mit transparenter Herkunft." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -187,7 +187,7 @@ function GeraetePage() {
         <p className="label-xs">Geräte</p>
         <h1 className="mt-1 font-display text-3xl font-extrabold">Datenquellen & Sync</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Einmal einrichten, danach synchronisiert Vektor automatisch. Jeder Wert bleibt sichtbar einer Quelle
+          Einmal einrichten, danach synchronisiert EVION automatisch. Jeder Wert bleibt sichtbar einer Quelle
           zugeordnet.
         </p>
       </header>
@@ -559,7 +559,7 @@ function GeraetePage() {
       </Section>
 
       <Disclaimer>
-        Vektor liest ausschließlich Daten, die du freigibst. Synchronisierte Werte liegen verschlüsselt in deinem
+        EVION liest ausschließlich Daten, die du freigibst. Synchronisierte Werte liegen verschlüsselt in deinem
         Konto und lassen sich jederzeit löschen. Keine medizinische Diagnose – bei auffälligen Werten bitte ärztlich
         abklären.
       </Disclaimer>

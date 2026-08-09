@@ -80,14 +80,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Vektor – Dein Fitness-Cockpit mit KI-Coach" },
+      { title: "EVION – Dein Fitness-Cockpit mit KI-Coach" },
       {
         name: "description",
         content:
           "Training, Ernährung, Regeneration und Fortschritt in einer App – mit konkreten Handlungsempfehlungen statt reinem Tracking.",
       },
-      { name: "author", content: "Vektor" },
-      { property: "og:title", content: "Vektor – Dein Fitness-Cockpit mit KI-Coach" },
+      { name: "author", content: "EVION" },
+      { property: "og:title", content: "EVION – Dein Fitness-Cockpit mit KI-Coach" },
       {
         property: "og:description",
         content: "Maximale Ergebnisse bei minimalem Zeitaufwand.",

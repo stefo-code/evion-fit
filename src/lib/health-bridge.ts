@@ -1,7 +1,7 @@
 /**
  * Brücke zu Android Health Connect.
  *
- * In der Android-Hülle (Capacitor) injiziert das Plugin `window.VektorHealth`.
+ * In der Android-Hülle (Capacitor) injiziert das Plugin `window.EvionHealth`.
  * Im normalen Browser existiert dieses Objekt nicht – die App erkennt das und
  * bietet stattdessen den Auto-Import per Ingest-Token bzw. Datei-Import an.
  */
@@ -14,7 +14,7 @@ export type BridgeMessung = {
   quality?: "gemessen" | "geschätzt" | "berechnet";
 };
 
-export type VektorHealthBridge = {
+export type EvionHealthBridge = {
   readonly version: string;
   requestPermissions(metriken: string[]): Promise<boolean>;
   read(metriken: string[], seit: string): Promise<BridgeMessung[]>;
@@ -22,13 +22,13 @@ export type VektorHealthBridge = {
 
 declare global {
   interface Window {
-    VektorHealth?: VektorHealthBridge;
+    EvionHealth?: EvionHealthBridge;
   }
 }
 
-export function bridge(): VektorHealthBridge | null {
+export function bridge(): EvionHealthBridge | null {
   if (typeof window === "undefined") return null;
-  return window.VektorHealth ?? null;
+  return window.EvionHealth ?? null;
 }
 
 export function bridgeVerfuegbar() {
@@ -45,7 +45,7 @@ export async function leseUeberBridge(metriken: string[], tage = 14): Promise<Br
   return b.read(metriken, seit);
 }
 
-/** Health-Connect-Datentypen je Vektor-Metrik – identisch in Plugin und App. */
+/** Health-Connect-Datentypen je EVION-Metrik – identisch in Plugin und App. */
 export const healthConnectTypen: Record<string, string> = {
   gewicht: "Weight",
   koerperfett: "BodyFat",

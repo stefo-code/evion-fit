@@ -42,9 +42,9 @@ export const integrationen: Integration[] = [
       "Schritte, Workouts, Schlaf und Herzfrequenz. Die Daten werden über Android Health Connect gelesen – Samsung stellt keine offene Web-Schnittstelle bereit.",
     schritte: [
       "Samsung Health öffnen → Einstellungen → Health Connect aktivieren",
-      "In Health Connect die Vektor-App zulassen",
+      "In Health Connect die EVION-App zulassen",
       "Datenarten freigeben: Schritte, Training, Schlaf, Herzfrequenz",
-      "Zurück in Vektor: Synchronisierung starten",
+      "Zurück in EVION: Synchronisierung starten",
     ],
     verfuegbarImWeb: false,
   },
@@ -56,12 +56,12 @@ export const integrationen: Integration[] = [
     metriken: ["ruhepuls", "hrv", "schlaf", "schritte"],
     prioritaet: 30,
     beschreibung:
-      "Ruhepuls, HRV, Schlafphasen und Energy Score. Die Uhr schreibt ihre Werte in Samsung Health, von dort liest Vektor über Health Connect.",
+      "Ruhepuls, HRV, Schlafphasen und Energy Score. Die Uhr schreibt ihre Werte in Samsung Health, von dort liest EVION über Health Connect.",
     schritte: [
       "Galaxy Watch 6 mit Samsung Health koppeln (Galaxy Wearable App)",
       "Kontinuierliche HRV- und Schlafmessung in der Uhr aktivieren",
-      "Health Connect Freigabe für Vektor erteilen",
-      "Synchronisierung starten – Vektor nutzt Ruhepuls & HRV für die Readiness",
+      "Health Connect Freigabe für EVION erteilen",
+      "Synchronisierung starten – EVION nutzt Ruhepuls & HRV für die Readiness",
     ],
     verfuegbarImWeb: false,
   },
@@ -77,7 +77,7 @@ export const integrationen: Integration[] = [
     schritte: [
       "HealthManager Pro öffnen → Menü → Daten exportieren",
       "Format CSV wählen, Zeitraum festlegen",
-      "Datei hier hochladen – Vektor erkennt Spalten automatisch",
+      "Datei hier hochladen – EVION erkennt Spalten automatisch",
       "Werte prüfen und übernehmen",
     ],
     verfuegbarImWeb: true,
@@ -102,7 +102,7 @@ export type Verbindung = {
   freigaben: HealthMetric[];
 };
 
-const KEY = "vektor.integrationen.v1";
+const KEY = "evion.integrationen.v1";
 
 export function ladeVerbindungen(): Record<string, Verbindung> {
   if (typeof window === "undefined") return {};

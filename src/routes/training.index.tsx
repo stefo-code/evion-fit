@@ -7,12 +7,12 @@ import { ChevronRight, Dumbbell, History, Repeat, Trophy } from "lucide-react";
 export const Route = createFileRoute("/training/")({
   head: () => ({
     meta: [
-      { title: "Training – Vektor" },
+      { title: "Training – EVION" },
       {
         name: "description",
         content: "Personalisierter Trainingsplan, Zeit-Effizienz-Modus, Übungshistorie und Rekorde.",
       },
-      { property: "og:title", content: "Training – Vektor" },
+      { property: "og:title", content: "Training – EVION" },
       { property: "og:description", content: "Dein Plan für heute – angepasst an Zeit und Erholung." },
     ],
   }),

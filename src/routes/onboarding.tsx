@@ -7,12 +7,12 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
     meta: [
-      { title: "Onboarding – Vektor" },
+      { title: "Onboarding – EVION" },
       {
         name: "description",
         content: "In wenigen Schritten zu deinem persönlichen Trainings- und Ernährungsplan.",
       },
-      { property: "og:title", content: "Onboarding – Vektor" },
+      { property: "og:title", content: "Onboarding – EVION" },
       { property: "og:description", content: "Nur die Angaben, die wirklich genutzt werden." },
     ],
   }),

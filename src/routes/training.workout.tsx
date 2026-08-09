@@ -9,12 +9,12 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/training/workout")({
   head: () => ({
     meta: [
-      { title: "Workout – Sätze loggen | Vektor" },
+      { title: "Workout – Sätze loggen | EVION" },
       {
         name: "description",
         content: "Schnelles Satz-Logging mit vorausgefüllten Werten und automatischem Steigerungsvorschlag.",
       },
-      { property: "og:title", content: "Workout – Sätze loggen | Vektor" },
+      { property: "og:title", content: "Workout – Sätze loggen | EVION" },
       { property: "og:description", content: "Ein Tap pro Satz – die App schlägt das nächste Gewicht vor." },
     ],
   }),

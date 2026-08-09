@@ -6,12 +6,12 @@ import { ArrowRight, CheckCircle2, Target, TriangleAlert } from "lucide-react";
 export const Route = createFileRoute("/wochenrueckblick")({
   head: () => ({
     meta: [
-      { title: "Wochenrückblick – Vektor" },
+      { title: "Wochenrückblick – EVION" },
       {
         name: "description",
         content: "Deine Woche in Zahlen mit Einordnung und konkretem Fokus für die kommende Woche.",
       },
-      { property: "og:title", content: "Wochenrückblick – Vektor" },
+      { property: "og:title", content: "Wochenrückblick – EVION" },
       { property: "og:description", content: "Was lief gut, was ändern wir – einmal pro Woche." },
     ],
   }),
