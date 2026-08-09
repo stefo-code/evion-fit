@@ -10,11 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ErnaehrungRouteImport } from './routes/ernaehrung'
 import { Route as TrainingIndexRouteImport } from './routes/training.index'
+import { Route as TrainingWorkoutRouteImport } from './routes/training.workout'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ErnaehrungRoute = ErnaehrungRouteImport.update({
+  id: '/ernaehrung',
+  path: '/ernaehrung',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TrainingIndexRoute = TrainingIndexRouteImport.update({
@@ -22,30 +29,43 @@ const TrainingIndexRoute = TrainingIndexRouteImport.update({
   path: '/training/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TrainingWorkoutRoute = TrainingWorkoutRouteImport.update({
+  id: '/training/workout',
+  path: '/training/workout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ernaehrung': typeof ErnaehrungRoute
+  '/training/workout': typeof TrainingWorkoutRoute
   '/training/': typeof TrainingIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ernaehrung': typeof ErnaehrungRoute
+  '/training/workout': typeof TrainingWorkoutRoute
   '/training': typeof TrainingIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/ernaehrung': typeof ErnaehrungRoute
+  '/training/workout': typeof TrainingWorkoutRoute
   '/training/': typeof TrainingIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/training/'
+  fullPaths: '/' | '/ernaehrung' | '/training/workout' | '/training/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/training'
-  id: '__root__' | '/' | '/training/'
+  to: '/' | '/ernaehrung' | '/training/workout' | '/training'
+  id: '__root__' | '/' | '/ernaehrung' | '/training/workout' | '/training/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ErnaehrungRoute: typeof ErnaehrungRoute
+  TrainingWorkoutRoute: typeof TrainingWorkoutRoute
   TrainingIndexRoute: typeof TrainingIndexRoute
 }
 
@@ -58,6 +78,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ernaehrung': {
+      id: '/ernaehrung'
+      path: '/ernaehrung'
+      fullPath: '/ernaehrung'
+      preLoaderRoute: typeof ErnaehrungRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/training/': {
       id: '/training/'
       path: '/training'
@@ -65,11 +92,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TrainingIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/training/workout': {
+      id: '/training/workout'
+      path: '/training/workout'
+      fullPath: '/training/workout'
+      preLoaderRoute: typeof TrainingWorkoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ErnaehrungRoute: ErnaehrungRoute,
+  TrainingWorkoutRoute: TrainingWorkoutRoute,
   TrainingIndexRoute: TrainingIndexRoute,
 }
 export const routeTree = rootRouteImport

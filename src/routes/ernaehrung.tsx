@@ -105,14 +105,14 @@ function ErnaehrungPage() {
                       </p>
                     </div>
                     <div className="num shrink-0 rounded-lg bg-card px-3 py-1.5 text-sm font-bold">
-                      {mengen[i]} g
+                      {mengen[i] ?? 0} g
                     </div>
                   </div>
                   <input
                     type="range"
                     min={50}
                     max={400}
-                    value={mengen[i]}
+                    value={mengen[i] ?? 0}
                     onChange={(e) =>
                       setMengen((m) => m.map((v, j) => (j === i ? Number(e.target.value) : v)))
                     }

@@ -27,13 +27,13 @@ function WorkoutPage() {
   const uebungen = workoutHeute.uebungen;
   const [idx, setIdx] = useState(0);
   const [log, setLog] = useState<Log>({});
-  const u = uebungen[idx];
+  const u = uebungen[idx]!;
   const done = log[u.id] ?? [];
 
   const vorschlag = useMemo<LoggedSet>(() => {
     if (done.length === 0) return u.vorschlag;
-    const letzter = done[done.length - 1];
-    const [min, max] = u.wdhBereich.split("–").map(Number);
+    const letzter = done[done.length - 1]!;
+    const [min = 6, max = 10] = u.wdhBereich.split("–").map(Number);
     if (letzter.wdh >= max && letzter.rpe <= 8) {
       return { gewicht: letzter.gewicht + 2.5, wdh: min, rpe: 8 };
     }
