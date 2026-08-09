@@ -52,6 +52,18 @@ function EinstellungenPage() {
         </Card>
       </Section>
 
+      <Section titel="Onboarding">
+        <Card className="flex items-center gap-3 text-sm">
+          Fitnessprofil neu erstellen
+          <Link
+            to="/onboarding"
+            className="ml-auto shrink-0 rounded-lg border border-border px-3 py-1.5 text-xs font-bold"
+          >
+            Starten
+          </Link>
+        </Card>
+      </Section>
+
       <Section titel="Ziel">
         <Card>
           <div className="flex flex-wrap gap-2">
