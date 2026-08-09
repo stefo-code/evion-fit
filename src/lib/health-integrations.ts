@@ -146,10 +146,10 @@ export async function syncIntegration(int: Integration): Promise<HealthSample[]>
 
 export type CsvMessung = {
   datum: string;
-  gewicht?: number;
-  koerperfett?: number;
-  muskelmasse?: number;
-  wasser?: number;
+  gewicht?: number | undefined;
+  koerperfett?: number | undefined;
+  muskelmasse?: number | undefined;
+  wasser?: number | undefined;
 };
 
 /** Liest CSV-Exporte des Beurer HealthManager (Pro). Erkennt ; oder , als Trenner. */
