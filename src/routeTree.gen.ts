@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CoachRouteImport } from './routes/coach'
 import { Route as DatenschutzRouteImport } from './routes/datenschutz'
 import { Route as EinstellungenRouteImport } from './routes/einstellungen'
@@ -26,6 +27,11 @@ import { Route as ApiPublicHealthIngestRouteImport } from './routes/api/public/h
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CoachRoute = CoachRouteImport.update({
@@ -91,6 +97,7 @@ const ApiPublicHealthIngestRoute = ApiPublicHealthIngestRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/coach': typeof CoachRoute
   '/datenschutz': typeof DatenschutzRoute
   '/einstellungen': typeof EinstellungenRoute
@@ -106,6 +113,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/coach': typeof CoachRoute
   '/datenschutz': typeof DatenschutzRoute
   '/einstellungen': typeof EinstellungenRoute
@@ -122,6 +130,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/coach': typeof CoachRoute
   '/datenschutz': typeof DatenschutzRoute
   '/einstellungen': typeof EinstellungenRoute
@@ -139,6 +148,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
     | '/coach'
     | '/datenschutz'
     | '/einstellungen'
@@ -154,6 +164,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth'
     | '/coach'
     | '/datenschutz'
     | '/einstellungen'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/auth'
     | '/coach'
     | '/datenschutz'
     | '/einstellungen'
@@ -185,6 +197,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRoute
   CoachRoute: typeof CoachRoute
   DatenschutzRoute: typeof DatenschutzRoute
   EinstellungenRoute: typeof EinstellungenRoute
@@ -206,6 +219,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/coach': {
@@ -297,6 +317,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRoute,
   CoachRoute: CoachRoute,
   DatenschutzRoute: DatenschutzRoute,
   EinstellungenRoute: EinstellungenRoute,
