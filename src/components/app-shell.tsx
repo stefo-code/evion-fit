@@ -1,6 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
-  Activity,
   Apple,
   Dumbbell,
   Home,
@@ -12,6 +11,7 @@ import {
   Watch,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { EvionLogo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 
 const main = [
@@ -37,11 +37,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen w-full">
       {/* Desktop-Seitennavigation */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-border bg-sidebar px-4 py-6 lg:flex">
-        <Link to="/" className="mb-8 flex items-center gap-2 px-2">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
-            <Activity className="h-5 w-5" />
-          </span>
-          <span className="font-display text-lg font-bold">EVION</span>
+        <Link to="/" className="mb-8 flex items-center px-2">
+          <EvionLogo />
         </Link>
         <nav className="space-y-1">
           {main.map((i) => (
