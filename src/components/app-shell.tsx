@@ -41,7 +41,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
             <Activity className="h-5 w-5" />
           </span>
-          <span className="font-display text-lg font-bold">Vektor</span>
+          <span className="font-display text-lg font-bold">EVION</span>
         </Link>
         <nav className="space-y-1">
           {main.map((i) => (

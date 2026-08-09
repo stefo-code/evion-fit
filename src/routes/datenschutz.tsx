@@ -8,12 +8,12 @@ import { Shield } from "lucide-react";
 export const Route = createFileRoute("/datenschutz")({
   head: () => ({
     meta: [
-      { title: "Datenschutz – Vektor" },
+      { title: "Datenschutz – EVION" },
       {
         name: "description",
         content: "Granulare Einwilligungen, Datenexport und Löschung – Gesundheitsdaten unter deiner Kontrolle.",
       },
-      { property: "og:title", content: "Datenschutz – Vektor" },
+      { property: "og:title", content: "Datenschutz – EVION" },
       { property: "og:description", content: "Welche Daten wofür genutzt werden – transparent und widerrufbar." },
     ],
   }),
@@ -57,7 +57,7 @@ function DatenschutzPage() {
       </header>
 
       <Disclaimer>
-        Gesundheitsdaten sind besonders sensibel. Vektor verarbeitet nur, was du freigibst, nutzt deine
+        Gesundheitsdaten sind besonders sensibel. EVION verarbeitet nur, was du freigibst, nutzt deine
         Gesundheitsdaten niemals für Werbung und trennt sie strikt von möglichen sozialen Funktionen. Du
         kannst jede Einwilligung jederzeit widerrufen.
       </Disclaimer>

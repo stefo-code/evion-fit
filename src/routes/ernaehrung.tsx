@@ -18,13 +18,13 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/ernaehrung")({
   head: () => ({
     meta: [
-      { title: "Ernährung – Vektor" },
+      { title: "Ernährung – EVION" },
       {
         name: "description",
         content:
           "Kalorien, Protein und Makros tracken, Mahlzeiten per Foto schätzen und passende Rezepte erhalten.",
       },
-      { property: "og:title", content: "Ernährung – Vektor" },
+      { property: "og:title", content: "Ernährung – EVION" },
       { property: "og:description", content: "Vorschläge, die zu deinem restlichen Tagesziel passen." },
     ],
   }),
@@ -356,7 +356,7 @@ function ErnaehrungPage() {
       <Section titel="Was habe ich zu Hause?">
         <Card>
           <p className="text-sm text-muted-foreground">
-            Gib vorhandene Zutaten ein – Vektor berücksichtigt deine offenen Kalorien, dein Protein-Ziel,
+            Gib vorhandene Zutaten ein – EVION berücksichtigt deine offenen Kalorien, dein Protein-Ziel,
             deine Ernährungsform und Unverträglichkeiten ({profile.allergien.join(", ")}).
           </p>
           <div className="mt-3 flex flex-wrap gap-2">

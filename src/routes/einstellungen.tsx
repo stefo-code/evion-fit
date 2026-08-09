@@ -8,9 +8,9 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/einstellungen")({
   head: () => ({
     meta: [
-      { title: "Einstellungen – Vektor" },
+      { title: "Einstellungen – EVION" },
       { name: "description", content: "Profil, Ziel, Trainingsvorgaben und Erinnerungen anpassen." },
-      { property: "og:title", content: "Einstellungen – Vektor" },
+      { property: "og:title", content: "Einstellungen – EVION" },
       { property: "og:description", content: "Dein Profil und deine Vorgaben – jederzeit änderbar." },
     ],
   }),

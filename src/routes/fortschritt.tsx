@@ -26,12 +26,12 @@ import {
 export const Route = createFileRoute("/fortschritt")({
   head: () => ({
     meta: [
-      { title: "Fortschritt – Vektor" },
+      { title: "Fortschritt – EVION" },
       {
         name: "description",
         content: "Gewicht, Körperzusammensetzung, Kraft, Volumen, Schlaf und Aktivität im Verlauf.",
       },
-      { property: "og:title", content: "Fortschritt – Vektor" },
+      { property: "og:title", content: "Fortschritt – EVION" },
       { property: "og:description", content: "Sichtbarer Fortschritt – auch wenn das Gewicht stagniert." },
     ],
   }),

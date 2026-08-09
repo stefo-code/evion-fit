@@ -37,13 +37,13 @@ import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "rec
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Fitness-Cockpit – Vektor" },
+      { title: "Fitness-Cockpit – EVION" },
       {
         name: "description",
         content:
           "Goal Score, Tagesfokus, Wochenfortschritt, Körperstatus und KI-Empfehlungen auf einen Blick.",
       },
-      { property: "og:title", content: "Fitness-Cockpit – Vektor" },
+      { property: "og:title", content: "Fitness-Cockpit – EVION" },
       {
         property: "og:description",
         content: "Was soll ich heute tun? Mache ich Fortschritte? Bin ich bereit? Alles auf einem Screen.",
@@ -392,7 +392,7 @@ function Cockpit() {
       </Section>
 
       <Disclaimer>
-        Vektor ersetzt keine medizinische Beratung. Empfehlungen basieren auf deinen erfassten Daten und
+        EVION ersetzt keine medizinische Beratung. Empfehlungen basieren auf deinen erfassten Daten und
         allgemeinen Trainings- und Ernährungsprinzipien. Bei Beschwerden, Verletzungen oder Erkrankungen
         wende dich bitte an medizinisches Fachpersonal.
       </Disclaimer>

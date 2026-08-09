@@ -10,7 +10,7 @@ sie in einer Android-Hülle sofort mit echten Daten arbeitet.
 Die Hülle injiziert vor dem Laden der Web-App ein globales Objekt:
 
 ```ts
-window.VektorHealth = {
+window.EvionHealth = {
   version: "1.0.0",
   requestPermissions(typen: string[]): Promise<boolean>,
   read(typen: string[], seitIso: string): Promise<{
@@ -28,7 +28,7 @@ statt der Beispielwerte. Ohne Objekt bleibt der Auto-Import per Token aktiv.
 
 ## Health-Connect-Datentypen
 
-| Vektor-Metrik | Health Connect Record |
+| EVION-Metrik | Health Connect Record |
 | --- | --- |
 | gewicht | Weight |
 | koerperfett | BodyFat |
@@ -46,9 +46,9 @@ statt der Beispielwerte. Ohne Objekt bleibt der Auto-Import per Token aktiv.
 
 1. Projekt exportieren und lokal `npm install` ausführen.
 2. Capacitor hinzufügen: `npm i @capacitor/core @capacitor/android` und
-   `npx cap init Vektor app.vektor.fitness`.
+   `npx cap init EVION app.evion.fitness`.
 3. Ein Health-Connect-Plugin einbinden (z. B. `capacitor-health-connect`) und
-   in `MainActivity` das oben beschriebene `window.VektorHealth` bereitstellen.
+   in `MainActivity` das oben beschriebene `window.EvionHealth` bereitstellen.
 4. In `AndroidManifest.xml` die Health-Connect-Berechtigungen deklarieren,
    z. B. `android.permission.health.READ_WEIGHT`, `READ_STEPS`,
    `READ_HEART_RATE`, `READ_SLEEP`, `READ_EXERCISE`, `READ_BODY_FAT`.

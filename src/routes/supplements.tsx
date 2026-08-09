@@ -8,12 +8,12 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/supplements")({
   head: () => ({
     meta: [
-      { title: "Supplement-Kompass – Vektor" },
+      { title: "Supplement-Kompass – EVION" },
       {
         name: "description",
         content: "Evidenzorientierte Einordnung gängiger Supplements inklusive Dosierung und Timing.",
       },
-      { property: "og:title", content: "Supplement-Kompass – Vektor" },
+      { property: "og:title", content: "Supplement-Kompass – EVION" },
       { property: "og:description", content: "Was wirkt, was ist verzichtbar – ohne Heilsversprechen." },
     ],
   }),

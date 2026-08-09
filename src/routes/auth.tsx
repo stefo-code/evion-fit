@@ -14,12 +14,12 @@ export const Route = createFileRoute("/auth")({
   validateSearch: suchSchema,
   head: () => ({
     meta: [
-      { title: "Anmelden – Vektor" },
+      { title: "Anmelden – EVION" },
       {
         name: "description",
         content: "Melde dich an, um deine Health-Daten von Samsung Health, Galaxy Watch und Beurer zu synchronisieren.",
       },
-      { property: "og:title", content: "Anmelden – Vektor" },
+      { property: "og:title", content: "Anmelden – EVION" },
       { property: "og:description", content: "Konto für die automatische Health-Synchronisation." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
