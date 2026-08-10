@@ -32,6 +32,9 @@ import {
   zeitModi,
 } from "@/lib/demo-data";
 import { cn } from "@/lib/utils";
+import { Nudge } from "@/components/nudge";
+import { effektivesProfil, useOnboardingProfil } from "@/lib/onboarding-store";
+
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 export const Route = createFileRoute("/")({
