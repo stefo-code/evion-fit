@@ -360,8 +360,8 @@ function Welcome({ onStart }: { onStart: () => void }) {
   const navigate = useNavigate();
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 pb-8 pt-10">
-      <EvionLogo className="h-8" />
-      <p className="mt-2 text-sm font-semibold text-primary">Evolve. Every day.</p>
+      <EvionLogo className="h-8 self-center" />
+      <p className="mt-2 self-center text-center text-sm font-semibold text-primary">Evolve. Every day.</p>
 
       <div className="relative mt-8 flex-1">
         <h1 className="font-display text-4xl font-extrabold leading-[1.1]">
