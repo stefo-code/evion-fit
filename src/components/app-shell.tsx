@@ -107,7 +107,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   )}
                 >
                   <i.icon className="h-5 w-5 shrink-0" />
-                  <span className="w-full truncate text-center">{i.label}</span>
+                  <span className="w-full truncate text-center">{i.kurz}</span>
                 </Link>
               </li>
             );
