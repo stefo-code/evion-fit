@@ -96,31 +96,32 @@ export function AppShell({ children }: { children: ReactNode }) {
           {main.map((i) => {
             const active = isActive(pathname, i.to);
             return (
-              <li key={i.to}>
+              <li key={i.to} className="min-w-0">
                 <Link
                   to={i.to}
                   className={cn(
-                    "flex flex-col items-center gap-1 py-2.5 text-[10px] font-bold uppercase tracking-wider transition-colors",
+                    "flex flex-col items-center gap-1 px-0.5 py-2.5 text-[9px] font-bold uppercase tracking-tight transition-colors",
                     active ? "text-primary" : "text-muted-foreground",
                   )}
                 >
-                  <i.icon className="h-5 w-5" />
-                  {i.label}
+                  <i.icon className="h-5 w-5 shrink-0" />
+                  <span className="w-full truncate text-center">{i.label}</span>
                 </Link>
               </li>
             );
           })}
-          <li>
+          <li className="min-w-0">
             <button
               onClick={() => setMehrOffen(true)}
-              className="flex w-full flex-col items-center gap-1 py-2.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+              className="flex w-full flex-col items-center gap-1 px-0.5 py-2.5 text-[9px] font-bold uppercase tracking-tight text-muted-foreground"
             >
-              <MoreHorizontal className="h-5 w-5" />
-              Mehr
+              <MoreHorizontal className="h-5 w-5 shrink-0" />
+              <span className="w-full truncate text-center">Mehr</span>
             </button>
           </li>
         </ul>
       </nav>
+
 
       {/* Mobile „Mehr“-Sheet */}
       {mehrOffen && (
