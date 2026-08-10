@@ -19,12 +19,13 @@ import { ladeProfil } from "@/lib/onboarding-store";
 import { cn } from "@/lib/utils";
 
 const main = [
-  { to: "/", label: "Home", icon: Home },
-  { to: "/training", label: "Training", icon: Dumbbell },
-  { to: "/ernaehrung", label: "Ernährung", icon: Apple },
-  { to: "/fortschritt", label: "Fortschritt", icon: LineChart },
-  { to: "/coach", label: "Coach", icon: Sparkles },
+  { to: "/", label: "Home", kurz: "Home", icon: Home },
+  { to: "/training", label: "Training", kurz: "Training", icon: Dumbbell },
+  { to: "/ernaehrung", label: "Ernährung", kurz: "Essen", icon: Apple },
+  { to: "/fortschritt", label: "Fortschritt", kurz: "Verlauf", icon: LineChart },
+  { to: "/coach", label: "Coach", kurz: "Coach", icon: Sparkles },
 ] as const;
+
 
 const secondary = [
   { to: "/profil", label: "Dein Profil", icon: User },
