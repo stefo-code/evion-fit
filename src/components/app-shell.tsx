@@ -59,8 +59,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         </Link>
         <nav className="space-y-1">
           {main.map((i) => (
-            <NavItem key={i.to} {...i} active={isActive(pathname, i.to)} />
+            <NavItem key={i.to} to={i.to} label={i.label} icon={i.icon} active={isActive(pathname, i.to)} />
           ))}
+
         </nav>
         <p className="label-xs mt-8 px-3">Mehr</p>
         <nav className="mt-2 space-y-1">
