@@ -108,9 +108,11 @@ function OnboardingPage() {
       <PlanScreen
         p={p}
         onStart={() => {
-          set({ abgeschlossen: true, schritt: SCHRITTE.length });
+          // synchron persistieren, damit der Erststart-Check sofort greift
+          speichereProfil({ ...p, abgeschlossen: true, schritt: SCHRITTE.length });
           navigate({ to: "/" });
         }}
+
       />
     );
 
