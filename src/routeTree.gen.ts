@@ -18,6 +18,7 @@ import { Route as ErnaehrungRouteImport } from './routes/ernaehrung'
 import { Route as FortschrittRouteImport } from './routes/fortschritt'
 import { Route as GeraeteRouteImport } from './routes/geraete'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as ProfilRouteImport } from './routes/profil'
 import { Route as SupplementsRouteImport } from './routes/supplements'
 import { Route as WochenrueckblickRouteImport } from './routes/wochenrueckblick'
 import { Route as TrainingIndexRouteImport } from './routes/training.index'
@@ -69,6 +70,11 @@ const OnboardingRoute = OnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfilRoute = ProfilRouteImport.update({
+  id: '/profil',
+  path: '/profil',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SupplementsRoute = SupplementsRouteImport.update({
   id: '/supplements',
   path: '/supplements',
@@ -105,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/fortschritt': typeof FortschrittRoute
   '/geraete': typeof GeraeteRoute
   '/onboarding': typeof OnboardingRoute
+  '/profil': typeof ProfilRoute
   '/supplements': typeof SupplementsRoute
   '/wochenrueckblick': typeof WochenrueckblickRoute
   '/training/workout': typeof TrainingWorkoutRoute
@@ -121,6 +128,7 @@ export interface FileRoutesByTo {
   '/fortschritt': typeof FortschrittRoute
   '/geraete': typeof GeraeteRoute
   '/onboarding': typeof OnboardingRoute
+  '/profil': typeof ProfilRoute
   '/supplements': typeof SupplementsRoute
   '/wochenrueckblick': typeof WochenrueckblickRoute
   '/training/workout': typeof TrainingWorkoutRoute
@@ -138,6 +146,7 @@ export interface FileRoutesById {
   '/fortschritt': typeof FortschrittRoute
   '/geraete': typeof GeraeteRoute
   '/onboarding': typeof OnboardingRoute
+  '/profil': typeof ProfilRoute
   '/supplements': typeof SupplementsRoute
   '/wochenrueckblick': typeof WochenrueckblickRoute
   '/training/workout': typeof TrainingWorkoutRoute
@@ -156,6 +165,7 @@ export interface FileRouteTypes {
     | '/fortschritt'
     | '/geraete'
     | '/onboarding'
+    | '/profil'
     | '/supplements'
     | '/wochenrueckblick'
     | '/training/workout'
@@ -172,6 +182,7 @@ export interface FileRouteTypes {
     | '/fortschritt'
     | '/geraete'
     | '/onboarding'
+    | '/profil'
     | '/supplements'
     | '/wochenrueckblick'
     | '/training/workout'
@@ -188,6 +199,7 @@ export interface FileRouteTypes {
     | '/fortschritt'
     | '/geraete'
     | '/onboarding'
+    | '/profil'
     | '/supplements'
     | '/wochenrueckblick'
     | '/training/workout'
@@ -205,6 +217,7 @@ export interface RootRouteChildren {
   FortschrittRoute: typeof FortschrittRoute
   GeraeteRoute: typeof GeraeteRoute
   OnboardingRoute: typeof OnboardingRoute
+  ProfilRoute: typeof ProfilRoute
   SupplementsRoute: typeof SupplementsRoute
   WochenrueckblickRoute: typeof WochenrueckblickRoute
   TrainingWorkoutRoute: typeof TrainingWorkoutRoute
@@ -277,6 +290,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profil': {
+      id: '/profil'
+      path: '/profil'
+      fullPath: '/profil'
+      preLoaderRoute: typeof ProfilRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/supplements': {
       id: '/supplements'
       path: '/supplements'
@@ -325,6 +345,7 @@ const rootRouteChildren: RootRouteChildren = {
   FortschrittRoute: FortschrittRoute,
   GeraeteRoute: GeraeteRoute,
   OnboardingRoute: OnboardingRoute,
+  ProfilRoute: ProfilRoute,
   SupplementsRoute: SupplementsRoute,
   WochenrueckblickRoute: WochenrueckblickRoute,
   TrainingWorkoutRoute: TrainingWorkoutRoute,
@@ -334,13 +355,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

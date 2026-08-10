@@ -32,6 +32,9 @@ import {
   zeitModi,
 } from "@/lib/demo-data";
 import { cn } from "@/lib/utils";
+import { Nudge } from "@/components/nudge";
+import { effektivesProfil, useOnboardingProfil } from "@/lib/onboarding-store";
+
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 export const Route = createFileRoute("/")({
@@ -59,7 +62,9 @@ export const Route = createFileRoute("/")({
 });
 
 function Cockpit() {
-  const { score, parts } = computeGoalScore(profile.goal);
+  const { profil } = useOnboardingProfil();
+  const eff = effektivesProfil(profil);
+  const { score, parts } = computeGoalScore(eff.ziel);
   const [zeit, setZeit] = useState<number | null>(null);
   const gewichtDelta = profile.startGewicht - profile.gewicht;
   const zielFortschritt = Math.round(
@@ -71,11 +76,20 @@ function Cockpit() {
       {/* HERO */}
       <header className="hero-glow surface relative overflow-hidden p-6">
         <div className="space-y-4">
-          <div className="min-w-0">
-            <p className="label-xs truncate whitespace-nowrap">Guten Morgen, {profile.name}</p>
-            <h1 className="mt-1 truncate whitespace-nowrap font-display text-lg font-extrabold leading-tight sm:text-xl md:text-2xl">
-              Ziel: {goalLabels[profile.goal]}
-            </h1>
+          <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="label-xs truncate whitespace-nowrap">Guten Morgen, {eff.name}</p>
+              <h1 className="mt-1 truncate whitespace-nowrap font-display text-lg font-extrabold leading-tight sm:text-xl md:text-2xl">
+                Ziel: {goalLabels[eff.ziel]}
+              </h1>
+            </div>
+            <Link
+              to="/profil"
+              aria-label="Dein Profil"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/12 font-display text-sm font-extrabold text-primary"
+            >
+              {eff.name.slice(0, 1).toUpperCase()}
+            </Link>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Ring value={score} label={String(score)} sub="Goal Score" />
@@ -94,6 +108,17 @@ function Cockpit() {
         </div>
         <ScoreErklaerung parts={parts} score={score} />
       </header>
+
+      {/* PROGRESSIVE PROFILING */}
+      <Nudge
+        frage={{
+          id: "dauer-40",
+          text: "Deine Trainings dauern durchschnittlich 38 Minuten statt der geplanten 60 Minuten.",
+          hinweis: "Soll EVION zukünftige Workouts auf etwa 40 Minuten optimieren?",
+          antworten: ["Ja, anpassen", "Nein"],
+        }}
+      />
+
 
       {/* ERFOLG */}
       <div className="surface flex items-center gap-4 border-primary/40 bg-primary/10 p-5">
