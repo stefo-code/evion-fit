@@ -599,3 +599,18 @@ export function alternativenFuer(id: string) {
     (a) => a.id !== u.id && (a.muster === u.muster || a.muskel === u.muskel),
   );
 }
+
+/** Heuristische Bildzuordnung anhand eines Übungsnamens. */
+export function bildFuerName(name: string): string {
+  const n = name.toLowerCase();
+  const treffer = uebungsBibliothek.find((u) => u.name.toLowerCase().includes(n) || n.includes(u.name.toLowerCase()));
+  if (treffer) return musterBild[treffer.muster];
+  if (/curl|trizeps|dip|arm/.test(n)) return musterBild.arme;
+  if (/schulter|seitheben|press/.test(n)) return musterBild.schulter;
+  if (/rudern|latzug|klimmzug|zug|face/.test(n)) return musterBild.ziehen;
+  if (/kniebeuge|squat|beinpresse|ausfall|bein/.test(n)) return musterBild.kniebeuge;
+  if (/kreuzheben|hip|glute|hüft/.test(n)) return musterBild.huefte;
+  if (/plank|bauch|core|dead bug|pallof/.test(n)) return musterBild.core;
+  if (/mobil|beckenboden|katze|dehn/.test(n)) return musterBild.mobility;
+  return musterBild.druecken;
+}

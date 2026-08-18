@@ -5,6 +5,7 @@ import { supplementPlan, goalLabels } from "@/lib/demo-data";
 import {
   empfehlungen,
   stufenFarbe,
+  supplementDatenbank,
   type Kategorie,
   type Stufe,
 } from "@/lib/supplements-data";
@@ -72,7 +73,7 @@ function SupplementsPage() {
         <p className="label-xs">Supplements</p>
         <h1 className="mt-1 font-display text-3xl font-extrabold">Supplement-Kompass</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {supplementDatenbankGroesse} Präparate nach Studienlage eingeordnet und auf dein Profil
+          {supplementDatenbank.length} Präparate nach Studienlage eingeordnet und auf dein Profil
           zugeschnitten – Supplements sind ein Zusatz, keine Voraussetzung.
         </p>
       </header>
@@ -219,5 +220,3 @@ function Feld({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-
-const supplementDatenbankGroesse = 21;
