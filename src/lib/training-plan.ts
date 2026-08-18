@@ -146,7 +146,8 @@ function wochenVorlage(k: PlanKontext): Session[] {
     { titel: "Oberkörper", muster: ["druecken", "ziehen", "schulter"] },
     { titel: "Unterkörper & Rumpf", muster: ["huefte", "kniebeuge", "core"] },
     { titel: "Schwachstellen", muster: ["arme", "schulter", "core"] },
-  ].slice(0, tage);
+  ];
+  return split.slice(0, tage);
 }
 
 /** Zusätzliche Muster, die der gewählte Fokus in jede Einheit einstreut. */
