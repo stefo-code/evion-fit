@@ -13,7 +13,7 @@ import {
   type Fokus,
   type PlanKontext,
 } from "@/lib/training-plan";
-import { alternativenFuer, bildFuer, uebungById } from "@/lib/exercise-library";
+import { alternativenFuer, bildFuer } from "@/lib/exercise-library";
 import { ChevronRight, History, Repeat, Trophy, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -311,6 +311,3 @@ function originalId(aktuelleId: string, tausch: Record<string, string>) {
   const eintrag = Object.entries(tausch).find(([, zu]) => zu === aktuelleId);
   return eintrag ? eintrag[0] : aktuelleId;
 }
-
-// Referenz, damit ungenutzte Bibliotheks-Exports typgeprüft bleiben.
-void uebungById;
