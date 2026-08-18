@@ -139,7 +139,7 @@ function wochenVorlage(k: PlanKontext): Session[] {
     ];
   }
 
-  return [
+  const split: Session[] = [
     { titel: "Push", muster: ["druecken", "schulter", "arme"] },
     { titel: "Pull", muster: ["ziehen", "ziehen", "arme"] },
     { titel: "Beine", muster: ["kniebeuge", "huefte", "core"] },
