@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Card, Disclaimer, Why } from "@/components/ui-kit";
 import { workoutHeute, type LoggedSet } from "@/lib/demo-data";
+import { bildFuerName } from "@/lib/exercise-library";
 import { toast } from "sonner";
 import { Check, ChevronLeft, Minus, Plus, Timer, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -118,7 +119,16 @@ function WorkoutPage() {
         ))}
       </div>
 
-      <Card>
+      <Card className="overflow-hidden p-0">
+        <img
+          src={bildFuerName(u.name)}
+          alt={`Ausführung der Übung ${u.name}`}
+          loading="lazy"
+          width={768}
+          height={512}
+          className="h-44 w-full bg-secondary object-cover"
+        />
+        <div className="p-5">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
           <div className="min-w-0">
             <h2 className="truncate font-display text-2xl font-extrabold">{u.name}</h2>
@@ -175,6 +185,7 @@ function WorkoutPage() {
             ))}
           </ul>
         )}
+        </div>
       </Card>
 
       <Card>

@@ -1,0 +1,616 @@
+/**
+ * Übungsbibliothek mit Bildern, Bewegungsmustern und Eignungs-Flags.
+ *
+ * Die Bilder sind bewegungsmuster-basiert (Drücken, Ziehen, Kniebeuge, …),
+ * damit jede Übung eine passende Illustration erhält.
+ */
+
+import bildDruecken from "@/assets/ex-druecken.jpg";
+import bildZiehen from "@/assets/ex-ziehen.jpg";
+import bildKniebeuge from "@/assets/ex-kniebeuge.jpg";
+import bildHuefte from "@/assets/ex-huefte.jpg";
+import bildSchulter from "@/assets/ex-schulter.jpg";
+import bildArme from "@/assets/ex-arme.jpg";
+import bildCore from "@/assets/ex-core.jpg";
+import bildMobility from "@/assets/ex-mobility.jpg";
+
+export type Muster =
+  | "druecken"
+  | "ziehen"
+  | "kniebeuge"
+  | "huefte"
+  | "schulter"
+  | "arme"
+  | "core"
+  | "mobility";
+
+export const musterBild: Record<Muster, string> = {
+  druecken: bildDruecken,
+  ziehen: bildZiehen,
+  kniebeuge: bildKniebeuge,
+  huefte: bildHuefte,
+  schulter: bildSchulter,
+  arme: bildArme,
+  core: bildCore,
+  mobility: bildMobility,
+};
+
+export type Equipment = "körpergewicht" | "kurzhantel" | "langhantel" | "maschine" | "kabel" | "band";
+
+export type LibUebung = {
+  id: string;
+  name: string;
+  muskel: string;
+  muster: Muster;
+  equipment: Equipment[];
+  /** Grundübung mit hohem Reiz (bleibt bei Zeitmangel im Plan). */
+  grund: boolean;
+  zielSaetze: number;
+  wdhBereich: string;
+  startGewicht: number;
+  hinweis: string;
+  /** Belastet die Wirbelsäule kaum (axial gering) → rückenschonend. */
+  rueckenschonend: boolean;
+  /** Geeignet für Rückbildung nach der Schwangerschaft (kein Druck auf Beckenboden/Rektusdiastase). */
+  rueckbildung: boolean;
+  /** Für Einsteiger geeignet. */
+  einsteiger: boolean;
+};
+
+export const uebungsBibliothek: LibUebung[] = [
+  // Drücken / Brust
+  {
+    id: "bank-lh",
+    name: "Bankdrücken (Langhantel)",
+    muskel: "Brust",
+    muster: "druecken",
+    equipment: ["langhantel"],
+    grund: true,
+    zielSaetze: 4,
+    wdhBereich: "6–8",
+    startGewicht: 60,
+    hinweis: "Schulterblätter fixieren, Ellbogen ca. 45° zum Körper.",
+    rueckenschonend: true,
+    rueckbildung: false,
+    einsteiger: false,
+  },
+  {
+    id: "bank-kh",
+    name: "Kurzhantel-Bankdrücken",
+    muskel: "Brust",
+    muster: "druecken",
+    equipment: ["kurzhantel"],
+    grund: true,
+    zielSaetze: 3,
+    wdhBereich: "8–12",
+    startGewicht: 22,
+    hinweis: "Größerer Bewegungsradius, schulterfreundlicher als die Langhantel.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "brustpresse",
+    name: "Brustpresse (Maschine)",
+    muskel: "Brust",
+    muster: "druecken",
+    equipment: ["maschine"],
+    grund: true,
+    zielSaetze: 3,
+    wdhBereich: "10–12",
+    startGewicht: 35,
+    hinweis: "Geführte Bewegung – ideal zum sicheren Einstieg.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "liegestuetz",
+    name: "Liegestütze (ggf. erhöht)",
+    muskel: "Brust",
+    muster: "druecken",
+    equipment: ["körpergewicht"],
+    grund: true,
+    zielSaetze: 3,
+    wdhBereich: "8–15",
+    startGewicht: 0,
+    hinweis: "Bei Bedarf Hände auf Bank oder Wand erhöhen.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "fliegende",
+    name: "Kabelzug Fliegende",
+    muskel: "Brust",
+    muster: "druecken",
+    equipment: ["kabel"],
+    grund: false,
+    zielSaetze: 2,
+    wdhBereich: "12–15",
+    startGewicht: 15,
+    hinweis: "Isolation – bei Zeitmangel als Erstes kürzbar.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+
+  // Ziehen / Rücken
+  {
+    id: "latzug",
+    name: "Latzug",
+    muskel: "Rücken",
+    muster: "ziehen",
+    equipment: ["maschine", "kabel"],
+    grund: true,
+    zielSaetze: 3,
+    wdhBereich: "8–12",
+    startGewicht: 45,
+    hinweis: "Brust heben, Ellbogen nach unten-hinten ziehen.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "rudern-kabel",
+    name: "Rudern am Kabel (sitzend)",
+    muskel: "Rücken",
+    muster: "ziehen",
+    equipment: ["kabel", "maschine"],
+    grund: true,
+    zielSaetze: 3,
+    wdhBereich: "10–12",
+    startGewicht: 45,
+    hinweis: "Rumpf ruhig halten, Zug aus dem Rücken statt aus den Armen.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "rudern-kh",
+    name: "Kurzhantelrudern (einarmig)",
+    muskel: "Rücken",
+    muster: "ziehen",
+    equipment: ["kurzhantel"],
+    grund: true,
+    zielSaetze: 3,
+    wdhBereich: "8–12",
+    startGewicht: 24,
+    hinweis: "Abstützen entlastet die Lendenwirbelsäule.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "rudern-lh",
+    name: "Langhantelrudern",
+    muskel: "Rücken",
+    muster: "ziehen",
+    equipment: ["langhantel"],
+    grund: true,
+    zielSaetze: 4,
+    wdhBereich: "6–10",
+    startGewicht: 55,
+    hinweis: "Hohe Rumpfbelastung – nur mit sauberer Technik.",
+    rueckenschonend: false,
+    rueckbildung: false,
+    einsteiger: false,
+  },
+  {
+    id: "facepull",
+    name: "Face Pull",
+    muskel: "Schultern",
+    muster: "ziehen",
+    equipment: ["kabel", "band"],
+    grund: false,
+    zielSaetze: 3,
+    wdhBereich: "12–20",
+    startGewicht: 15,
+    hinweis: "Top für Haltung und gesunde Schultern.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "klimmzug",
+    name: "Klimmzüge (ggf. unterstützt)",
+    muskel: "Rücken",
+    muster: "ziehen",
+    equipment: ["körpergewicht", "maschine"],
+    grund: true,
+    zielSaetze: 3,
+    wdhBereich: "5–10",
+    startGewicht: 0,
+    hinweis: "Mit Band oder Maschine unterstützen, bis 8 Wdh. sauber gelingen.",
+    rueckenschonend: true,
+    rueckbildung: false,
+    einsteiger: false,
+  },
+
+  // Beine – Kniebeuge-Muster
+  {
+    id: "kniebeuge-lh",
+    name: "Kniebeuge (Langhantel)",
+    muskel: "Beine",
+    muster: "kniebeuge",
+    equipment: ["langhantel"],
+    grund: true,
+    zielSaetze: 4,
+    wdhBereich: "5–8",
+    startGewicht: 70,
+    hinweis: "Höchster Reiz für die Beine, hohe Wirbelsäulenbelastung.",
+    rueckenschonend: false,
+    rueckbildung: false,
+    einsteiger: false,
+  },
+  {
+    id: "goblet",
+    name: "Goblet Squat",
+    muskel: "Beine",
+    muster: "kniebeuge",
+    equipment: ["kurzhantel"],
+    grund: true,
+    zielSaetze: 3,
+    wdhBereich: "8–12",
+    startGewicht: 16,
+    hinweis: "Gewicht vor der Brust – leicht zu lernen, rückenfreundlich.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "beinpresse",
+    name: "Beinpresse",
+    muskel: "Beine",
+    muster: "kniebeuge",
+    equipment: ["maschine"],
+    grund: true,
+    zielSaetze: 3,
+    wdhBereich: "10–15",
+    startGewicht: 100,
+    hinweis: "Geführt und ohne Auflast auf die Wirbelsäule.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "ausfallschritt",
+    name: "Ausfallschritte (Split Squat)",
+    muskel: "Beine",
+    muster: "kniebeuge",
+    equipment: ["körpergewicht", "kurzhantel"],
+    grund: true,
+    zielSaetze: 3,
+    wdhBereich: "8–12",
+    startGewicht: 10,
+    hinweis: "Einbeinig – gut für Gesäß, Balance und Alltagsstabilität.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "beinstrecker",
+    name: "Beinstrecker",
+    muskel: "Beine",
+    muster: "kniebeuge",
+    equipment: ["maschine"],
+    grund: false,
+    zielSaetze: 2,
+    wdhBereich: "12–15",
+    startGewicht: 30,
+    hinweis: "Isolation für den vorderen Oberschenkel.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+
+  // Hüftstreckung / Gesäß / hintere Kette
+  {
+    id: "kreuzheben",
+    name: "Kreuzheben",
+    muskel: "Rücken",
+    muster: "huefte",
+    equipment: ["langhantel"],
+    grund: true,
+    zielSaetze: 3,
+    wdhBereich: "3–6",
+    startGewicht: 90,
+    hinweis: "Sehr effektiv, aber hohe Belastung für den unteren Rücken.",
+    rueckenschonend: false,
+    rueckbildung: false,
+    einsteiger: false,
+  },
+  {
+    id: "rdl-kh",
+    name: "Rumänisches Kreuzheben (KH)",
+    muskel: "Beine",
+    muster: "huefte",
+    equipment: ["kurzhantel"],
+    grund: true,
+    zielSaetze: 3,
+    wdhBereich: "8–12",
+    startGewicht: 20,
+    hinweis: "Dehnung in der Beinrückseite spüren, Rücken bleibt gerade.",
+    rueckenschonend: false,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "hipthrust",
+    name: "Hip Thrust",
+    muskel: "Gesäß",
+    muster: "huefte",
+    equipment: ["langhantel", "kurzhantel", "maschine"],
+    grund: true,
+    zielSaetze: 3,
+    wdhBereich: "8–12",
+    startGewicht: 40,
+    hinweis: "Stärkster Gesäß-Reiz bei minimaler Rückenbelastung.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "glutebridge",
+    name: "Glute Bridge (Körpergewicht)",
+    muskel: "Gesäß",
+    muster: "huefte",
+    equipment: ["körpergewicht", "band"],
+    grund: false,
+    zielSaetze: 3,
+    wdhBereich: "12–20",
+    startGewicht: 0,
+    hinweis: "Ideal für Einstieg und Rückbildung – Beckenboden bewusst mitnehmen.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "beinbeuger",
+    name: "Beinbeuger (Maschine)",
+    muskel: "Beine",
+    muster: "huefte",
+    equipment: ["maschine"],
+    grund: false,
+    zielSaetze: 3,
+    wdhBereich: "10–15",
+    startGewicht: 30,
+    hinweis: "Isolation für die Beinrückseite.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+
+  // Schultern
+  {
+    id: "schulterdruecken-kh",
+    name: "Schulterdrücken (Kurzhantel)",
+    muskel: "Schultern",
+    muster: "schulter",
+    equipment: ["kurzhantel"],
+    grund: true,
+    zielSaetze: 3,
+    wdhBereich: "8–12",
+    startGewicht: 14,
+    hinweis: "Sitzend mit Rückenlehne entlastet den unteren Rücken.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "seitheben",
+    name: "Seitheben",
+    muskel: "Schultern",
+    muster: "schulter",
+    equipment: ["kurzhantel", "kabel"],
+    grund: false,
+    zielSaetze: 3,
+    wdhBereich: "12–15",
+    startGewicht: 8,
+    hinweis: "Formt die seitliche Schulter – gut für eine definierte Silhouette.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+
+  // Arme
+  {
+    id: "bizeps-kh",
+    name: "Bizepscurls (Kurzhantel)",
+    muskel: "Bizeps",
+    muster: "arme",
+    equipment: ["kurzhantel", "band"],
+    grund: false,
+    zielSaetze: 3,
+    wdhBereich: "10–15",
+    startGewicht: 10,
+    hinweis: "Ellbogen bleiben am Körper.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "trizeps-kabel",
+    name: "Trizepsdrücken am Kabel",
+    muskel: "Trizeps",
+    muster: "arme",
+    equipment: ["kabel", "band"],
+    grund: false,
+    zielSaetze: 3,
+    wdhBereich: "12–15",
+    startGewicht: 20,
+    hinweis: "Klassiker zum Straffen der Oberarmrückseite.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "dips",
+    name: "Dips / Bankdips",
+    muskel: "Trizeps",
+    muster: "arme",
+    equipment: ["körpergewicht"],
+    grund: true,
+    zielSaetze: 3,
+    wdhBereich: "8–12",
+    startGewicht: 0,
+    hinweis: "Bankdips als leichtere Variante.",
+    rueckenschonend: true,
+    rueckbildung: false,
+    einsteiger: true,
+  },
+  {
+    id: "hammer",
+    name: "Hammercurls",
+    muskel: "Bizeps",
+    muster: "arme",
+    equipment: ["kurzhantel"],
+    grund: false,
+    zielSaetze: 3,
+    wdhBereich: "10–15",
+    startGewicht: 10,
+    hinweis: "Trainiert zusätzlich den Unterarm.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+
+  // Core
+  {
+    id: "plank",
+    name: "Unterarmstütz (Plank)",
+    muskel: "Bauch",
+    muster: "core",
+    equipment: ["körpergewicht"],
+    grund: false,
+    zielSaetze: 3,
+    wdhBereich: "20–45 s",
+    startGewicht: 0,
+    hinweis: "Rippen nach unten ziehen, Becken nicht absacken lassen.",
+    rueckenschonend: true,
+    rueckbildung: false,
+    einsteiger: true,
+  },
+  {
+    id: "deadbug",
+    name: "Dead Bug",
+    muskel: "Bauch",
+    muster: "core",
+    equipment: ["körpergewicht"],
+    grund: false,
+    zielSaetze: 3,
+    wdhBereich: "8–12",
+    startGewicht: 0,
+    hinweis: "Sanfte Tiefenmuskulatur-Übung, auch bei Rektusdiastase geeignet.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "pallof",
+    name: "Pallof Press (Anti-Rotation)",
+    muskel: "Bauch",
+    muster: "core",
+    equipment: ["kabel", "band"],
+    grund: false,
+    zielSaetze: 3,
+    wdhBereich: "10–12",
+    startGewicht: 12,
+    hinweis: "Stabilisiert die Mitte, ohne die Wirbelsäule zu beugen.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "farmers",
+    name: "Farmer's Walk",
+    muskel: "Bauch",
+    muster: "core",
+    equipment: ["kurzhantel"],
+    grund: false,
+    zielSaetze: 3,
+    wdhBereich: "30–45 s",
+    startGewicht: 20,
+    hinweis: "Ganzkörperstabilität und Kalorienverbrauch in einem.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+
+  // Mobility / Rückbildung
+  {
+    id: "beckenboden",
+    name: "Beckenboden-Aktivierung",
+    muskel: "Beckenboden",
+    muster: "mobility",
+    equipment: ["körpergewicht"],
+    grund: true,
+    zielSaetze: 3,
+    wdhBereich: "8–10 × 5 s",
+    startGewicht: 0,
+    hinweis: "Ruhig atmen, beim Ausatmen sanft anspannen, vollständig loslassen.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "vierfuessler",
+    name: "Vierfüßler-Stand (Bird Dog)",
+    muskel: "Rumpf",
+    muster: "mobility",
+    equipment: ["körpergewicht"],
+    grund: false,
+    zielSaetze: 3,
+    wdhBereich: "8–10",
+    startGewicht: 0,
+    hinweis: "Becken stabil halten, Bewegung langsam ausführen.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "katze-kuh",
+    name: "Katze-Kuh Mobilisation",
+    muskel: "Wirbelsäule",
+    muster: "mobility",
+    equipment: ["körpergewicht"],
+    grund: false,
+    zielSaetze: 2,
+    wdhBereich: "8–10",
+    startGewicht: 0,
+    hinweis: "Mobilisiert die Wirbelsäule – ideal als Aufwärmen.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+];
+
+export const uebungById = new Map(uebungsBibliothek.map((u) => [u.id, u]));
+
+export function bildFuer(u: LibUebung) {
+  return musterBild[u.muster];
+}
+
+/** Sinnvolle Austausch-Optionen: gleiches Bewegungsmuster, andere Übung. */
+export function alternativenFuer(id: string) {
+  const u = uebungById.get(id);
+  if (!u) return [];
+  return uebungsBibliothek.filter(
+    (a) => a.id !== u.id && (a.muster === u.muster || a.muskel === u.muskel),
+  );
+}
+
+/** Heuristische Bildzuordnung anhand eines Übungsnamens. */
+export function bildFuerName(name: string): string {
+  const n = name.toLowerCase();
+  const treffer = uebungsBibliothek.find((u) => u.name.toLowerCase().includes(n) || n.includes(u.name.toLowerCase()));
+  if (treffer) return musterBild[treffer.muster];
+  if (/curl|trizeps|dip|arm/.test(n)) return musterBild.arme;
+  if (/schulter|seitheben|press/.test(n)) return musterBild.schulter;
+  if (/rudern|latzug|klimmzug|zug|face/.test(n)) return musterBild.ziehen;
+  if (/kniebeuge|squat|beinpresse|ausfall|bein/.test(n)) return musterBild.kniebeuge;
+  if (/kreuzheben|hip|glute|hüft/.test(n)) return musterBild.huefte;
+  if (/plank|bauch|core|dead bug|pallof/.test(n)) return musterBild.core;
+  if (/mobil|beckenboden|katze|dehn/.test(n)) return musterBild.mobility;
+  return musterBild.druecken;
+}

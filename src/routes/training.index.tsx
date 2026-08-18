@@ -1,8 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Card, Chip, Disclaimer, Section, Why } from "@/components/ui-kit";
-import { workoutHeute, zeitModi, muskelStatus, type MuscleKey } from "@/lib/demo-data";
-import { ChevronRight, Dumbbell, History, Repeat, Trophy } from "lucide-react";
+import { zeitModi, muskelStatus, goalLabels, type MuscleKey } from "@/lib/demo-data";
+import { useOnboardingProfil } from "@/lib/onboarding-store";
+import {
+  erzeugePlan,
+  fokusOptionen,
+  mappeEquipment,
+  usePlanEinstellungen,
+  wendeTauschAn,
+  wochentage,
+  type Fokus,
+  type PlanKontext,
+} from "@/lib/training-plan";
+import { alternativenFuer, bildFuer } from "@/lib/exercise-library";
+import { ChevronRight, History, Repeat, Trophy, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/training/")({
   head: () => ({
@@ -10,24 +24,15 @@ export const Route = createFileRoute("/training/")({
       { title: "Training – EVION" },
       {
         name: "description",
-        content: "Personalisierter Trainingsplan, Zeit-Effizienz-Modus, Übungshistorie und Rekorde.",
+        content:
+          "Trainingsplan mit Übungsbildern, individuellem Fokus, Übungstausch und Zeit-Effizienz-Modus.",
       },
       { property: "og:title", content: "Training – EVION" },
-      { property: "og:description", content: "Dein Plan für heute – angepasst an Zeit und Erholung." },
+      { property: "og:description", content: "Dein Plan – angepasst an Ziel, Alter, Geschlecht und Zeit." },
     ],
   }),
   component: TrainingPage,
 });
-
-const plan = [
-  { tag: "Montag", name: "Unterkörper – Kniebeuge-Fokus", dauer: 55, status: "erledigt" },
-  { tag: "Dienstag", name: "Oberkörper – Push", dauer: 48, status: "erledigt" },
-  { tag: "Mittwoch", name: "Oberkörper – Pull", dauer: 50, status: "erledigt" },
-  { tag: "Donnerstag", name: "Ruhetag / Spaziergang", dauer: 0, status: "ruhetag" },
-  { tag: "Freitag", name: "Unterkörper – Hip Hinge", dauer: 52, status: "erledigt" },
-  { tag: "Samstag", name: "Oberkörper – Push", dauer: 42, status: "heute" },
-  { tag: "Sonntag", name: "Ruhetag", dauer: 0, status: "ruhetag" },
-];
 
 const rekorde = [
   { uebung: "Bankdrücken", wert: "95 kg × 3", e1rm: "≈ 101 kg", datum: "vor 4 Tagen" },
@@ -37,20 +42,76 @@ const rekorde = [
 ];
 
 function TrainingPage() {
-  const [zeit, setZeit] = useState(60);
-  const modus = zeitModi.find((m) => m.minuten === zeit)!;
-  const anzahl =
-    zeit >= 60 ? workoutHeute.uebungen.length : zeit >= 45 ? 4 : zeit >= 30 ? 3 : 2;
+  const { profil } = useOnboardingProfil();
+  const { einstellungen, speichere, tausche } = usePlanEinstellungen();
+  const [zeit, setZeit] = useState(45);
+  const [tagIndex, setTagIndex] = useState(0);
+  const [tauschFuer, setTauschFuer] = useState<string | null>(null);
+
+  const modus = zeitModi.find((m) => m.minuten === zeit) ?? zeitModi[2]!;
+
+  const kontext: PlanKontext = useMemo(
+    () => ({
+      ziel: profil.abgeschlossen ? profil.ziel : "recomposition",
+      geschlecht: profil.geschlecht,
+      alter: profil.alter,
+      erfahrung: profil.erfahrung,
+      equipment: mappeEquipment([...(profil.equipment ?? []), ...(profil.orte ?? [])]),
+      tage: profil.tage || 4,
+      dauer: zeit,
+      fokus: einstellungen.fokus,
+    }),
+    [profil, zeit, einstellungen.fokus],
+  );
+
+  const plan = useMemo(
+    () => wendeTauschAn(erzeugePlan(kontext), einstellungen.tausch),
+    [kontext, einstellungen.tausch],
+  );
+
+  const tag = plan[Math.min(tagIndex, plan.length - 1)] ?? plan[0]!;
+  const fokusInfo = fokusOptionen.find((f) => f.id === einstellungen.fokus)!;
 
   return (
     <div className="space-y-8">
       <header>
         <p className="label-xs">Training</p>
-        <h1 className="mt-1 font-display text-3xl font-extrabold">{workoutHeute.name}</h1>
+        <h1 className="mt-1 font-display text-3xl font-extrabold">{tag.titel}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Fokus: {workoutHeute.fokus.join(" · ")} · geplant {modus.saetze} harte Sätze
+          Ziel: {goalLabels[kontext.ziel]} · Fokus: {fokusInfo.titel} · {tag.uebungen.length} Übungen ·{" "}
+          {modus.saetze} produktive Sätze
         </p>
       </header>
+
+      <Section titel="Trainingsfokus wählen">
+        <Card>
+          <div className="flex flex-wrap gap-2">
+            {fokusOptionen.map((f) => (
+              <Chip
+                key={f.id}
+                active={f.id === einstellungen.fokus}
+                onClick={() => {
+                  speichere({ fokus: f.id as Fokus });
+                  toast.success(`Plan neu berechnet: ${f.titel}`);
+                }}
+              >
+                {f.titel}
+              </Chip>
+            ))}
+          </div>
+          <p className="mt-3 text-sm text-muted-foreground">{fokusInfo.beschreibung}</p>
+          <Why
+            punkte={[
+              `Ziel „${goalLabels[kontext.ziel]}“ steuert Wiederholungsbereiche und Übungsauswahl.`,
+              `Alter ${kontext.alter ?? "—"} und Erfahrung „${kontext.erfahrung}“ bestimmen, wie technisch anspruchsvoll die Übungen sein dürfen.`,
+              kontext.geschlecht
+                ? `Angaben zu Geschlecht (${kontext.geschlecht}) fließen als Schwerpunkt ein – jede Übung bleibt frei austauschbar.`
+                : "Ohne Geschlechtsangabe wird ein neutraler Schwerpunkt gewählt.",
+              "Rückenschonend und Rückbildung schließen Übungen mit hoher Wirbelsäulen- bzw. Beckenbodenbelastung komplett aus.",
+            ]}
+          />
+        </Card>
+      </Section>
 
       <Section titel="Wie viel Zeit hast du heute?">
         <Card>
@@ -62,14 +123,6 @@ function TrainingPage() {
             ))}
           </div>
           <p className="mt-3 text-sm text-muted-foreground">{modus.beschreibung}</p>
-          <Why
-            punkte={[
-              "Grundübungen mit dem größten Reiz bleiben immer enthalten.",
-              "Isolationsübungen werden zuerst gekürzt, nicht zufällige Übungen.",
-              "Bei knapper Zeit werden antagonistische Supersätze gebildet, um Pausen zu nutzen.",
-              `Aktuell: ${anzahl} Übungen, ${modus.saetze} produktive Sätze.`,
-            ]}
-          />
           <Link
             to="/training/workout"
             className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 font-display text-base font-extrabold uppercase tracking-wide text-primary-foreground transition-transform hover:scale-[1.01]"
@@ -79,62 +132,118 @@ function TrainingPage() {
         </Card>
       </Section>
 
-      <Section titel="Übungen heute">
-        <div className="space-y-3">
-          {workoutHeute.uebungen.slice(0, anzahl).map((u) => (
-            <Card key={u.id} className="p-4">
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-                <div className="min-w-0">
-                  <p className="truncate font-display font-bold">{u.name}</p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {u.muskel} · {u.zielSaetze} Sätze · {u.wdhBereich} Wdh.
-                  </p>
-                </div>
-                <span className="num shrink-0 rounded-xl bg-secondary px-3 py-1.5 text-sm font-bold">
-                  {u.vorschlag.gewicht} kg
-                </span>
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">{u.hinweis}</p>
-              <p className="mt-2 text-xs text-muted-foreground">
-                <Repeat className="mr-1 inline h-3 w-3" />
-                Alternativen: {u.alternativen.join(", ")}
-              </p>
-            </Card>
-          ))}
-          {anzahl < workoutHeute.uebungen.length && (
-            <p className="text-xs text-muted-foreground">
-              {workoutHeute.uebungen.length - anzahl} Isolationsübung(en) wurden aufgrund deiner
-              Zeitvorgabe entfernt.
-            </p>
-          )}
-        </div>
-      </Section>
-
       <Section titel="Trainingswoche">
         <Card className="p-2">
           <ul className="divide-y divide-border">
-            {plan.map((p) => (
-              <li key={p.tag} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">{p.tag}</p>
-                  <p className="truncate text-xs text-muted-foreground">{p.name}</p>
-                </div>
-                <span
-                  className={
-                    "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider " +
-                    (p.status === "erledigt"
-                      ? "bg-success/15 text-success"
-                      : p.status === "heute"
-                        ? "bg-primary/15 text-primary"
-                        : "bg-secondary text-muted-foreground")
-                  }
+            {plan.map((t, i) => (
+              <li key={t.index}>
+                <button
+                  onClick={() => setTagIndex(i)}
+                  className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-3 text-left"
                 >
-                  {p.status === "erledigt" ? "Erledigt" : p.status === "heute" ? "Heute" : "Ruhetag"}
-                </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">{wochentage[i]}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {t.titel} · {t.uebungen.map((u) => u.name).join(", ")}
+                    </p>
+                  </div>
+                  <span
+                    className={cn(
+                      "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider",
+                      i === tagIndex ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground",
+                    )}
+                  >
+                    {i === tagIndex ? "Ausgewählt" : "Anzeigen"}
+                  </span>
+                </button>
               </li>
             ))}
           </ul>
         </Card>
+      </Section>
+
+      <Section titel={`Übungen – ${tag.titel}`}>
+        <div className="space-y-3">
+          {tag.uebungen.map((u) => (
+            <Card key={u.id} className="overflow-hidden p-0">
+              <img
+                src={bildFuer(u)}
+                alt={`Ausführung der Übung ${u.name}`}
+                loading="lazy"
+                width={768}
+                height={512}
+                className="h-40 w-full bg-secondary object-cover"
+              />
+              <div className="p-4">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-display font-bold">{u.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {u.muskel} · {u.zielSaetze} Sätze · {u.wdhBereich} Wdh.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setTauschFuer(tauschFuer === u.id ? null : u.id)}
+                    className="flex shrink-0 items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-xs font-bold"
+                  >
+                    <Repeat className="h-3.5 w-3.5" /> Tauschen
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">{u.hinweis}</p>
+                <p className="mt-1 text-xs text-primary">Warum: {u.begruendung}</p>
+
+                {tauschFuer === u.id && (
+                  <div className="mt-4 rounded-2xl border border-border p-3">
+                    <div className="flex items-center justify-between">
+                      <p className="label-xs">Alternative wählen</p>
+                      <button onClick={() => setTauschFuer(null)} aria-label="Auswahl schließen">
+                        <X className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    </div>
+                    <ul className="mt-2 space-y-1.5">
+                      {alternativenFuer(originalId(u.id, einstellungen.tausch)).map((a) => (
+                        <li key={a.id}>
+                          <button
+                            onClick={() => {
+                              tausche(originalId(u.id, einstellungen.tausch), a.id);
+                              setTauschFuer(null);
+                              toast.success(`${a.name} übernommen`);
+                            }}
+                            className="grid w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-secondary/60"
+                          >
+                            <img
+                              src={bildFuer(a)}
+                              alt=""
+                              loading="lazy"
+                              width={768}
+                              height={512}
+                              className="h-10 w-16 shrink-0 rounded-lg object-cover"
+                            />
+                            <span className="min-w-0">
+                              <span className="block truncate text-sm font-semibold">{a.name}</span>
+                              <span className="block truncate text-xs text-muted-foreground">
+                                {a.muskel} · {a.equipment.join(", ")}
+                                {a.rueckenschonend ? " · rückenschonend" : ""}
+                              </span>
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </Card>
+          ))}
+        </div>
+        {Object.keys(einstellungen.tausch).length > 0 && (
+          <button
+            onClick={() => speichere({ tausch: {} })}
+            className="text-xs font-bold uppercase tracking-wider text-primary"
+          >
+            Alle Übungstausche zurücksetzen
+          </button>
+        )}
       </Section>
 
       <Section titel="Wochenvolumen je Muskelgruppe">
@@ -143,7 +252,10 @@ function TrainingPage() {
             {(Object.keys(muskelStatus) as MuscleKey[]).map((k) => {
               const m = muskelStatus[k];
               return (
-                <li key={k} className="flex items-center justify-between rounded-xl bg-secondary/40 px-3 py-2 text-sm">
+                <li
+                  key={k}
+                  className="flex items-center justify-between rounded-xl bg-secondary/40 px-3 py-2 text-sm"
+                >
                   <span className="truncate">{m.name}</span>
                   <span className="num shrink-0 text-muted-foreground">
                     {m.saetze} / {m.ziel}
@@ -182,9 +294,20 @@ function TrainingPage() {
         <Card className="flex items-center gap-3 text-sm text-muted-foreground">
           <History className="h-4 w-4 shrink-0" />
           94 abgeschlossene Trainings · Ø 3,8 Einheiten/Woche · Ø 47 Minuten
-          <Dumbbell className="ml-auto hidden h-4 w-4 shrink-0 sm:block" />
         </Card>
       </Section>
+
+      <Disclaimer>
+        Die Planvorschläge sind allgemeine Trainingsempfehlungen und ersetzen keine physiotherapeutische
+        oder ärztliche Beratung. Nach Schwangerschaft, Operationen oder bei Beschwerden bitte vorab
+        fachlich abklären lassen.
+      </Disclaimer>
     </div>
   );
+}
+
+/** Findet die ursprüngliche Plan-ID zurück, wenn bereits getauscht wurde. */
+function originalId(aktuelleId: string, tausch: Record<string, string>) {
+  const eintrag = Object.entries(tausch).find(([, zu]) => zu === aktuelleId);
+  return eintrag ? eintrag[0] : aktuelleId;
 }
