@@ -13,6 +13,8 @@ import bildSchulter from "@/assets/ex-schulter.jpg";
 import bildArme from "@/assets/ex-arme.jpg";
 import bildCore from "@/assets/ex-core.jpg";
 import bildMobility from "@/assets/ex-mobility.jpg";
+import { uebungsBilder } from "@/lib/exercise-images";
+
 
 export type Muster =
   | "druecken"
@@ -587,7 +589,10 @@ export const uebungsBibliothek: LibUebung[] = [
 
 export const uebungById = new Map(uebungsBibliothek.map((u) => [u.id, u]));
 
-export function bildFuer(u: LibUebung) {
+/** Fotos werden nach Geschlecht ausgewählt; ohne Angabe wird das männliche Motiv genutzt. */
+export function bildFuer(u: Pick<LibUebung, "id" | "muster">, geschlecht?: string | null) {
+  const paar = uebungsBilder[u.id];
+  if (paar) return geschlecht === "weiblich" ? paar.w : paar.m;
   return musterBild[u.muster];
 }
 
@@ -601,10 +606,10 @@ export function alternativenFuer(id: string) {
 }
 
 /** Heuristische Bildzuordnung anhand eines Übungsnamens. */
-export function bildFuerName(name: string): string {
+export function bildFuerName(name: string, geschlecht?: string | null): string {
   const n = name.toLowerCase();
   const treffer = uebungsBibliothek.find((u) => u.name.toLowerCase().includes(n) || n.includes(u.name.toLowerCase()));
-  if (treffer) return musterBild[treffer.muster];
+  if (treffer) return bildFuer(treffer, geschlecht);
   if (/curl|trizeps|dip|arm/.test(n)) return musterBild.arme;
   if (/schulter|seitheben|press/.test(n)) return musterBild.schulter;
   if (/rudern|latzug|klimmzug|zug|face/.test(n)) return musterBild.ziehen;
@@ -614,3 +619,4 @@ export function bildFuerName(name: string): string {
   if (/mobil|beckenboden|katze|dehn/.test(n)) return musterBild.mobility;
   return musterBild.druecken;
 }
+
