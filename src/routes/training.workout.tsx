@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Card, Disclaimer, Why } from "@/components/ui-kit";
 import { workoutHeute, type LoggedSet } from "@/lib/demo-data";
 import { bildFuerName } from "@/lib/exercise-library";
+import { useOnboardingProfil } from "@/lib/onboarding-store";
 import { toast } from "sonner";
 import { Check, ChevronLeft, Minus, Plus, Timer, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ export const Route = createFileRoute("/training/workout")({
 type Log = Record<string, LoggedSet[]>;
 
 function WorkoutPage() {
+  const { profil } = useOnboardingProfil();
   const uebungen = workoutHeute.uebungen;
   const [idx, setIdx] = useState(0);
   const [log, setLog] = useState<Log>({});
@@ -121,7 +123,7 @@ function WorkoutPage() {
 
       <Card className="overflow-hidden p-0">
         <img
-          src={bildFuerName(u.name)}
+          src={bildFuerName(u.name, profil.geschlecht)}
           alt={`Ausführung der Übung ${u.name}`}
           loading="lazy"
           width={768}
