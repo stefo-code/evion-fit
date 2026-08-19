@@ -8,15 +8,24 @@ import {
   fokusOptionen,
   mappeEquipment,
   usePlanEinstellungen,
+  wendeAnpassungenAn,
   wendeTauschAn,
   wochentage,
   type Fokus,
   type PlanKontext,
 } from "@/lib/training-plan";
-import { alternativenFuer, bildFuer } from "@/lib/exercise-library";
-import { ChevronRight, History, Repeat, Trophy, X } from "lucide-react";
+import {
+  alternativenFuer,
+  bildFuer,
+  uebungsBibliothek,
+  type Equipment,
+  type LibUebung,
+  type Muster,
+} from "@/lib/exercise-library";
+import { ChevronRight, History, Plus, Repeat, Trash2, Trophy, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/training/")({
   head: () => ({
