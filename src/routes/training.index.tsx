@@ -167,7 +167,7 @@ function TrainingPage() {
           {tag.uebungen.map((u) => (
             <Card key={u.id} className="overflow-hidden p-0">
               <img
-                src={bildFuer(u)}
+                src={bildFuer(u, profil.geschlecht)}
                 alt={`Ausführung der Übung ${u.name}`}
                 loading="lazy"
                 width={768}
@@ -182,12 +182,24 @@ function TrainingPage() {
                       {u.muskel} · {u.zielSaetze} Sätze · {u.wdhBereich} Wdh.
                     </p>
                   </div>
-                  <button
-                    onClick={() => setTauschFuer(tauschFuer === u.id ? null : u.id)}
-                    className="flex shrink-0 items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-xs font-bold"
-                  >
-                    <Repeat className="h-3.5 w-3.5" /> Tauschen
-                  </button>
+                  <div className="flex shrink-0 gap-2">
+                    <button
+                      onClick={() => setTauschFuer(tauschFuer === u.id ? null : u.id)}
+                      className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-xs font-bold"
+                    >
+                      <Repeat className="h-3.5 w-3.5" /> Tauschen
+                    </button>
+                    <button
+                      onClick={() => {
+                        entferneUebung(tag.index, u.id);
+                        toast(`${u.name} entfernt`);
+                      }}
+                      aria-label={`${u.name} aus dem Tag entfernen`}
+                      className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-xs font-bold text-muted-foreground"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Entfernen
+                    </button>
+                  </div>
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">{u.hinweis}</p>
                 <p className="mt-1 text-xs text-primary">Warum: {u.begruendung}</p>
@@ -212,7 +224,7 @@ function TrainingPage() {
                             className="grid w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-secondary/60"
                           >
                             <img
-                              src={bildFuer(a)}
+                              src={bildFuer(a, profil.geschlecht)}
                               alt=""
                               loading="lazy"
                               width={768}
@@ -236,15 +248,50 @@ function TrainingPage() {
             </Card>
           ))}
         </div>
-        {Object.keys(einstellungen.tausch).length > 0 && (
+
+        <button
+          onClick={() => setPickerOffen((o) => !o)}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border px-5 py-4 font-display text-sm font-extrabold uppercase tracking-wide text-muted-foreground hover:border-primary hover:text-primary"
+        >
+          <Plus className="h-4 w-4" /> Übung hinzufügen
+        </button>
+
+        {pickerOffen && (
+          <UebungHinzufuegen
+            geschlecht={profil.geschlecht}
+            eigene={einstellungen.eigene ?? []}
+            bereitsImTag={tag.uebungen.map((u) => u.id)}
+            onWaehlen={(id, name) => {
+              fuegeUebungHinzu(tag.index, id);
+              setPickerOffen(false);
+              toast.success(`${name} hinzugefügt`);
+            }}
+            onEigeneErstellen={(u) => {
+              erstelleEigene(u);
+              fuegeUebungHinzu(tag.index, u.id);
+              setPickerOffen(false);
+              toast.success(`${u.name} erstellt und hinzugefügt`);
+            }}
+            onEigeneLoeschen={(id) => loescheEigene(id)}
+            onSchliessen={() => setPickerOffen(false)}
+          />
+        )}
+
+        {(Object.keys(einstellungen.tausch).length > 0 ||
+          Object.values(einstellungen.entfernt ?? {}).some((v) => v.length > 0) ||
+          Object.values(einstellungen.zusatz ?? {}).some((v) => v.length > 0)) && (
           <button
-            onClick={() => speichere({ tausch: {} })}
+            onClick={() => {
+              speichere({ tausch: {}, entfernt: {}, zusatz: {} });
+              toast("Plan auf den Vorschlag zurückgesetzt");
+            }}
             className="text-xs font-bold uppercase tracking-wider text-primary"
           >
-            Alle Übungstausche zurücksetzen
+            Alle Anpassungen zurücksetzen
           </button>
         )}
       </Section>
+
 
       <Section titel="Wochenvolumen je Muskelgruppe">
         <Card>
