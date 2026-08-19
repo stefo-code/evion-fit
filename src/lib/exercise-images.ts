@@ -5,7 +5,22 @@
 
 export type BildPaar = { m: string; w: string };
 
-export const uebungsBilder: Record<string, BildPaar> = {
+/** Lokal gebündelte Fotos (zweite Generierungs-Runde). */
+const lokal = import.meta.glob<string>("@/assets/exercises/*.jpg", {
+  eager: true,
+  import: "default",
+  query: "?url",
+});
+
+const lokalePaare: Record<string, Partial<BildPaar>> = {};
+for (const [pfad, url] of Object.entries(lokal)) {
+  const datei = pfad.split("/").pop()!.replace(/\.jpg$/, "");
+  const geschlecht = datei.endsWith("-w") ? "w" : "m";
+  const id = datei.slice(0, -2);
+  (lokalePaare[id] ??= {})[geschlecht] = url;
+}
+
+const basisBilder: Record<string, BildPaar> = {
   "ausfallschritt": { m: "/__l5e/assets-v1/9da331f2-00fe-41a3-8975-b9ae791de44b/ex-ausfallschritt-m.jpg", w: "/__l5e/assets-v1/9f3c57a5-103e-41a8-81b6-0b0446f988f9/ex-ausfallschritt-w.jpg" },
   "bank-kh": { m: "/__l5e/assets-v1/25094e41-95e9-4a3f-9ee7-30f452cc9410/ex-bank-kh-m.jpg", w: "/__l5e/assets-v1/3a51475e-7546-4e25-9ea9-bb255b85ca5f/ex-bank-kh-w.jpg" },
   "bank-lh": { m: "/__l5e/assets-v1/eaa1ef61-c3bf-4f49-ab94-d9fc82e47622/ex-bank-lh-m.jpg", w: "/__l5e/assets-v1/d70fbe03-cb3a-4f48-9b10-bfb6a862560f/ex-bank-lh-w.jpg" },
@@ -28,3 +43,13 @@ export const uebungsBilder: Record<string, BildPaar> = {
   "rudern-kh": { m: "/__l5e/assets-v1/7b7e3931-ed05-4c9d-bcf8-3c89ef399ee7/ex-rudern-kh-m.jpg", w: "/__l5e/assets-v1/2a0c317e-645f-44ec-878f-bfdbc0d9b9f8/ex-rudern-kh-w.jpg" },
   "rudern-lh": { m: "/__l5e/assets-v1/11d54acd-7c44-4643-9499-be95e4a7abb4/ex-rudern-lh-m.jpg", w: "/__l5e/assets-v1/fc397d92-71a9-4341-964b-8fd29cafe702/ex-rudern-lh-w.jpg" },
 };
+
+export const uebungsBilder: Record<string, BildPaar> = (() => {
+  const alle: Record<string, BildPaar> = { ...basisBilder };
+  for (const [id, paar] of Object.entries(lokalePaare)) {
+    const m = paar.m ?? paar.w ?? alle[id]?.m;
+    const w = paar.w ?? paar.m ?? alle[id]?.w;
+    if (m && w) alle[id] = { m, w };
+  }
+  return alle;
+})();
