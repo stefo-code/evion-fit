@@ -52,10 +52,19 @@ const rekorde = [
 
 function TrainingPage() {
   const { profil } = useOnboardingProfil();
-  const { einstellungen, speichere, tausche } = usePlanEinstellungen();
+  const {
+    einstellungen,
+    speichere,
+    tausche,
+    entferneUebung,
+    fuegeUebungHinzu,
+    erstelleEigene,
+    loescheEigene,
+  } = usePlanEinstellungen();
   const [zeit, setZeit] = useState(45);
   const [tagIndex, setTagIndex] = useState(0);
   const [tauschFuer, setTauschFuer] = useState<string | null>(null);
+  const [pickerOffen, setPickerOffen] = useState(false);
 
   const modus = zeitModi.find((m) => m.minuten === zeit) ?? zeitModi[2]!;
 
@@ -74,9 +83,10 @@ function TrainingPage() {
   );
 
   const plan = useMemo(
-    () => wendeTauschAn(erzeugePlan(kontext), einstellungen.tausch),
-    [kontext, einstellungen.tausch],
+    () => wendeAnpassungenAn(wendeTauschAn(erzeugePlan(kontext), einstellungen.tausch), einstellungen),
+    [kontext, einstellungen],
   );
+
 
   const tag = plan[Math.min(tagIndex, plan.length - 1)] ?? plan[0]!;
   const fokusInfo = fokusOptionen.find((f) => f.id === einstellungen.fokus)!;
