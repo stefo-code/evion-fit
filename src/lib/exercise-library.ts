@@ -13,6 +13,8 @@ import bildSchulter from "@/assets/ex-schulter.jpg";
 import bildArme from "@/assets/ex-arme.jpg";
 import bildCore from "@/assets/ex-core.jpg";
 import bildMobility from "@/assets/ex-mobility.jpg";
+import { uebungsBilder } from "@/lib/exercise-images";
+
 
 export type Muster =
   | "druecken"
