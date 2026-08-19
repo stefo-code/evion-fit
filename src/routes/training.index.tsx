@@ -377,3 +377,235 @@ function originalId(aktuelleId: string, tausch: Record<string, string>) {
   const eintrag = Object.entries(tausch).find(([, zu]) => zu === aktuelleId);
   return eintrag ? eintrag[0] : aktuelleId;
 }
+
+const musterLabels: { id: Muster; label: string }[] = [
+  { id: "druecken", label: "Drücken" },
+  { id: "ziehen", label: "Ziehen" },
+  { id: "kniebeuge", label: "Kniebeuge" },
+  { id: "huefte", label: "Hüfte / Gesäß" },
+  { id: "schulter", label: "Schulter" },
+  { id: "arme", label: "Arme" },
+  { id: "core", label: "Rumpf" },
+  { id: "mobility", label: "Mobility" },
+];
+
+const equipmentOptionen: Equipment[] = [
+  "körpergewicht",
+  "kurzhantel",
+  "langhantel",
+  "maschine",
+  "kabel",
+  "band",
+];
+
+/** Auswahl aus der Bibliothek oder Anlegen einer eigenen Übung. */
+function UebungHinzufuegen({
+  geschlecht,
+  eigene,
+  bereitsImTag,
+  onWaehlen,
+  onEigeneErstellen,
+  onEigeneLoeschen,
+  onSchliessen,
+}: {
+  geschlecht: string | null;
+  eigene: LibUebung[];
+  bereitsImTag: string[];
+  onWaehlen: (id: string, name: string) => void;
+  onEigeneErstellen: (u: LibUebung) => void;
+  onEigeneLoeschen: (id: string) => void;
+  onSchliessen: () => void;
+}) {
+  const [suche, setSuche] = useState("");
+  const [eigenModus, setEigenModus] = useState(false);
+  const [name, setName] = useState("");
+  const [muskel, setMuskel] = useState("");
+  const [muster, setMuster] = useState<Muster>("druecken");
+  const [equipment, setEquipment] = useState<Equipment[]>(["körpergewicht"]);
+  const [saetze, setSaetze] = useState(3);
+  const [wdh, setWdh] = useState("8–12");
+
+  const treffer = useMemo(() => {
+    const q = suche.trim().toLowerCase();
+    const alle = [...eigene, ...uebungsBibliothek];
+    return alle
+      .filter((u) => !bereitsImTag.includes(u.id))
+      .filter((u) => !q || u.name.toLowerCase().includes(q) || u.muskel.toLowerCase().includes(q))
+      .slice(0, 40);
+  }, [suche, eigene, bereitsImTag]);
+
+  function speichereEigene() {
+    if (!name.trim()) {
+      toast.error("Bitte einen Namen für die Übung angeben.");
+      return;
+    }
+    onEigeneErstellen({
+      id: `eigen-${Date.now()}`,
+      name: name.trim(),
+      muskel: muskel.trim() || "Ganzkörper",
+      muster,
+      equipment: equipment.length ? equipment : ["körpergewicht"],
+      grund: false,
+      zielSaetze: saetze,
+      wdhBereich: wdh.trim() || "8–12",
+      startGewicht: 0,
+      hinweis: "Selbst angelegte Übung.",
+      rueckenschonend: true,
+      rueckbildung: false,
+      einsteiger: true,
+    });
+  }
+
+  return (
+    <Card className="mt-3">
+      <div className="flex items-center justify-between">
+        <p className="label-xs">{eigenModus ? "Eigene Übung erstellen" : "Übung auswählen"}</p>
+        <button onClick={onSchliessen} aria-label="Auswahl schließen">
+          <X className="h-4 w-4 text-muted-foreground" />
+        </button>
+      </div>
+
+      {!eigenModus ? (
+        <>
+          <input
+            value={suche}
+            onChange={(e) => setSuche(e.target.value)}
+            placeholder="Übung oder Muskelgruppe suchen …"
+            className="mt-3 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          />
+          <ul className="mt-3 max-h-80 space-y-1.5 overflow-y-auto">
+            {treffer.map((a) => (
+              <li key={a.id}>
+                <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
+                  <button
+                    onClick={() => onWaehlen(a.id, a.name)}
+                    className="col-span-2 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-secondary/60"
+                  >
+                    <img
+                      src={bildFuer(a, geschlecht)}
+                      alt=""
+                      loading="lazy"
+                      width={768}
+                      height={512}
+                      className="h-10 w-16 shrink-0 rounded-lg object-cover"
+                    />
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-semibold">{a.name}</span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {a.muskel} · {a.equipment.join(", ")}
+                      </span>
+                    </span>
+                  </button>
+                  {a.id.startsWith("eigen-") && (
+                    <button
+                      onClick={() => onEigeneLoeschen(a.id)}
+                      aria-label={`${a.name} dauerhaft löschen`}
+                      className="p-2 text-muted-foreground"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </li>
+            ))}
+            {treffer.length === 0 && (
+              <li className="px-2 py-4 text-sm text-muted-foreground">
+                Keine passende Übung gefunden – lege sie einfach selbst an.
+              </li>
+            )}
+          </ul>
+          <button
+            onClick={() => setEigenModus(true)}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-bold"
+          >
+            <Plus className="h-4 w-4" /> Eigene Übung erstellen
+          </button>
+        </>
+      ) : (
+        <div className="mt-3 space-y-3">
+          <label className="block text-sm">
+            <span className="label-xs">Name</span>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="z. B. Rudern am Seilzug einarmig"
+              className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 outline-none focus:border-primary"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="label-xs">Muskelgruppe</span>
+            <input
+              value={muskel}
+              onChange={(e) => setMuskel(e.target.value)}
+              placeholder="z. B. Rücken"
+              className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 outline-none focus:border-primary"
+            />
+          </label>
+          <div>
+            <span className="label-xs">Bewegungsmuster</span>
+            <div className="mt-1 flex flex-wrap gap-2">
+              {musterLabels.map((m) => (
+                <Chip key={m.id} active={muster === m.id} onClick={() => setMuster(m.id)}>
+                  {m.label}
+                </Chip>
+              ))}
+            </div>
+          </div>
+          <div>
+            <span className="label-xs">Equipment</span>
+            <div className="mt-1 flex flex-wrap gap-2">
+              {equipmentOptionen.map((e) => (
+                <Chip
+                  key={e}
+                  active={equipment.includes(e)}
+                  onClick={() =>
+                    setEquipment((alt) =>
+                      alt.includes(e) ? alt.filter((x) => x !== e) : [...alt, e],
+                    )
+                  }
+                >
+                  {e}
+                </Chip>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block text-sm">
+              <span className="label-xs">Sätze</span>
+              <input
+                type="number"
+                min={1}
+                max={10}
+                value={saetze}
+                onChange={(e) => setSaetze(Number(e.target.value) || 3)}
+                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 outline-none focus:border-primary"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="label-xs">Wiederholungen</span>
+              <input
+                value={wdh}
+                onChange={(e) => setWdh(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 outline-none focus:border-primary"
+              />
+            </label>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={speichereEigene}
+              className="flex-1 rounded-xl bg-primary px-4 py-3 font-display text-sm font-extrabold uppercase tracking-wide text-primary-foreground"
+            >
+              Übung speichern
+            </button>
+            <button
+              onClick={() => setEigenModus(false)}
+              className="rounded-xl border border-border px-4 py-3 text-sm font-bold"
+            >
+              Zurück
+            </button>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
