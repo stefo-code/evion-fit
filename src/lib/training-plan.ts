@@ -304,14 +304,44 @@ export function wendeTauschAn(tage: Trainingstag[], tausch: Record<string, strin
   }));
 }
 
+/** Entfernt gelöschte und ergänzt hinzugefügte Übungen je Trainingstag. */
+export function wendeAnpassungenAn(
+  tage: Trainingstag[],
+  e: PlanEinstellungen,
+): Trainingstag[] {
+  const alle = new Map<string, LibUebung>(uebungById);
+  for (const u of e.eigene ?? []) alle.set(u.id, u);
+
+  return tage.map((t) => {
+    const key = String(t.index);
+    const entfernt = new Set(e.entfernt?.[key] ?? []);
+    const behalten = t.uebungen.filter((u) => !entfernt.has(u.id));
+    const zusatz = (e.zusatz?.[key] ?? [])
+      .map((id) => alle.get(id))
+      .filter((u): u is LibUebung => Boolean(u))
+      .filter((u) => !behalten.some((b) => b.id === u.id))
+      .map((u) => ({ ...u, begruendung: "Von dir hinzugefügt" }));
+    return { ...t, uebungen: [...behalten, ...zusatz] };
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Lokale Speicherung von Fokus und Übungstausch
 // ---------------------------------------------------------------------------
 
-export type PlanEinstellungen = { fokus: Fokus; tausch: Record<string, string> };
+export type PlanEinstellungen = {
+  fokus: Fokus;
+  tausch: Record<string, string>;
+  /** Entfernte Übungs-IDs je Trainingstag-Index. */
+  entfernt: Record<string, string[]>;
+  /** Zusätzlich gewählte Übungs-IDs je Trainingstag-Index. */
+  zusatz: Record<string, string[]>;
+  /** Selbst angelegte Übungen. */
+  eigene: LibUebung[];
+};
 
 const KEY = "evion.trainingsplan.v1";
-const leer: PlanEinstellungen = { fokus: "ausgewogen", tausch: {} };
+const leer: PlanEinstellungen = { fokus: "ausgewogen", tausch: {}, entfernt: {}, zusatz: {}, eigene: [] };
 
 export function ladePlanEinstellungen(): PlanEinstellungen {
   if (typeof window === "undefined") return leer;
@@ -330,9 +360,9 @@ export function usePlanEinstellungen() {
     setState(ladePlanEinstellungen());
   }, []);
 
-  const speichere = useCallback((teil: Partial<PlanEinstellungen>) => {
+  const aktualisiere = useCallback((fn: (alt: PlanEinstellungen) => PlanEinstellungen) => {
     setState((alt) => {
-      const neu = { ...alt, ...teil };
+      const neu = fn(alt);
       try {
         window.localStorage.setItem(KEY, JSON.stringify(neu));
       } catch {
@@ -342,24 +372,76 @@ export function usePlanEinstellungen() {
     });
   }, []);
 
+  const speichere = useCallback(
+    (teil: Partial<PlanEinstellungen>) => aktualisiere((alt) => ({ ...alt, ...teil })),
+    [aktualisiere],
+  );
+
   const tausche = useCallback(
     (vonId: string, zuId: string) =>
-      setState((alt) => {
+      aktualisiere((alt) => {
         const tausch = { ...alt.tausch };
         if (vonId === zuId) delete tausch[vonId];
         else tausch[vonId] = zuId;
-        const neu = { ...alt, tausch };
-        try {
-          window.localStorage.setItem(KEY, JSON.stringify(neu));
-        } catch {
-          /* ignorieren */
-        }
-        return neu;
+        return { ...alt, tausch };
       }),
-    [],
+    [aktualisiere],
   );
 
-  return { einstellungen: state, speichere, tausche };
+  const entferneUebung = useCallback(
+    (tagIndex: number, id: string) =>
+      aktualisiere((alt) => {
+        const key = String(tagIndex);
+        const zusatz = { ...alt.zusatz };
+        if ((zusatz[key] ?? []).includes(id)) {
+          zusatz[key] = zusatz[key]!.filter((x) => x !== id);
+          return { ...alt, zusatz };
+        }
+        const entfernt = { ...alt.entfernt };
+        entfernt[key] = [...new Set([...(entfernt[key] ?? []), id])];
+        return { ...alt, entfernt };
+      }),
+    [aktualisiere],
+  );
+
+  const fuegeUebungHinzu = useCallback(
+    (tagIndex: number, id: string) =>
+      aktualisiere((alt) => {
+        const key = String(tagIndex);
+        const entfernt = { ...alt.entfernt, [key]: (alt.entfernt[key] ?? []).filter((x) => x !== id) };
+        const zusatz = { ...alt.zusatz, [key]: [...new Set([...(alt.zusatz[key] ?? []), id])] };
+        return { ...alt, entfernt, zusatz };
+      }),
+    [aktualisiere],
+  );
+
+  const erstelleEigene = useCallback(
+    (u: LibUebung) => aktualisiere((alt) => ({ ...alt, eigene: [...(alt.eigene ?? []), u] })),
+    [aktualisiere],
+  );
+
+  const loescheEigene = useCallback(
+    (id: string) =>
+      aktualisiere((alt) => ({
+        ...alt,
+        eigene: (alt.eigene ?? []).filter((x) => x.id !== id),
+        zusatz: Object.fromEntries(
+          Object.entries(alt.zusatz).map(([k, v]) => [k, v.filter((x) => x !== id)]),
+        ),
+      })),
+    [aktualisiere],
+  );
+
+  return {
+    einstellungen: state,
+    speichere,
+    tausche,
+    entferneUebung,
+    fuegeUebungHinzu,
+    erstelleEigene,
+    loescheEigene,
+  };
 }
 
 export const wochentage = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
+
