@@ -43,3 +43,13 @@ const basisBilder: Record<string, BildPaar> = {
   "rudern-kh": { m: "/__l5e/assets-v1/7b7e3931-ed05-4c9d-bcf8-3c89ef399ee7/ex-rudern-kh-m.jpg", w: "/__l5e/assets-v1/2a0c317e-645f-44ec-878f-bfdbc0d9b9f8/ex-rudern-kh-w.jpg" },
   "rudern-lh": { m: "/__l5e/assets-v1/11d54acd-7c44-4643-9499-be95e4a7abb4/ex-rudern-lh-m.jpg", w: "/__l5e/assets-v1/fc397d92-71a9-4341-964b-8fd29cafe702/ex-rudern-lh-w.jpg" },
 };
+
+export const uebungsBilder: Record<string, BildPaar> = (() => {
+  const alle: Record<string, BildPaar> = { ...basisBilder };
+  for (const [id, paar] of Object.entries(lokalePaare)) {
+    const m = paar.m ?? paar.w ?? alle[id]?.m;
+    const w = paar.w ?? paar.m ?? alle[id]?.w;
+    if (m && w) alle[id] = { m, w };
+  }
+  return alle;
+})();
