@@ -336,8 +336,11 @@ export function erzeugePlan(k: PlanKontext): Trainingstag[] {
 
   return vorlage.map((s, i) => {
     const benutzt = new Set<string>();
-    const musterListe = [...s.muster, ...extra];
-    const maxUebungen = k.dauer <= 20 ? 2 : k.dauer <= 30 ? 3 : k.dauer <= 45 ? 4 : 5;
+    // Fokus-Muster direkt nach der ersten Grundübung einfügen, damit sie nicht
+    // durch das Zeitbudget herausfallen.
+    const musterListe = [s.muster[0]!, ...extra, ...s.muster.slice(1)];
+    const maxUebungen = k.dauer <= 20 ? 3 : k.dauer <= 30 ? 4 : k.dauer <= 45 ? 5 : 6;
+
     const uebungen: PlanUebung[] = [];
 
     for (const m of musterListe) {
