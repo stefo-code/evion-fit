@@ -173,7 +173,8 @@ function wochenVorlage(k: PlanKontext): Session[] {
   }
 
   if (k.fokus === "gesaess-beine") {
-    return [
+    return ([
+
       { titel: "Gesäß – Hüftstreckung", muster: ["huefte", "huefte", "core"] },
       { titel: "Push", muster: ["druecken", "schulter", "arme"] },
       { titel: "Beine – Kniebeuge", muster: ["kniebeuge", "kniebeuge", "huefte"] },
