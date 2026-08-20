@@ -181,7 +181,8 @@ function wochenVorlage(k: PlanKontext): Session[] {
       { titel: "Pull", muster: ["ziehen", "ziehen", "arme"] },
       { titel: "Gesäß & Rumpf", muster: ["huefte", "core", "kniebeuge"] },
       { titel: "Schwachstellen", muster: ["huefte", "core", "schulter"] },
-    ].slice(0, tage);
+    ] as Session[]).slice(0, tage);
+
   }
 
   if (k.fokus === "arme-straffen") {
