@@ -760,18 +760,19 @@ export function alternativenFuer(id: string) {
   );
 }
 
+/** Neutrales, realistisches Foto für eigene Übungen ohne eigenes Motiv. */
+export function neutralesBild(geschlecht?: string | null): string {
+  const neutral = uebungsBilder["neutral"];
+  if (neutral) return geschlecht === "weiblich" ? neutral.w : neutral.m;
+  return musterBild.druecken;
+}
+
 /** Heuristische Bildzuordnung anhand eines Übungsnamens. */
 export function bildFuerName(name: string, geschlecht?: string | null): string {
   const n = name.toLowerCase();
   const treffer = uebungsBibliothek.find((u) => u.name.toLowerCase().includes(n) || n.includes(u.name.toLowerCase()));
   if (treffer) return bildFuer(treffer, geschlecht);
-  if (/curl|trizeps|dip|arm/.test(n)) return musterBild.arme;
-  if (/schulter|seitheben|press/.test(n)) return musterBild.schulter;
-  if (/rudern|latzug|klimmzug|zug|face/.test(n)) return musterBild.ziehen;
-  if (/kniebeuge|squat|beinpresse|ausfall|bein/.test(n)) return musterBild.kniebeuge;
-  if (/kreuzheben|hip|glute|hüft/.test(n)) return musterBild.huefte;
-  if (/plank|bauch|core|dead bug|pallof/.test(n)) return musterBild.core;
-  if (/mobil|beckenboden|katze|dehn/.test(n)) return musterBild.mobility;
-  return musterBild.druecken;
+  return neutralesBild(geschlecht);
 }
+
 
