@@ -538,6 +538,157 @@ export const uebungsBibliothek: LibUebung[] = [
     rueckbildung: true,
     einsteiger: true,
   },
+  {
+    id: "crunch",
+    name: "Bauchcrunch (Boden)",
+    muskel: "Bauch",
+    muster: "core",
+    equipment: ["körpergewicht"],
+    grund: false,
+    zielSaetze: 3,
+    wdhBereich: "12–20",
+    startGewicht: 0,
+    hinweis: "Nur den Oberkörper einrollen, Lendenwirbelsäule bleibt am Boden.",
+    rueckenschonend: true,
+    rueckbildung: false,
+    einsteiger: true,
+  },
+  {
+    id: "crunch-maschine",
+    name: "Bauchmaschine (Crunch)",
+    muskel: "Bauch",
+    muster: "core",
+    equipment: ["maschine"],
+    grund: false,
+    zielSaetze: 3,
+    wdhBereich: "10–15",
+    startGewicht: 25,
+    hinweis: "Geführte Rumpfbeugung – gut progressiv belastbar.",
+    rueckenschonend: true,
+    rueckbildung: false,
+    einsteiger: true,
+  },
+  {
+    id: "kabelcrunch",
+    name: "Kabelzug-Crunch (kniend)",
+    muskel: "Bauch",
+    muster: "core",
+    equipment: ["kabel"],
+    grund: false,
+    zielSaetze: 3,
+    wdhBereich: "10–15",
+    startGewicht: 25,
+    hinweis: "Hüfte bleibt still, nur die Wirbelsäule beugt sich.",
+    rueckenschonend: true,
+    rueckbildung: false,
+    einsteiger: false,
+  },
+  {
+    id: "beinheben",
+    name: "Hängendes Beinheben",
+    muskel: "Bauch",
+    muster: "core",
+    equipment: ["körpergewicht"],
+    grund: false,
+    zielSaetze: 3,
+    wdhBereich: "8–12",
+    startGewicht: 0,
+    hinweis: "Ohne Schwung, unteren Bauch aktiv einrollen.",
+    rueckenschonend: true,
+    rueckbildung: false,
+    einsteiger: false,
+  },
+  {
+    id: "seitstuetz",
+    name: "Seitstütz (Side Plank)",
+    muskel: "Bauch",
+    muster: "core",
+    equipment: ["körpergewicht"],
+    grund: false,
+    zielSaetze: 3,
+    wdhBereich: "20–40 s",
+    startGewicht: 0,
+    hinweis: "Trainiert die seitliche Bauchmuskulatur und die Taille.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "hyperextension",
+    name: "Rückenstrecken (Hyperextension)",
+    muskel: "Unterer Rücken",
+    muster: "huefte",
+    equipment: ["maschine", "körpergewicht"],
+    grund: false,
+    zielSaetze: 3,
+    wdhBereich: "10–15",
+    startGewicht: 0,
+    hinweis: "Bis zur geraden Linie aufrichten, nicht überstrecken.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "abduktoren",
+    name: "Abduktoren-Maschine",
+    muskel: "Gesäß",
+    muster: "huefte",
+    equipment: ["maschine"],
+    grund: false,
+    zielSaetze: 3,
+    wdhBereich: "12–15",
+    startGewicht: 30,
+    hinweis: "Trainiert gezielt den mittleren Gesäßmuskel.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "kickback-kabel",
+    name: "Kabel-Kickback (Gesäß)",
+    muskel: "Gesäß",
+    muster: "huefte",
+    equipment: ["kabel", "band"],
+    grund: false,
+    zielSaetze: 3,
+    wdhBereich: "12–15",
+    startGewicht: 10,
+    hinweis: "Isoliert den großen Gesäßmuskel, Becken bleibt stabil.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "bulgarian",
+    name: "Bulgarian Split Squat",
+    muskel: "Beine",
+    muster: "kniebeuge",
+    equipment: ["kurzhantel", "körpergewicht"],
+    grund: true,
+    zielSaetze: 3,
+    wdhBereich: "8–12",
+    startGewicht: 12,
+    hinweis: "Hoher Reiz für Beine und Gesäß bei geringer Wirbelsäulenlast.",
+    rueckenschonend: true,
+    rueckbildung: false,
+    einsteiger: false,
+  },
+  {
+    id: "wadenheben",
+    name: "Wadenheben (stehend)",
+    muskel: "Waden",
+    muster: "kniebeuge",
+    equipment: ["maschine", "körpergewicht"],
+    grund: false,
+    zielSaetze: 3,
+    wdhBereich: "12–20",
+    startGewicht: 40,
+    hinweis: "Volle Bewegungsamplitude, oben kurz halten.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+
 
   // Mobility / Rückbildung
   {
@@ -591,10 +742,14 @@ export const uebungById = new Map(uebungsBibliothek.map((u) => [u.id, u]));
 
 /** Fotos werden nach Geschlecht ausgewählt; ohne Angabe wird das männliche Motiv genutzt. */
 export function bildFuer(u: Pick<LibUebung, "id" | "muster">, geschlecht?: string | null) {
+  const weiblich = geschlecht === "weiblich";
   const paar = uebungsBilder[u.id];
-  if (paar) return geschlecht === "weiblich" ? paar.w : paar.m;
+  if (paar) return weiblich ? paar.w : paar.m;
+  const neutral = uebungsBilder["neutral"];
+  if (neutral) return weiblich ? neutral.w : neutral.m;
   return musterBild[u.muster];
 }
+
 
 /** Sinnvolle Austausch-Optionen: gleiches Bewegungsmuster, andere Übung. */
 export function alternativenFuer(id: string) {
@@ -605,18 +760,19 @@ export function alternativenFuer(id: string) {
   );
 }
 
+/** Neutrales, realistisches Foto für eigene Übungen ohne eigenes Motiv. */
+export function neutralesBild(geschlecht?: string | null): string {
+  const neutral = uebungsBilder["neutral"];
+  if (neutral) return geschlecht === "weiblich" ? neutral.w : neutral.m;
+  return musterBild.druecken;
+}
+
 /** Heuristische Bildzuordnung anhand eines Übungsnamens. */
 export function bildFuerName(name: string, geschlecht?: string | null): string {
   const n = name.toLowerCase();
   const treffer = uebungsBibliothek.find((u) => u.name.toLowerCase().includes(n) || n.includes(u.name.toLowerCase()));
   if (treffer) return bildFuer(treffer, geschlecht);
-  if (/curl|trizeps|dip|arm/.test(n)) return musterBild.arme;
-  if (/schulter|seitheben|press/.test(n)) return musterBild.schulter;
-  if (/rudern|latzug|klimmzug|zug|face/.test(n)) return musterBild.ziehen;
-  if (/kniebeuge|squat|beinpresse|ausfall|bein/.test(n)) return musterBild.kniebeuge;
-  if (/kreuzheben|hip|glute|hüft/.test(n)) return musterBild.huefte;
-  if (/plank|bauch|core|dead bug|pallof/.test(n)) return musterBild.core;
-  if (/mobil|beckenboden|katze|dehn/.test(n)) return musterBild.mobility;
-  return musterBild.druecken;
+  return neutralesBild(geschlecht);
 }
+
 
