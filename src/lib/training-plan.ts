@@ -186,14 +186,15 @@ function wochenVorlage(k: PlanKontext): Session[] {
   }
 
   if (k.fokus === "arme-straffen") {
-    return [
+    return ([
       { titel: "Push & Trizeps", muster: ["druecken", "schulter", "arme"] },
       { titel: "Pull & Bizeps", muster: ["ziehen", "ziehen", "arme"] },
       { titel: "Beine", muster: ["kniebeuge", "huefte", "core"] },
       { titel: "Schultern & Arme", muster: ["schulter", "arme", "arme"] },
       { titel: "Oberkörper gemischt", muster: ["druecken", "ziehen", "arme"] },
       { titel: "Unterkörper & Rumpf", muster: ["huefte", "kniebeuge", "core"] },
-    ].slice(0, tage);
+    ] as Session[]).slice(0, tage);
+
   }
 
   const split: Session[] = [
