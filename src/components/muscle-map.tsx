@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { muskelStatus, muscleStatusLabel, type MuscleKey, type MuscleStatus } from "@/lib/demo-data";
+import { muskelStatus as vorlage, muscleStatusLabel, type MuscleKey, type MuscleStatus } from "@/lib/demo-data";
+import { useAktivitaet, type Aktivitaet } from "@/lib/activity-store";
 import { cn } from "@/lib/utils";
 import { Bar, Chip } from "@/components/ui-kit";
 
@@ -40,7 +41,77 @@ const silhouette = [
 ];
 
 
+/** Ordnet die Muskelbezeichnungen der Übungsbibliothek den Karten-Regionen zu. */
+const zuordnung: Record<string, MuscleKey> = {
+  Brust: "brust",
+  Schultern: "schultern",
+  Schulter: "schultern",
+  Bizeps: "bizeps",
+  Arme: "bizeps",
+  Trizeps: "trizeps",
+  Bauch: "bauch",
+  Rumpf: "bauch",
+  Core: "bauch",
+  Beine: "quadrizeps",
+  Quadrizeps: "quadrizeps",
+  Rücken: "ruecken",
+  "Oberer Rücken": "ruecken",
+  "Unterer Rücken": "ruecken",
+  Latissimus: "ruecken",
+  Gesäß: "gesaess",
+  Beinbeuger: "beinbeuger",
+  Hamstrings: "beinbeuger",
+  Waden: "waden",
+  Abduktoren: "gesaess",
+};
+
+/** Berechnet den Muskelstatus aus den protokollierten Sätzen der letzten 7 Tage. */
+function berechneStatus(a: Aktivitaet) {
+  const out = {} as Record<
+    MuscleKey,
+    { name: string; status: MuscleStatus; saetze: number; ziel: number; zuletzt: string; bereitschaft: number }
+  >;
+  const grenze = Date.now() - 7 * 86400000;
+
+  for (const key of Object.keys(vorlage) as MuscleKey[]) {
+    const v = vorlage[key];
+    let saetze = 0;
+    let letzterZeitpunkt: number | null = null;
+    for (const e of a.einheiten) {
+      const t = new Date(e.datum).getTime();
+      const treffer = e.saetze.filter((x) => zuordnung[x.muskel] === key).length;
+      if (treffer === 0) continue;
+      if (t >= grenze) saetze += treffer;
+      if (letzterZeitpunkt === null || t > letzterZeitpunkt) letzterZeitpunkt = t;
+    }
+    const tageHer = letzterZeitpunkt === null ? null : Math.floor((Date.now() - letzterZeitpunkt) / 86400000);
+    const bereitschaft =
+      tageHer === null ? 100 : Math.max(35, Math.min(100, 45 + tageHer * 22 - Math.max(0, saetze - 6) * 3));
+    const quote = saetze / v.ziel;
+    const status: MuscleStatus =
+      saetze === 0 ? "wenig" : quote >= 0.9 ? "belastet" : bereitschaft >= 80 ? "bereit" : "regeneriert";
+    out[key] = {
+      name: v.name,
+      status,
+      saetze,
+      ziel: v.ziel,
+      zuletzt:
+        tageHer === null
+          ? "noch nicht"
+          : tageHer === 0
+            ? "heute"
+            : tageHer === 1
+              ? "gestern"
+              : `vor ${tageHer} Tagen`,
+      bereitschaft,
+    };
+  }
+  return out;
+}
+
 export function MuscleMap() {
+  const { aktivitaet } = useAktivitaet();
+  const muskelStatus = berechneStatus(aktivitaet);
   const [seite, setSeite] = useState<"vorne" | "hinten">("vorne");
   const [sel, setSel] = useState<MuscleKey>("brust");
   const shapes = seite === "vorne" ? vorne : hinten;
