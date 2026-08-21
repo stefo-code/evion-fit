@@ -34,6 +34,23 @@ import {
 import { cn } from "@/lib/utils";
 import { Nudge } from "@/components/nudge";
 import { effektivesProfil, useOnboardingProfil } from "@/lib/onboarding-store";
+import {
+  einheitenSeit,
+  gesamtVolumen,
+  rekorde,
+  streak as serie,
+  useAktivitaet,
+  volumen as satzVolumen,
+} from "@/lib/activity-store";
+import {
+  erzeugePlan,
+  mappeEquipment,
+  usePlanEinstellungen,
+  wendeAnpassungenAn,
+  wendeTauschAn,
+  type PlanKontext,
+} from "@/lib/training-plan";
+import { useMemo } from "react";
 
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
@@ -66,10 +83,51 @@ function Cockpit() {
   const eff = effektivesProfil(profil);
   const { score, parts } = computeGoalScore(eff.ziel);
   const [zeit, setZeit] = useState<number | null>(null);
-  const gewichtDelta = profile.startGewicht - profile.gewicht;
-  const zielFortschritt = Math.round(
-    (gewichtDelta / (profile.startGewicht - profile.zielGewicht)) * 100,
+  const { aktivitaet } = useAktivitaet();
+  const { einstellungen } = usePlanEinstellungen();
+
+  const kontext: PlanKontext = useMemo(
+    () => ({
+      ziel: profil.abgeschlossen ? profil.ziel : "recomposition",
+      geschlecht: profil.geschlecht,
+      alter: profil.alter,
+      erfahrung: profil.erfahrung,
+      equipment: mappeEquipment([...(profil.equipment ?? []), ...(profil.orte ?? [])]),
+      tage: profil.tage || 4,
+      dauer: profil.dauer || 45,
+      fokus: einstellungen.fokus,
+    }),
+    [profil, einstellungen.fokus],
   );
+  const plan = useMemo(
+    () => wendeAnpassungenAn(wendeTauschAn(erzeugePlan(kontext), einstellungen.tausch), einstellungen),
+    [kontext, einstellungen],
+  );
+  const naechsterTagIndex = plan.length > 0 ? aktivitaet.einheiten.length % plan.length : 0;
+  const naechsterTag = plan[naechsterTagIndex];
+
+  const gewichte = aktivitaet.gewichte;
+  const startGewicht = gewichte[0]?.gewicht ?? profil.gewicht ?? profile.startGewicht;
+  const aktuellesGewicht = gewichte[gewichte.length - 1]?.gewicht ?? profil.gewicht ?? profile.gewicht;
+  const zielGewichtWert = profil.zielGewicht ?? profile.zielGewicht;
+  const gewichtDelta = +(startGewicht - aktuellesGewicht).toFixed(1);
+  const zielFortschritt =
+    startGewicht === zielGewichtWert
+      ? 100
+      : Math.max(0, Math.min(100, Math.round((gewichtDelta / (startGewicht - zielGewichtWert)) * 100)));
+
+  const gewichtsDaten =
+    gewichte.length > 1
+      ? gewichte.map((g) => ({
+          woche: new Date(g.datum).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }),
+          gewicht: g.gewicht,
+        }))
+      : gewichtsVerlauf;
+
+  const letzteEinheit = aktivitaet.einheiten[aktivitaet.einheiten.length - 1];
+  const topRekord = rekorde(aktivitaet)[0];
+  const wocheEinheiten = einheitenSeit(aktivitaet, 7);
+  const trainingsSerie = serie(aktivitaet);
 
   return (
     <div className="space-y-8">
@@ -101,7 +159,7 @@ function Cockpit() {
                 +{profile.goalScoreDelta} Punkte ggü. letzter Woche
               </span>
               <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-3 py-1 text-xs font-bold text-accent">
-                <Flame className="h-3.5 w-3.5" /> {profile.streak} Tage Streak
+                <Flame className="h-3.5 w-3.5" /> {trainingsSerie} Einheiten Serie
               </span>
             </div>
           </div>
@@ -126,17 +184,40 @@ function Cockpit() {
           <Trophy className="h-6 w-6" />
         </span>
         <div className="min-w-0">
-          <p className="label-xs text-primary">{erfolg.titel}</p>
-          <p className="num truncate text-xl font-extrabold">{erfolg.wert}</p>
-          <p className="truncate text-sm text-muted-foreground">{erfolg.sub}</p>
+          <p className="label-xs text-primary">
+            {topRekord ? "Aktueller Rekord" : letzteEinheit ? "Letzte Einheit" : "Erster Schritt"}
+          </p>
+          <p className="num truncate text-xl font-extrabold">
+            {topRekord
+              ? `${topRekord.name}: ${topRekord.gewicht} kg × ${topRekord.wdh}`
+              : letzteEinheit
+                ? `${satzVolumen(letzteEinheit.saetze).toLocaleString("de-DE")} kg Volumen`
+                : "Noch kein Training protokolliert"}
+          </p>
+          <p className="truncate text-sm text-muted-foreground">
+            {aktivitaet.einheiten.length > 0
+              ? `${aktivitaet.einheiten.length} Einheiten · ${gesamtVolumen(aktivitaet).toLocaleString("de-DE")} kg gesamt`
+              : "Starte dein erstes Training – Auswertung und Erfolge entstehen automatisch."}
+          </p>
         </div>
+        <Link
+          to="/erfolge"
+          className="ml-auto shrink-0 text-xs font-bold uppercase tracking-wider text-primary"
+        >
+          Erfolge
+        </Link>
       </div>
 
       {/* HEUTE */}
       <Section titel="Heute">
         <Card>
           <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
-            <TagesZiel icon={Dumbbell} label="Training" value={heute.workoutName} sub={`${heute.dauer} Minuten`} />
+            <TagesZiel
+              icon={Dumbbell}
+              label="Training"
+              value={naechsterTag?.titel ?? heute.workoutName}
+              sub={`${profil.dauer || heute.dauer} Minuten · ${naechsterTag?.uebungen.length ?? 0} Übungen`}
+            />
             <TagesZiel
               icon={Beef}
               label="Protein"
@@ -159,7 +240,7 @@ function Cockpit() {
 
           <Link
             to="/training/workout"
-            search={{ tag: 0 }}
+            search={{ tag: naechsterTagIndex }}
             className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 font-display text-base font-extrabold uppercase tracking-wide text-primary-foreground transition-transform hover:scale-[1.01]"
           >
             Training starten <ChevronRight className="h-5 w-5" />
@@ -197,17 +278,28 @@ function Cockpit() {
       >
         <Card>
           <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
-            <Stat label="Gewicht" value={`−${gewichtDelta.toFixed(1)}`} unit="kg" delta="seit Start" tone="good" />
-            <Stat label="Körperfett" value="−3,2" unit="%" delta="geschätzt" tone="good" />
-            <Stat label="Muskelmasse" value="+1,8" unit="kg" delta="geschätzt" tone="good" />
-            <Stat label="Taille" value="−6,2" unit="cm" delta="gemessen" tone="good" />
+            <Stat
+              label="Gewicht"
+              value={`${gewichtDelta > 0 ? "−" : "+"}${Math.abs(gewichtDelta).toLocaleString("de-DE")}`}
+              unit="kg"
+              delta="seit Start"
+              tone="good"
+            />
+            <Stat label="Einheiten" value={String(aktivitaet.einheiten.length)} delta="gesamt" tone="good" />
+            <Stat
+              label="Volumen"
+              value={gesamtVolumen(aktivitaet).toLocaleString("de-DE")}
+              unit="kg"
+              delta="gesamt"
+            />
+            <Stat label="Rekorde" value={String(rekorde(aktivitaet).length)} delta="Übungen" tone="good" />
           </div>
 
           <div className="mt-5">
             <div className="flex items-center justify-between text-sm">
               <span className="font-semibold">{zielFortschritt} % des Ziels erreicht</span>
               <span className="text-muted-foreground">
-                {profile.gewicht} kg → {profile.zielGewicht} kg
+                {aktuellesGewicht} kg → {zielGewichtWert} kg
               </span>
             </div>
             <Bar className="mt-2 h-3" value={zielFortschritt} />
@@ -215,7 +307,7 @@ function Cockpit() {
 
           <div className="mt-5 h-40">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={gewichtsVerlauf} margin={{ left: -18, right: 4, top: 6 }}>
+              <AreaChart data={gewichtsDaten} margin={{ left: -18, right: 4, top: 6 }}>
                 <defs>
                   <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.5} />
@@ -267,7 +359,9 @@ function Cockpit() {
         <Card>
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
             <div className="min-w-0">
-              <p className="num text-2xl font-extrabold">4 / 5 Tage auf Kurs</p>
+              <p className="num text-2xl font-extrabold">
+                {wocheEinheiten.length} / {profil.tage || 4} Einheiten diese Woche
+              </p>
               <div className="mt-3 flex gap-2">
                 {woche.map((d) => (
                   <div key={d.tag} className="flex flex-col items-center gap-1.5">
