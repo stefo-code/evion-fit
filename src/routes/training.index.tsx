@@ -25,6 +25,13 @@ import {
 import { ChevronRight, History, Plus, Repeat, Trash2, Trophy, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+  einheitenSeit,
+  rekorde as ermittleRekorde,
+  streak as serie,
+  useAktivitaet,
+  volumen as satzVolumen,
+} from "@/lib/activity-store";
 
 
 export const Route = createFileRoute("/training/")({
@@ -43,13 +50,6 @@ export const Route = createFileRoute("/training/")({
   component: TrainingPage,
 });
 
-const rekorde = [
-  { uebung: "Bankdrücken", wert: "95 kg × 3", e1rm: "≈ 101 kg", datum: "vor 4 Tagen" },
-  { uebung: "Kniebeuge", wert: "137,5 kg × 4", e1rm: "≈ 152 kg", datum: "vor 8 Tagen" },
-  { uebung: "Kreuzheben", wert: "170 kg × 3", e1rm: "≈ 181 kg", datum: "vor 12 Tagen" },
-  { uebung: "Klimmzüge", wert: "+20 kg × 6", e1rm: "—", datum: "vor 6 Tagen" },
-];
-
 function TrainingPage() {
   const { profil } = useOnboardingProfil();
   const {
@@ -61,6 +61,8 @@ function TrainingPage() {
     erstelleEigene,
     loescheEigene,
   } = usePlanEinstellungen();
+  const { aktivitaet } = useAktivitaet();
+  const rekorde = ermittleRekorde(aktivitaet);
   const [zeit, setZeit] = useState(45);
   const [tagIndex, setTagIndex] = useState(0);
   const [tauschFuer, setTauschFuer] = useState<string | null>(null);
@@ -336,20 +338,31 @@ function TrainingPage() {
 
       <Section titel="Persönliche Rekorde">
         <Card className="p-2">
-          <ul className="divide-y divide-border">
-            {rekorde.map((r) => (
-              <li key={r.uebung} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-3 py-3">
-                <Trophy className="h-4 w-4 shrink-0 text-accent" />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">{r.uebung}</p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {r.datum} · geschätztes 1RM {r.e1rm}
-                  </p>
-                </div>
-                <span className="num shrink-0 text-sm font-bold">{r.wert}</span>
-              </li>
-            ))}
-          </ul>
+          {rekorde.length === 0 ? (
+            <p className="px-3 py-4 text-sm text-muted-foreground">
+              Noch keine Rekorde – nach deinem ersten protokollierten Training erscheinen sie hier.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {rekorde.slice(0, 8).map((r) => (
+                <li
+                  key={r.uebungId}
+                  className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-3 py-3"
+                >
+                  <Trophy className="h-4 w-4 shrink-0 text-accent" />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">{r.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {new Date(r.datum).toLocaleDateString("de-DE")} · geschätztes 1RM ≈ {r.e1rm} kg
+                    </p>
+                  </div>
+                  <span className="num shrink-0 text-sm font-bold">
+                    {r.gewicht} kg × {r.wdh}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </Card>
         <Disclaimer>
           Das 1RM wird aus Gewicht und Wiederholungen berechnet (Schätzformel) und ist kein tatsächlich
@@ -360,7 +373,16 @@ function TrainingPage() {
       <Section titel="Historie">
         <Card className="flex items-center gap-3 text-sm text-muted-foreground">
           <History className="h-4 w-4 shrink-0" />
-          94 abgeschlossene Trainings · Ø 3,8 Einheiten/Woche · Ø 47 Minuten
+          {aktivitaet.einheiten.length} abgeschlossene Trainings · {einheitenSeit(aktivitaet, 7).length} in
+          den letzten 7 Tagen · Serie {serie(aktivitaet)} ·{" "}
+          {aktivitaet.einheiten.length > 0
+            ? `Ø ${Math.round(
+                aktivitaet.einheiten.reduce((s, e) => s + e.dauerMin, 0) / aktivitaet.einheiten.length,
+              )} Minuten · Ø ${Math.round(
+                aktivitaet.einheiten.reduce((s, e) => s + satzVolumen(e.saetze), 0) /
+                  aktivitaet.einheiten.length,
+              ).toLocaleString("de-DE")} kg Volumen`
+            : "noch keine Historie"}
         </Card>
       </Section>
 
