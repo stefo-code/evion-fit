@@ -159,6 +159,7 @@ function Cockpit() {
 
           <Link
             to="/training/workout"
+            search={{ tag: 0 }}
             className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 font-display text-base font-extrabold uppercase tracking-wide text-primary-foreground transition-transform hover:scale-[1.01]"
           >
             Training starten <ChevronRight className="h-5 w-5" />

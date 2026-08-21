@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CoachRouteImport } from './routes/coach'
 import { Route as DatenschutzRouteImport } from './routes/datenschutz'
 import { Route as EinstellungenRouteImport } from './routes/einstellungen'
+import { Route as ErfolgeRouteImport } from './routes/erfolge'
 import { Route as ErnaehrungRouteImport } from './routes/ernaehrung'
 import { Route as FortschrittRouteImport } from './routes/fortschritt'
 import { Route as GeraeteRouteImport } from './routes/geraete'
@@ -48,6 +49,11 @@ const DatenschutzRoute = DatenschutzRouteImport.update({
 const EinstellungenRoute = EinstellungenRouteImport.update({
   id: '/einstellungen',
   path: '/einstellungen',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ErfolgeRoute = ErfolgeRouteImport.update({
+  id: '/erfolge',
+  path: '/erfolge',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ErnaehrungRoute = ErnaehrungRouteImport.update({
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/coach': typeof CoachRoute
   '/datenschutz': typeof DatenschutzRoute
   '/einstellungen': typeof EinstellungenRoute
+  '/erfolge': typeof ErfolgeRoute
   '/ernaehrung': typeof ErnaehrungRoute
   '/fortschritt': typeof FortschrittRoute
   '/geraete': typeof GeraeteRoute
@@ -124,6 +131,7 @@ export interface FileRoutesByTo {
   '/coach': typeof CoachRoute
   '/datenschutz': typeof DatenschutzRoute
   '/einstellungen': typeof EinstellungenRoute
+  '/erfolge': typeof ErfolgeRoute
   '/ernaehrung': typeof ErnaehrungRoute
   '/fortschritt': typeof FortschrittRoute
   '/geraete': typeof GeraeteRoute
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/coach': typeof CoachRoute
   '/datenschutz': typeof DatenschutzRoute
   '/einstellungen': typeof EinstellungenRoute
+  '/erfolge': typeof ErfolgeRoute
   '/ernaehrung': typeof ErnaehrungRoute
   '/fortschritt': typeof FortschrittRoute
   '/geraete': typeof GeraeteRoute
@@ -161,6 +170,7 @@ export interface FileRouteTypes {
     | '/coach'
     | '/datenschutz'
     | '/einstellungen'
+    | '/erfolge'
     | '/ernaehrung'
     | '/fortschritt'
     | '/geraete'
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
     | '/coach'
     | '/datenschutz'
     | '/einstellungen'
+    | '/erfolge'
     | '/ernaehrung'
     | '/fortschritt'
     | '/geraete'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/coach'
     | '/datenschutz'
     | '/einstellungen'
+    | '/erfolge'
     | '/ernaehrung'
     | '/fortschritt'
     | '/geraete'
@@ -213,6 +225,7 @@ export interface RootRouteChildren {
   CoachRoute: typeof CoachRoute
   DatenschutzRoute: typeof DatenschutzRoute
   EinstellungenRoute: typeof EinstellungenRoute
+  ErfolgeRoute: typeof ErfolgeRoute
   ErnaehrungRoute: typeof ErnaehrungRoute
   FortschrittRoute: typeof FortschrittRoute
   GeraeteRoute: typeof GeraeteRoute
@@ -260,6 +273,13 @@ declare module '@tanstack/react-router' {
       path: '/einstellungen'
       fullPath: '/einstellungen'
       preLoaderRoute: typeof EinstellungenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/erfolge': {
+      id: '/erfolge'
+      path: '/erfolge'
+      fullPath: '/erfolge'
+      preLoaderRoute: typeof ErfolgeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ernaehrung': {
@@ -341,6 +361,7 @@ const rootRouteChildren: RootRouteChildren = {
   CoachRoute: CoachRoute,
   DatenschutzRoute: DatenschutzRoute,
   EinstellungenRoute: EinstellungenRoute,
+  ErfolgeRoute: ErfolgeRoute,
   ErnaehrungRoute: ErnaehrungRoute,
   FortschrittRoute: FortschrittRoute,
   GeraeteRoute: GeraeteRoute,
