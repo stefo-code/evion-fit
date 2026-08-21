@@ -7,6 +7,7 @@ import {
   MoreHorizontal,
   Pill,
   Settings,
+  Trophy,
   Shield,
   Sparkles,
   User,
@@ -29,6 +30,7 @@ const main = [
 
 const secondary = [
   { to: "/profil", label: "Dein Profil", icon: User },
+  { to: "/erfolge", label: "Erfolge", icon: Trophy },
   { to: "/supplements", label: "Supplements", icon: Pill },
   { to: "/geraete", label: "Geräte", icon: Watch },
   { to: "/einstellungen", label: "Einstellungen", icon: Settings },
@@ -70,7 +72,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
         <div className="mt-auto rounded-xl border border-border bg-secondary/40 p-3 text-[11px] leading-relaxed text-muted-foreground">
-          Demo-Profil mit Beispieldaten. Keine medizinische Beratung.
+          Deine Daten bleiben auf diesem Gerät. Keine medizinische Beratung.
         </div>
       </aside>
 

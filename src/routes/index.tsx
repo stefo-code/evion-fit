@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ChevronRight,
   Flame,
@@ -50,7 +50,6 @@ import {
   wendeTauschAn,
   type PlanKontext,
 } from "@/lib/training-plan";
-import { useMemo } from "react";
 
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
