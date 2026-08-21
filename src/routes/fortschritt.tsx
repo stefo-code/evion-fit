@@ -174,7 +174,7 @@ function FortschrittPage() {
               value={kraftDelta === null ? "—" : `${kraftDelta > 0 ? "+" : ""}${kraftDelta}`}
               unit="%"
               delta={topUebung?.name ?? "noch keine Rekorde"}
-              tone={kraftDelta && kraftDelta > 0 ? "good" : undefined}
+              tone={kraftDelta && kraftDelta > 0 ? "good" : "default"}
             />
           </div>
           {zielFortschritt !== null && (
