@@ -1,14 +1,37 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Card, Disclaimer, Why } from "@/components/ui-kit";
-import { workoutHeute, type LoggedSet } from "@/lib/demo-data";
-import { bildFuerName } from "@/lib/exercise-library";
+import { bildFuer } from "@/lib/exercise-library";
 import { useOnboardingProfil } from "@/lib/onboarding-store";
+import {
+  erzeugePlan,
+  mappeEquipment,
+  usePlanEinstellungen,
+  wendeAnpassungenAn,
+  wendeTauschAn,
+  type PlanKontext,
+} from "@/lib/training-plan";
+import {
+  bestesE1rm,
+  e1rm,
+  ladeAktivitaet,
+  letzterSatz,
+  speichereEinheit,
+  useAktivitaet,
+  volumen as summeVolumen,
+  type SatzLog,
+  type SessionErgebnis,
+} from "@/lib/activity-store";
 import { toast } from "sonner";
 import { Check, ChevronLeft, Minus, Plus, Timer, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+type Suche = { tag?: number };
+
 export const Route = createFileRoute("/training/workout")({
+  validateSearch: (s: Record<string, unknown>): Suche => ({
+    tag: typeof s.tag === "number" ? s.tag : s.tag ? Number(s.tag) : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Workout – Sätze loggen | EVION" },
@@ -23,32 +46,79 @@ export const Route = createFileRoute("/training/workout")({
   component: WorkoutPage,
 });
 
-type Log = Record<string, LoggedSet[]>;
+type Log = Record<string, SatzLog[]>;
+
+function bereich(wdhBereich: string): [number, number] {
+  const [min, max] = wdhBereich.split(/[–-]/).map((x) => Number(x.trim()));
+  return [Number.isFinite(min) ? min! : 8, Number.isFinite(max) ? max! : (min ?? 10)];
+}
 
 function WorkoutPage() {
+  const { tag: tagParam } = Route.useSearch();
+  const navigate = useNavigate();
   const { profil } = useOnboardingProfil();
-  const uebungen = workoutHeute.uebungen;
+  const { einstellungen } = usePlanEinstellungen();
+  const { aktivitaet } = useAktivitaet();
+
+  const kontext: PlanKontext = useMemo(
+    () => ({
+      ziel: profil.abgeschlossen ? profil.ziel : "recomposition",
+      geschlecht: profil.geschlecht,
+      alter: profil.alter,
+      erfahrung: profil.erfahrung,
+      equipment: mappeEquipment([...(profil.equipment ?? []), ...(profil.orte ?? [])]),
+      tage: profil.tage || 4,
+      dauer: profil.dauer || 45,
+      fokus: einstellungen.fokus,
+    }),
+    [profil, einstellungen.fokus],
+  );
+
+  const plan = useMemo(
+    () => wendeAnpassungenAn(wendeTauschAn(erzeugePlan(kontext), einstellungen.tausch), einstellungen),
+    [kontext, einstellungen],
+  );
+
+  const tagIndex = Math.min(Math.max(tagParam ?? 0, 0), plan.length - 1);
+  const tag = plan[tagIndex] ?? plan[0]!;
+  const uebungen = tag.uebungen;
+
+  const [start] = useState(() => Date.now());
   const [idx, setIdx] = useState(0);
   const [log, setLog] = useState<Log>({});
-  const u = uebungen[idx]!;
-  const done = log[u.id] ?? [];
+  const [ergebnis, setErgebnis] = useState<SessionErgebnis | null>(null);
 
-  const vorschlag = useMemo<LoggedSet>(() => {
-    if (done.length === 0) return u.vorschlag;
-    const letzter = done[done.length - 1]!;
-    const [min = 6, max = 10] = u.wdhBereich.split("–").map(Number);
-    if (letzter.wdh >= max && letzter.rpe <= 8) {
-      return { gewicht: letzter.gewicht + 2.5, wdh: min, rpe: 8 };
+  const sicherIdx = Math.min(idx, Math.max(uebungen.length - 1, 0));
+  const u = uebungen[sicherIdx];
+
+  const done = u ? (log[u.id] ?? []) : [];
+
+  const vorschlag = useMemo(() => {
+    if (!u) return { gewicht: 0, wdh: 8, rpe: 8 };
+    const [min, max] = bereich(u.wdhBereich);
+    if (done.length > 0) {
+      const l = done[done.length - 1]!;
+      if (l.wdh >= max && l.rpe <= 8) return { gewicht: +(l.gewicht + 2.5).toFixed(1), wdh: min, rpe: 8 };
+      if (l.rpe >= 9.5) return { gewicht: l.gewicht, wdh: Math.max(min, l.wdh - 1), rpe: 9 };
+      return { gewicht: l.gewicht, wdh: l.wdh, rpe: l.rpe };
     }
-    if (letzter.rpe >= 9.5) return { gewicht: letzter.gewicht, wdh: Math.max(min, letzter.wdh - 1), rpe: 9 };
-    return { gewicht: letzter.gewicht, wdh: letzter.wdh, rpe: letzter.rpe };
-  }, [done, u]);
+    const historie = letzterSatz(aktivitaet, u.id);
+    if (historie) {
+      const steigern = historie.wdh >= max && historie.rpe <= 8;
+      return {
+        gewicht: steigern ? +(historie.gewicht + 2.5).toFixed(1) : historie.gewicht,
+        wdh: steigern ? min : historie.wdh,
+        rpe: 8,
+      };
+    }
+    return { gewicht: u.startGewicht, wdh: min, rpe: 7.5 };
+  }, [done, u, aktivitaet]);
 
   const [gewicht, setGewicht] = useState(vorschlag.gewicht);
   const [wdh, setWdh] = useState(vorschlag.wdh);
   const [rpe, setRpe] = useState(vorschlag.rpe);
-  const [synced, setSynced] = useState(`${u.id}-0`);
-  const key = `${u.id}-${done.length}`;
+  const key = `${u?.id ?? "-"}-${done.length}`;
+  const [synced, setSynced] = useState(key);
   if (synced !== key) {
     setSynced(key);
     setGewicht(vorschlag.gewicht);
@@ -57,35 +127,158 @@ function WorkoutPage() {
   }
 
   const gesamtSaetze = uebungen.reduce((s, e) => s + e.zielSaetze, 0);
-  const geloggt = Object.values(log).reduce((s, e) => s + e.length, 0);
+  const alleSaetze = Object.values(log).flat();
+  const geloggt = alleSaetze.length;
   const [pause, setPause] = useState<number | null>(null);
 
   function satzAbschliessen() {
-    const neu = { gewicht, wdh, rpe };
+    if (!u) return;
+    const neu: SatzLog = {
+      uebungId: u.id,
+      name: u.name,
+      muskel: u.muskel,
+      gewicht,
+      wdh,
+      rpe,
+      zeit: new Date().toISOString(),
+    };
     setLog((l) => ({ ...l, [u.id]: [...(l[u.id] ?? []), neu] }));
     setPause(120);
-    if (u.id === "bank" && gewicht >= 82.5 && wdh >= 7) {
-      toast.success("Neuer Rekord: 82,5 kg × " + wdh + " Wiederholungen");
+
+    const bisher = bestesE1rm(ladeAktivitaet(), u.id);
+    const jetzt = e1rm(gewicht, wdh);
+    const besteInSession = Math.max(
+      0,
+      ...(log[u.id] ?? []).map((s) => e1rm(s.gewicht, s.wdh)),
+    );
+    if (jetzt > Math.max(bisher, besteInSession)) {
+      toast.success(`Persönliche Bestleistung: ${gewicht} kg × ${wdh} (≈ ${jetzt} kg e1RM)`);
     } else {
       toast("Satz gespeichert", { description: `${gewicht} kg × ${wdh} Wdh. · RPE ${rpe}` });
     }
+
+    // Automatisch zur nächsten Übung wechseln, wenn die Zielsätze erreicht sind.
+    if ((log[u.id]?.length ?? 0) + 1 >= u.zielSaetze && sicherIdx < uebungen.length - 1) {
+      setIdx(sicherIdx + 1);
+    }
   }
 
-  const fertig = geloggt >= gesamtSaetze;
+  function trainingBeenden() {
+    if (geloggt === 0) {
+      toast.error("Noch kein Satz protokolliert.");
+      return;
+    }
+    const dauerMin = Math.max(1, Math.round((Date.now() - start) / 60000));
+    const res = speichereEinheit({
+      datum: new Date().toISOString(),
+      titel: tag.titel,
+      tagIndex,
+      dauerMin,
+      saetze: uebungen.flatMap((e) => log[e.id] ?? []),
+    });
+    setErgebnis(res);
+    for (const erf of res.neueErfolge) toast.success(`Erfolg freigeschaltet: ${erf.titel}`);
+    toast.success("Training gespeichert", {
+      description: `${res.einheit.saetze.length} Sätze · ${res.volumen.toLocaleString("de-DE")} kg Volumen`,
+    });
+  }
+
+  const fertigQuote = gesamtSaetze > 0 ? Math.min(100, (geloggt / gesamtSaetze) * 100) : 0;
+
+  if (ergebnis) {
+    return (
+      <div className="space-y-6">
+        <header>
+          <p className="label-xs">Abgeschlossen</p>
+          <h1 className="mt-1 font-display text-3xl font-extrabold">{ergebnis.einheit.titel}</h1>
+        </header>
+        <Card className="border-primary/40 bg-primary/10">
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <Wert label="Sätze" wert={String(ergebnis.einheit.saetze.length)} />
+            <Wert label="Volumen" wert={`${ergebnis.volumen.toLocaleString("de-DE")} kg`} />
+            <Wert label="Dauer" wert={`${ergebnis.einheit.dauerMin} min`} />
+          </div>
+        </Card>
+
+        {ergebnis.rekorde.length > 0 && (
+          <Card>
+            <p className="flex items-center gap-2 font-display text-lg font-extrabold">
+              <Trophy className="h-5 w-5 text-primary" /> Neue Bestleistungen
+            </p>
+            <ul className="mt-3 space-y-2 text-sm">
+              {ergebnis.rekorde.map((r) => (
+                <li key={r.uebungId} className="flex justify-between gap-3">
+                  <span className="truncate">{r.name}</span>
+                  <span className="num shrink-0 font-bold">
+                    {r.gewicht} kg × {r.wdh} · ≈ {r.e1rm} kg
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+
+        {ergebnis.neueErfolge.length > 0 && (
+          <Card>
+            <p className="font-display text-lg font-extrabold">Freigeschaltete Erfolge</p>
+            <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
+              {ergebnis.neueErfolge.map((e) => (
+                <li key={e.id}>
+                  <span className="font-semibold text-foreground">{e.titel}</span> – {e.beschreibung}
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Link
+            to="/fortschritt"
+            className="flex items-center justify-center rounded-2xl bg-primary px-5 py-3 font-display font-extrabold uppercase tracking-wide text-primary-foreground"
+          >
+            Fortschritt ansehen
+          </Link>
+          <Link
+            to="/erfolge"
+            className="flex items-center justify-center rounded-2xl border border-border px-5 py-3 font-display font-extrabold uppercase tracking-wide"
+          >
+            Erfolge
+          </Link>
+          <Link
+            to="/"
+            className="flex items-center justify-center rounded-2xl border border-border px-5 py-3 font-display font-extrabold uppercase tracking-wide"
+          >
+            Zum Cockpit
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!u) {
+    return (
+      <Card>
+        <p className="text-sm">Für diesen Tag sind keine Übungen geplant.</p>
+        <Link to="/training" className="mt-4 inline-flex text-sm font-bold text-primary">
+          Zum Trainingsplan
+        </Link>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <header className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
-        <Link
-          to="/training"
+        <button
+          onClick={() => navigate({ to: "/training" })}
           className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border"
           aria-label="Zurück zum Training"
         >
           <ChevronLeft className="h-5 w-5" />
-        </Link>
+        </button>
         <div className="min-w-0">
           <p className="label-xs">Laufendes Training</p>
-          <h1 className="truncate font-display text-xl font-extrabold">{workoutHeute.name}</h1>
+          <h1 className="truncate font-display text-xl font-extrabold">{tag.titel}</h1>
         </div>
       </header>
 
@@ -102,7 +295,7 @@ function WorkoutPage() {
           )}
         </div>
         <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
-          <div className="h-full bg-primary" style={{ width: `${(geloggt / gesamtSaetze) * 100}%` }} />
+          <div className="h-full bg-primary" style={{ width: `${fertigQuote}%` }} />
         </div>
       </div>
 
@@ -113,17 +306,20 @@ function WorkoutPage() {
             onClick={() => setIdx(i)}
             className={cn(
               "shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-semibold",
-              i === idx ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground",
+              i === sicherIdx
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border text-muted-foreground",
             )}
           >
             {e.name}
+            {(log[e.id]?.length ?? 0) > 0 && ` · ${log[e.id]!.length}`}
           </button>
         ))}
       </div>
 
       <Card className="overflow-hidden p-0">
         <img
-          src={bildFuerName(u.name, profil.geschlecht)}
+          src={bildFuer(u, profil.geschlecht)}
           alt={`Ausführung der Übung ${u.name}`}
           loading="lazy"
           width={768}
@@ -131,103 +327,91 @@ function WorkoutPage() {
           className="h-44 w-full bg-secondary object-cover"
         />
         <div className="p-5">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-          <div className="min-w-0">
-            <h2 className="truncate font-display text-2xl font-extrabold">{u.name}</h2>
-            <p className="text-sm text-muted-foreground">
-              Zielbereich {u.wdhBereich} Wdh. · Satz {done.length + 1} von {u.zielSaetze}
-            </p>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+            <div className="min-w-0">
+              <h2 className="truncate font-display text-2xl font-extrabold">{u.name}</h2>
+              <p className="text-sm text-muted-foreground">
+                Zielbereich {u.wdhBereich} Wdh. · Satz {done.length + 1} von {u.zielSaetze}
+              </p>
+            </div>
+            <span className="num shrink-0 rounded-xl bg-secondary px-3 py-1.5 text-xs font-bold">
+              {u.muskel}
+            </span>
           </div>
-          <span className="num shrink-0 rounded-xl bg-secondary px-3 py-1.5 text-xs font-bold">
-            {u.muskel}
-          </span>
-        </div>
 
-        <div className="mt-5 grid grid-cols-3 gap-3">
-          <Stepper label="Gewicht" unit="kg" value={gewicht} step={2.5} onChange={setGewicht} />
-          <Stepper label="Wdh." value={wdh} step={1} onChange={setWdh} />
-          <Stepper label="RPE" value={rpe} step={0.5} onChange={setRpe} />
-        </div>
+          <div className="mt-5 grid grid-cols-3 gap-3">
+            <Stepper label="Gewicht" unit="kg" value={gewicht} step={2.5} onChange={setGewicht} />
+            <Stepper label="Wdh." value={wdh} step={1} onChange={setWdh} />
+            <Stepper label="RPE" value={rpe} step={0.5} onChange={setRpe} />
+          </div>
 
-        <button
-          onClick={satzAbschliessen}
-          className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 font-display text-base font-extrabold uppercase tracking-wide text-primary-foreground transition-transform active:scale-[0.99]"
-        >
-          <Check className="h-5 w-5" /> Satz abschließen
-        </button>
+          <button
+            onClick={satzAbschliessen}
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 font-display text-base font-extrabold uppercase tracking-wide text-primary-foreground transition-transform active:scale-[0.99]"
+          >
+            <Check className="h-5 w-5" /> Satz abschließen
+          </button>
 
-        <div className="mt-5 rounded-2xl border border-border bg-secondary/40 p-4">
-          <p className="label-xs">Nächster Satz – Vorschlag</p>
-          <p className="num mt-1 text-lg font-bold">
-            {vorschlag.gewicht} kg · {vorschlag.wdh}
-            {u.wdhBereich.includes("–") ? `–${u.wdhBereich.split("–")[1]}` : ""} Wiederholungen
-          </p>
-          <Why
-            punkte={[
-              `Letzte Einheit: ${u.letzte.map((s) => `${s.gewicht} × ${s.wdh}`).join(" | ")}`,
-              `Zielbereich: ${u.wdhBereich} Wiederholungen`,
-              u.hinweis,
-              "Bei sinkender Leistung oder hoher RPE wird nicht automatisch gesteigert.",
-            ]}
-          />
-        </div>
+          <div className="mt-5 rounded-2xl border border-border bg-secondary/40 p-4">
+            <p className="label-xs">Nächster Satz – Vorschlag</p>
+            <p className="num mt-1 text-lg font-bold">
+              {vorschlag.gewicht} kg · {vorschlag.wdh} Wiederholungen · RPE {vorschlag.rpe}
+            </p>
+            <Why
+              punkte={[
+                letzterSatz(aktivitaet, u.id)
+                  ? "Basis ist dein letzter protokollierter Satz dieser Übung."
+                  : "Erste Einheit dieser Übung – Startwert aus der Übungsbibliothek.",
+                "Oberes Ende des Wiederholungsbereichs bei RPE ≤ 8 → Gewicht +2,5 kg.",
+                "RPE ≥ 9,5 → Wiederholungen reduzieren statt Gewicht steigern.",
+              ]}
+            />
+          </div>
 
-        {done.length > 0 && (
-          <ul className="mt-4 space-y-1.5">
-            {done.map((s, i) => (
-              <li
-                key={i}
-                className="flex items-center justify-between rounded-xl bg-secondary/50 px-3 py-2 text-sm"
-              >
-                <span className="text-muted-foreground">Satz {i + 1}</span>
-                <span className="num font-semibold">
-                  {s.gewicht} kg × {s.wdh} · RPE {s.rpe}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+          {done.length > 0 && (
+            <ul className="mt-4 space-y-1 text-sm">
+              {done.map((s, i) => (
+                <li key={i} className="flex justify-between rounded-lg bg-secondary/40 px-3 py-2">
+                  <span>Satz {i + 1}</span>
+                  <span className="num font-semibold">
+                    {s.gewicht} kg × {s.wdh} · RPE {s.rpe}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <p className="mt-3 text-xs text-muted-foreground">{u.hinweis}</p>
         </div>
       </Card>
 
       <Card>
-        <p className="label-xs">Letzte Einheit</p>
-        <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-          {u.letzte.map((s, i) => (
-            <li key={i} className="num">
-              Satz {i + 1}: {s.gewicht} kg × {s.wdh} Wdh. · RPE {s.rpe}
-            </li>
-          ))}
-        </ul>
-        <p className="mt-3 text-xs text-muted-foreground">
-          Alternativen bei belegtem Gerät: {u.alternativen.join(", ")}
-        </p>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">Bisheriges Volumen</span>
+          <span className="num font-bold">{summeVolumen(alleSaetze).toLocaleString("de-DE")} kg</span>
+        </div>
+        <button
+          onClick={trainingBeenden}
+          disabled={geloggt === 0}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-foreground px-5 py-4 font-display text-base font-extrabold uppercase tracking-wide text-background disabled:opacity-40"
+        >
+          <Trophy className="h-5 w-5" /> Training abschließen & speichern
+        </button>
       </Card>
-
-      {fertig && (
-        <Card className="border-primary/40 bg-primary/10">
-          <div className="flex items-center gap-3">
-            <Trophy className="h-6 w-6 shrink-0 text-primary" />
-            <div className="min-w-0">
-              <p className="font-display text-lg font-extrabold">Training abgeschlossen</p>
-              <p className="text-sm text-muted-foreground">
-                {geloggt} Sätze protokolliert · Volumen und Muskelstatus wurden aktualisiert.
-              </p>
-            </div>
-          </div>
-          <Link
-            to="/"
-            className="mt-4 flex w-full items-center justify-center rounded-2xl bg-primary px-5 py-3 font-display font-extrabold uppercase tracking-wide text-primary-foreground"
-          >
-            Zum Cockpit
-          </Link>
-        </Card>
-      )}
 
       <Disclaimer>
         Steigerungsvorschläge sind Empfehlungen und lassen sich jederzeit überschreiben. Trainiere im
         Rahmen deiner technischen Fähigkeiten und breche bei Schmerzen ab.
       </Disclaimer>
+    </div>
+  );
+}
+
+function Wert({ label, wert }: { label: string; wert: string }) {
+  return (
+    <div>
+      <p className="label-xs">{label}</p>
+      <p className="num mt-1 font-display text-xl font-extrabold">{wert}</p>
     </div>
   );
 }
