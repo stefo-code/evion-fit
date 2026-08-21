@@ -265,7 +265,7 @@ export const erfolgsDefinitionen: ErfolgDef[] = [
   },
 ];
 
-export type ErfolgStatus = ErfolgDef & { aktuell: number; erreicht: boolean; datum?: string };
+export type ErfolgStatus = ErfolgDef & { aktuell: number; erreicht: boolean; datum?: string | undefined };
 
 export function erfolgsStatus(a: Aktivitaet): ErfolgStatus[] {
   return erfolgsDefinitionen.map((d) => {
