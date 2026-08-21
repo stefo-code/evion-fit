@@ -26,11 +26,11 @@ import { toast } from "sonner";
 import { Check, ChevronLeft, Minus, Plus, Timer, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Suche = { tag?: number };
+type Suche = { tag: number };
 
 export const Route = createFileRoute("/training/workout")({
   validateSearch: (s: Record<string, unknown>): Suche => ({
-    tag: typeof s.tag === "number" ? s.tag : s.tag ? Number(s.tag) : undefined,
+    tag: Number(s["tag"] ?? 0) || 0,
   }),
   head: () => ({
     meta: [
@@ -79,7 +79,7 @@ function WorkoutPage() {
     [kontext, einstellungen],
   );
 
-  const tagIndex = Math.min(Math.max(tagParam ?? 0, 0), plan.length - 1);
+  const tagIndex = Math.min(Math.max(tagParam, 0), plan.length - 1);
   const tag = plan[tagIndex] ?? plan[0]!;
   const uebungen = tag.uebungen;
 
