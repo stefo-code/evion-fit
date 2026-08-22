@@ -489,3 +489,84 @@ export const stufenFarbe: Record<Stufe, string> = {
   Optional: "bg-secondary text-muted-foreground",
   Verzichtbar: "bg-destructive/10 text-destructive",
 };
+
+// ---------------------------------------------------------------------------
+// Tagesplan: was wann einnehmen
+// ---------------------------------------------------------------------------
+
+export type Slot = {
+  id: string;
+  zeit: string;
+  titel: string;
+  hinweis: string;
+};
+
+export const tagesSlots: Slot[] = [
+  { id: "morgens", zeit: "Morgens", titel: "Nach dem Aufstehen", hinweis: "Zum Frühstück – möglichst zur gleichen Zeit, das erhöht die Regelmäßigkeit." },
+  { id: "vor", zeit: "30–60 Min. vorher", titel: "Vor dem Training", hinweis: "Leistungsrelevante Mittel wirken nur bei ausreichendem Vorlauf." },
+  { id: "waehrend", zeit: "Während", titel: "Im Training", hinweis: "Nur bei langen oder sehr schweißintensiven Einheiten nötig." },
+  { id: "nach", zeit: "0–2 Std. danach", titel: "Nach dem Training", hinweis: "Protein und Kreatin gemeinsam mit einer Mahlzeit oder einem Shake." },
+  { id: "mahlzeit", zeit: "Zur Hauptmahlzeit", titel: "Zum Essen", hinweis: "Fettlösliche Vitamine und Mineralstoffe brauchen eine Mahlzeit." },
+  { id: "abends", zeit: "Abends", titel: "Vor dem Schlafen", hinweis: "Beruhigende und regenerationsfördernde Mittel." },
+];
+
+/** Ordnet jedem Präparat den sinnvollsten Einnahmezeitpunkt zu. */
+const slotVon: Record<string, string> = {
+  creatin: "nach",
+  whey: "nach",
+  mehrkomponenten: "abends",
+  veganprotein: "nach",
+  eaa: "vor",
+  bcaa: "vor",
+  koffein: "vor",
+  citrullin: "vor",
+  betaalanin: "vor",
+  arginin: "vor",
+  gruentee: "morgens",
+  carnitin: "mahlzeit",
+  elektrolyte: "waehrend",
+  vitd3: "mahlzeit",
+  omega3: "mahlzeit",
+  b12: "morgens",
+  eisen: "morgens",
+  magnesium: "abends",
+  ashwagandha: "abends",
+  kollagen: "vor",
+  hmb: "mahlzeit",
+};
+
+export type TagesplanEintrag = { supp: Supplement; stufe: Stufe; slot: string };
+
+export type TagesplanSlot = Slot & { eintraege: TagesplanEintrag[] };
+
+/**
+ * Baut einen konkreten Einnahmeplan aus den Empfehlungen: nur Präparate der
+ * Stufen „Priorität“ und „Sinnvoll“, sortiert nach Relevanz, je Zeitfenster.
+ */
+export function tagesplan(ctx: SuppKontext, trainingstag = true): TagesplanSlot[] {
+  const relevant = empfehlungen(ctx).filter(
+    (e) => e.stufe === "Priorität" || e.stufe === "Sinnvoll",
+  );
+
+  const eintraege: TagesplanEintrag[] = relevant.map((e) => ({
+    supp: e.supp,
+    stufe: e.stufe,
+    slot: slotVon[e.supp.id] ?? "mahlzeit",
+  }));
+
+  const trainingSlots = new Set(["vor", "waehrend", "nach"]);
+
+  return tagesSlots
+    .map((s) => ({
+      ...s,
+      eintraege: eintraege.filter(
+        (e) => e.slot === s.id && (trainingstag || !trainingSlots.has(e.slot) || e.supp.id === "creatin"),
+      ),
+    }))
+    .map((s) =>
+      !trainingstag && s.id === "nach"
+        ? { ...s, zeit: "Zu einer Mahlzeit", titel: "Kreatin am trainingsfreien Tag" }
+        : s,
+    )
+    .filter((s) => s.eintraege.length > 0);
+}

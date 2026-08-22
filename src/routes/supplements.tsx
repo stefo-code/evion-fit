@@ -1,16 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Card, Chip, Disclaimer, Section, Why } from "@/components/ui-kit";
-import { supplementPlan, goalLabels } from "@/lib/demo-data";
+import { goalLabels } from "@/lib/demo-data";
 import {
   empfehlungen,
   stufenFarbe,
   supplementDatenbank,
+  tagesplan,
   type Kategorie,
   type Stufe,
 } from "@/lib/supplements-data";
 import { useOnboardingProfil } from "@/lib/onboarding-store";
-import { Check, ChevronDown, Circle, FlaskConical } from "lucide-react";
+import { ChevronDown, Clock, FlaskConical } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/supplements")({
@@ -43,6 +44,7 @@ function SupplementsPage() {
   const [offen, setOffen] = useState<string | null>(null);
   const [kategorie, setKategorie] = useState<Kategorie | "Alle">("Alle");
   const [nurRelevant, setNurRelevant] = useState(true);
+  const [trainingstag, setTrainingstag] = useState(true);
 
   const ctx = {
     ziel: profil.abgeschlossen ? profil.ziel : "recomposition",
@@ -64,6 +66,15 @@ function SupplementsPage() {
   const liste = alle
     .filter((e) => kategorie === "Alle" || e.supp.kategorie === kategorie)
     .filter((e) => !nurRelevant || e.stufe === "Priorität" || e.stufe === "Sinnvoll");
+
+  const plan = useMemo(() => tagesplan(ctx, trainingstag), [
+    ctx.ziel,
+    ctx.geschlecht,
+    ctx.alter,
+    ctx.trainingstage,
+    ctx.ernaehrungsform,
+    trainingstag,
+  ]);
 
   const top = alle.filter((e) => e.stufe === "Priorität").slice(0, 4);
 
@@ -107,24 +118,58 @@ function SupplementsPage() {
         </Card>
       </Section>
 
-      <Section titel="Tägliche Basics">
-        <Card className="p-2">
-          <ul className="divide-y divide-border">
-            {supplementPlan.map((s) => (
-              <li key={s.name} className="flex items-center gap-3 px-3 py-3 text-sm">
-                {s.erledigt ? (
-                  <Check className="h-4 w-4 shrink-0 text-success" />
-                ) : (
-                  <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />
-                )}
-                <span className={cn("truncate", s.erledigt && "text-muted-foreground line-through")}>
-                  {s.name}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Card>
+      <Section titel="Dein Supplement-Tagesplan">
+        <div className="flex flex-wrap gap-2">
+          <Chip active={trainingstag} onClick={() => setTrainingstag(true)}>
+            Trainingstag
+          </Chip>
+          <Chip active={!trainingstag} onClick={() => setTrainingstag(false)}>
+            Trainingsfreier Tag
+          </Chip>
+        </div>
+        <div className="mt-3 space-y-3">
+          {plan.map((s) => (
+            <Card key={s.id} className="p-0">
+              <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 border-b border-border p-4">
+                <Clock className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <div className="min-w-0">
+                  <p className="font-display font-bold">{s.titel}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {s.zeit} · {s.hinweis}
+                  </p>
+                </div>
+              </div>
+              <ul className="divide-y divide-border">
+                {s.eintraege.map((e) => (
+                  <li key={e.supp.id} className="px-4 py-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold">{e.supp.name}</p>
+                      <span
+                        className={cn(
+                          "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+                          stufenFarbe[e.stufe],
+                        )}
+                      >
+                        {e.stufe}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {e.supp.dosierung} · {e.supp.timing}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          ))}
+          {plan.length === 0 && (
+            <Card className="text-sm text-muted-foreground">
+              Für dein Profil ist aktuell kein Präparat klar empfehlenswert – die Basis machen
+              Ernährung, Schlaf und Training.
+            </Card>
+          )}
+        </div>
       </Section>
+
 
       <div className="space-y-3">
         <div className="flex flex-wrap gap-2">
