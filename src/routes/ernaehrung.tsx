@@ -356,6 +356,10 @@ function ErnaehrungPage() {
         }}
       />
 
+      <BarcodeScanner offen={scannerOffen} onSchliessen={() => setScannerOffen(false)} onCode={codeGefunden} />
+
+
+
       {(bild || laedt) && (
         <Section titel="Foto-Erkennung">
           <Card className="border-info/30">
