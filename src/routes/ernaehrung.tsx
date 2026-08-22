@@ -230,8 +230,11 @@ function ErnaehrungPage() {
                 <p className="text-sm font-bold">{produkt.name}</p>
                 <p className="text-xs text-muted-foreground">
                   {produkt.marke ? `${produkt.marke} · ` : ""}
-                  {produkt.kcal} kcal / 100 {produkt.einheit}
+                  {produkt.kcal > 0
+                    ? `${produkt.kcal} kcal / 100 ${produkt.einheit}`
+                    : "Für dieses Produkt sind keine Nährwerte hinterlegt – bitte per Suche oder Foto erfassen."}
                 </p>
+
               </div>
               <button onClick={() => setProdukt(null)} aria-label="Produkt verwerfen">
                 <X className="h-4 w-4 text-muted-foreground" />

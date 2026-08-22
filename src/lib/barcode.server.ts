@@ -36,44 +36,85 @@ function portionAus(text: unknown): number {
   return Math.round(wert);
 }
 
-export async function sucheBarcode(code: string): Promise<BarcodeProdukt | null> {
-  const res = await fetch(
-    `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=code,product_name,product_name_de,brands,nutriments,serving_quantity,quantity,image_front_small_url`,
-    { headers: { "User-Agent": "EVION-Fitness-App/1.0 (lovable.app)" } },
-  );
+type Nutriments = Record<string, unknown>;
+
+/**
+ * Holt einen Nährwert je 100 g/ml. Reihenfolge: _100g → Basiswert/_value →
+ * _serving (auf 100 hochgerechnet). So funktionieren auch Einträge, die nur
+ * Portionsangaben oder nur kJ hinterlegt haben.
+ */
+function proHundert(n: Nutriments, basis: string, portion: number): number {
+  const direkt = zahl(n[`${basis}_100g`]) || zahl(n[basis]) || zahl(n[`${basis}_value`]);
+  if (direkt) return direkt;
+  const proPortion = zahl(n[`${basis}_serving`]);
+  if (proPortion && portion > 0) return (proPortion * 100) / portion;
+  return 0;
+}
+
+function kcalAus(n: Nutriments, portion: number): number {
+  const kcal = proHundert(n, "energy-kcal", portion);
+  if (kcal) return kcal;
+  const kj = proHundert(n, "energy-kj", portion);
+  if (kj) return kj / 4.184;
+  const energie = proHundert(n, "energy", portion);
+  if (!energie) return 0;
+  const einheit = String(n["energy_unit"] ?? "kJ").toLowerCase();
+  return einheit.includes("cal") ? energie : energie / 4.184;
+}
+
+async function hole(url: string) {
+  const res = await fetch(url, { headers: { "User-Agent": "EVION-Fitness-App/1.0 (lovable.app)" } });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error("Produktdatenbank ist gerade nicht erreichbar.");
-
   const json = (await res.json()) as {
     status?: number;
-    product?: Record<string, unknown> & { nutriments?: Record<string, unknown> };
+    product?: Record<string, unknown> & { nutriments?: Nutriments };
   };
-  const p = json.product;
-  if (!p || json.status === 0) return null;
+  if (!json.product || json.status === 0) return null;
+  return json.product;
+}
 
-  const n = p.nutriments ?? {};
-  const kcal =
-    zahl(n["energy-kcal_100g"]) || Math.round(zahl(n["energy_100g"]) / 4.184) || 0;
+export async function sucheBarcode(code: string): Promise<BarcodeProdukt | null> {
+  const id = encodeURIComponent(code);
+  // Zuerst der gefilterte Aufruf, danach – falls Nährwerte fehlen – der volle Datensatz.
+  let p = await hole(
+    `https://world.openfoodfacts.org/api/v2/product/${id}.json?fields=code,product_name,product_name_de,generic_name,generic_name_de,brands,nutriments,serving_quantity,quantity,image_front_small_url`,
+  );
+  const leer = (prod: Record<string, unknown> | null) =>
+    !prod || !prod["nutriments"] || Object.keys(prod["nutriments"] as Nutriments).length === 0;
+  if (leer(p)) {
+    const voll = await hole(`https://world.openfoodfacts.org/api/v2/product/${id}.json`);
+    if (voll) p = voll;
+  }
+  if (!p) return null;
+
+  const n = (p.nutriments ?? {}) as Nutriments;
 
   const name =
     (typeof p["product_name_de"] === "string" && p["product_name_de"]) ||
     (typeof p["product_name"] === "string" && p["product_name"]) ||
+    (typeof p["generic_name_de"] === "string" && p["generic_name_de"]) ||
+    (typeof p["generic_name"] === "string" && p["generic_name"]) ||
     "";
   if (!name) return null;
 
   const istGetraenk = typeof p["quantity"] === "string" && /\b(ml|cl|l)\b/i.test(p["quantity"]);
-  const portion = zahl(p["serving_quantity"]) || portionAus(p["quantity"]) || 100;
+  const rohPortion = zahl(p["serving_quantity"]) || portionAus(p["serving_size"]);
+  const portion = rohPortion || portionAus(p["quantity"]) || 100;
+  // Portionsbezug für die Hochrechnung: nur echte Portionsangaben nutzen.
+  const bezug = rohPortion || 0;
 
   return {
     code,
     name,
     marke: typeof p["brands"] === "string" && p["brands"] ? (String(p["brands"]).split(",")[0] ?? "").trim() : null,
-    kcal: Math.round(kcal),
-    protein: Math.round(zahl(n["proteins_100g"])),
-    kh: Math.round(zahl(n["carbohydrates_100g"])),
-    fett: Math.round(zahl(n["fat_100g"])),
+    kcal: Math.round(kcalAus(n, bezug)),
+    protein: Math.round(proHundert(n, "proteins", bezug)),
+    kh: Math.round(proHundert(n, "carbohydrates", bezug)),
+    fett: Math.round(proHundert(n, "fat", bezug)),
     portion_g: Math.min(2000, Math.max(10, portion)),
     einheit: istGetraenk ? "ml" : "g",
     bild: typeof p["image_front_small_url"] === "string" ? p["image_front_small_url"] : null,
   };
 }
+
