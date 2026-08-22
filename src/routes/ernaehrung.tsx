@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { analysiereFoto } from "@/lib/food-vision.functions";
 import type { FotoAnalyse } from "@/lib/food-vision.server";
