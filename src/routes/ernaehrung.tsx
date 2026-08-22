@@ -13,6 +13,7 @@ import {
   Droplets,
   Loader2,
   Plus,
+  ScanBarcode,
   Search,
   Trash2,
   Utensils,
@@ -20,6 +21,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { BarcodeScanner } from "@/components/barcode-scanner";
+import { produktPerBarcode } from "@/lib/barcode.functions";
+import type { BarcodeProdukt } from "@/lib/barcode.server";
+
 
 export const Route = createFileRoute("/ernaehrung")({
   head: () => ({
