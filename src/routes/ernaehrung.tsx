@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { analysiereFoto } from "@/lib/food-vision.functions";
 import type { FotoAnalyse } from "@/lib/food-vision.server";
@@ -13,6 +13,7 @@ import {
   Droplets,
   Loader2,
   Plus,
+  ScanBarcode,
   Search,
   Trash2,
   Utensils,
@@ -20,6 +21,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { BarcodeScanner } from "@/components/barcode-scanner";
+import { produktPerBarcode } from "@/lib/barcode.functions";
+import type { BarcodeProdukt } from "@/lib/barcode.server";
+
 
 export const Route = createFileRoute("/ernaehrung")({
   head: () => ({
@@ -62,8 +67,35 @@ function ErnaehrungPage() {
   const [neueZutat, setNeueZutat] = useState("");
   const [offenesRezept, setOffenesRezept] = useState<string | null>(null);
   const [nurVorrat, setNurVorrat] = useState(false);
+  const [scannerOffen, setScannerOffen] = useState(false);
+  const [produkt, setProdukt] = useState<BarcodeProdukt | null>(null);
+  const [produktMenge, setProduktMenge] = useState(100);
+  const [suchtCode, setSuchtCode] = useState(false);
   const kamera = useRef<HTMLInputElement>(null);
   const analysiere = useServerFn(analysiereFoto);
+  const barcodeSuche = useServerFn(produktPerBarcode);
+
+  const codeGefunden = useCallback(
+    async (code: string) => {
+      setScannerOffen(false);
+      setSuchtCode(true);
+      try {
+        const p = await barcodeSuche({ data: { code } });
+        if (!p) {
+          toast("Produkt nicht gefunden – bitte per Suche oder Foto erfassen.");
+          return;
+        }
+        setProdukt(p);
+        setProduktMenge(p.portion_g);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Barcode-Suche fehlgeschlagen");
+      } finally {
+        setSuchtCode(false);
+      }
+    },
+    [barcodeSuche],
+  );
+
 
   const offenKcal = Math.max(0, plan.kalorien - heuteSumme.kcal);
   const offenProtein = Math.max(0, plan.protein - heuteSumme.protein);
@@ -154,22 +186,96 @@ function ErnaehrungPage() {
       </Card>
 
       <Section titel="Schnell erfassen">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
+          <button
+            onClick={() => setScannerOffen(true)}
+            className="surface flex flex-col items-center gap-2 p-4 text-center text-xs font-bold transition-colors hover:border-primary/50"
+          >
+            <ScanBarcode className="h-5 w-5 text-primary" />
+            Barcode scannen
+          </button>
           <button
             onClick={() => kamera.current?.click()}
-            className="surface flex flex-col items-center gap-2 p-4 text-xs font-bold transition-colors hover:border-primary/50"
+            className="surface flex flex-col items-center gap-2 p-4 text-center text-xs font-bold transition-colors hover:border-primary/50"
           >
             <Camera className="h-5 w-5 text-primary" />
             Foto analysieren
           </button>
           <button
             onClick={() => setErfassenOffen((o) => !o)}
-            className="surface flex flex-col items-center gap-2 p-4 text-xs font-bold transition-colors hover:border-primary/50"
+            className="surface flex flex-col items-center gap-2 p-4 text-center text-xs font-bold transition-colors hover:border-primary/50"
           >
             <Search className="h-5 w-5 text-primary" />
             Lebensmittel suchen
           </button>
         </div>
+
+        {suchtCode && (
+          <Card className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Produkt wird gesucht …
+          </Card>
+        )}
+
+        {produkt && (
+          <Card className="mt-3 border-primary/30">
+            <div className="flex items-start gap-3">
+              {produkt.bild && (
+                <img
+                  src={produkt.bild}
+                  alt={`Produktfoto ${produkt.name}`}
+                  className="h-16 w-16 rounded-xl object-contain"
+                />
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold">{produkt.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {produkt.marke ? `${produkt.marke} · ` : ""}
+                  {produkt.kcal} kcal / 100 {produkt.einheit}
+                </p>
+              </div>
+              <button onClick={() => setProdukt(null)} aria-label="Produkt verwerfen">
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <input
+                type="number"
+                min={10}
+                step={10}
+                value={produktMenge}
+                onChange={(e) => setProduktMenge(Math.max(0, Number(e.target.value)))}
+                aria-label={`Menge ${produkt.name}`}
+                className="num w-24 rounded-lg border border-border bg-card px-2 py-1.5 text-sm"
+              />
+              <span className="text-xs text-muted-foreground">{produkt.einheit}</span>
+              <p className="num text-xs text-muted-foreground">
+                = {Math.round((produkt.kcal * produktMenge) / 100)} kcal ·{" "}
+                {Math.round((produkt.protein * produktMenge) / 100)} g Protein
+              </p>
+              <button
+                onClick={() => {
+                  mahlzeitHinzufuegen({
+                    name: `${produkt.marke ? `${produkt.marke} ` : ""}${produkt.name} (${produktMenge} ${produkt.einheit})`,
+                    kcal: Math.round((produkt.kcal * produktMenge) / 100),
+                    protein: Math.round((produkt.protein * produktMenge) / 100),
+                    kh: Math.round((produkt.kh * produktMenge) / 100),
+                    fett: Math.round((produkt.fett * produktMenge) / 100),
+                    quelle: "datenbank",
+                  });
+                  toast.success(`${produkt.name} erfasst`);
+                  setProdukt(null);
+                }}
+                className="ml-auto flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground"
+              >
+                <Plus className="h-3.5 w-3.5" /> Erfassen
+              </button>
+            </div>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Angaben aus Open Food Facts – Herstellerdaten können abweichen.
+            </p>
+          </Card>
+        )}
+
 
         {erfassenOffen && (
           <Card className="mt-3">
@@ -249,6 +355,10 @@ function ErnaehrungPage() {
           e.target.value = "";
         }}
       />
+
+      <BarcodeScanner offen={scannerOffen} onSchliessen={() => setScannerOffen(false)} onCode={codeGefunden} />
+
+
 
       {(bild || laedt) && (
         <Section titel="Foto-Erkennung">
