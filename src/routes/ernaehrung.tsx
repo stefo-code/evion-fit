@@ -67,8 +67,35 @@ function ErnaehrungPage() {
   const [neueZutat, setNeueZutat] = useState("");
   const [offenesRezept, setOffenesRezept] = useState<string | null>(null);
   const [nurVorrat, setNurVorrat] = useState(false);
+  const [scannerOffen, setScannerOffen] = useState(false);
+  const [produkt, setProdukt] = useState<BarcodeProdukt | null>(null);
+  const [produktMenge, setProduktMenge] = useState(100);
+  const [suchtCode, setSuchtCode] = useState(false);
   const kamera = useRef<HTMLInputElement>(null);
   const analysiere = useServerFn(analysiereFoto);
+  const barcodeSuche = useServerFn(produktPerBarcode);
+
+  const codeGefunden = useCallback(
+    async (code: string) => {
+      setScannerOffen(false);
+      setSuchtCode(true);
+      try {
+        const p = await barcodeSuche({ data: { code } });
+        if (!p) {
+          toast("Produkt nicht gefunden – bitte per Suche oder Foto erfassen.");
+          return;
+        }
+        setProdukt(p);
+        setProduktMenge(p.portion_g);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Barcode-Suche fehlgeschlagen");
+      } finally {
+        setSuchtCode(false);
+      }
+    },
+    [barcodeSuche],
+  );
+
 
   const offenKcal = Math.max(0, plan.kalorien - heuteSumme.kcal);
   const offenProtein = Math.max(0, plan.protein - heuteSumme.protein);
