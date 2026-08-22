@@ -1,19 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { analysiereFoto } from "@/lib/food-vision.functions";
 import type { FotoAnalyse } from "@/lib/food-vision.server";
 import { Bar, Card, Chip, Disclaimer, Ring, Section, Why } from "@/components/ui-kit";
+import { berechnePlan, useOnboardingProfil } from "@/lib/onboarding-store";
+import { useErnaehrung } from "@/lib/nutrition-store";
+import { lebensmittel, rezeptVorschlaege, vorratVorschlaege, type RezeptTreffer } from "@/lib/recipes";
 import {
-  adaptiveKalorien,
-  fotoErkennung,
-  heute,
-  mahlzeiten,
-  profile,
-  rezeptVorschlaege,
-} from "@/lib/demo-data";
-import { Barcode, Camera, Droplets, Loader2, Mic, Plus, Search, ShoppingCart, Trash2, Utensils } from "lucide-react";
+  Camera,
+  ChevronDown,
+  Droplets,
+  Loader2,
+  Plus,
+  Search,
+  Trash2,
+  Utensils,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/ernaehrung")({
   head: () => ({
@@ -22,7 +28,7 @@ export const Route = createFileRoute("/ernaehrung")({
       {
         name: "description",
         content:
-          "Kalorien, Protein und Makros tracken, Mahlzeiten per Foto schätzen und passende Rezepte erhalten.",
+          "Kalorien, Protein und Makros tracken, Mahlzeiten per Foto schätzen und Rezepte aus deinem Vorrat erhalten.",
       },
       { property: "og:title", content: "Ernährung – EVION" },
       { property: "og:description", content: "Vorschläge, die zu deinem restlichen Tagesziel passen." },
@@ -32,14 +38,54 @@ export const Route = createFileRoute("/ernaehrung")({
 });
 
 function ErnaehrungPage() {
+  const { profil } = useOnboardingProfil();
+  const plan = useMemo(() => berechnePlan(profil), [profil]);
+  const {
+    daten,
+    heutigeMahlzeiten,
+    heuteSumme,
+    wasserHeute,
+    mahlzeitHinzufuegen,
+    mahlzeitEntfernen,
+    wasserHinzufuegen,
+    vorratHinzufuegen,
+    vorratEntfernen,
+  } = useErnaehrung();
+
   const [bild, setBild] = useState<string | null>(null);
   const [analyse, setAnalyse] = useState<FotoAnalyse | null>(null);
   const [laedt, setLaedt] = useState(false);
   const [faktoren, setFaktoren] = useState<number[]>([]);
-  const [demoFoto, setDemoFoto] = useState(false);
-  const [mengen, setMengen] = useState([195, 225, 155]);
+  const [suche, setSuche] = useState("");
+  const [menge, setMenge] = useState<Record<string, number>>({});
+  const [erfassenOffen, setErfassenOffen] = useState(false);
+  const [neueZutat, setNeueZutat] = useState("");
+  const [offenesRezept, setOffenesRezept] = useState<string | null>(null);
+  const [nurVorrat, setNurVorrat] = useState(false);
   const kamera = useRef<HTMLInputElement>(null);
   const analysiere = useServerFn(analysiereFoto);
+
+  const offenKcal = Math.max(0, plan.kalorien - heuteSumme.kcal);
+  const offenProtein = Math.max(0, plan.protein - heuteSumme.protein);
+  const wasserZiel = 2500;
+
+  const treffer = useMemo(
+    () =>
+      rezeptVorschlaege({
+        vorrat: daten.vorrat,
+        offenKcal,
+        offenProtein,
+        ernaehrungsform: profil.ernaehrungsform,
+        allergien: profil.allergien,
+      }),
+    [daten.vorrat, offenKcal, offenProtein, profil.ernaehrungsform, profil.allergien],
+  );
+
+  const sichtbareRezepte = (nurVorrat ? treffer.filter((t) => t.abdeckung >= 0.75) : treffer).slice(0, 8);
+
+  const gefiltert = suche
+    ? lebensmittel.filter((l) => l.name.toLowerCase().includes(suche.toLowerCase())).slice(0, 8)
+    : lebensmittel.slice(0, 6);
 
   const bildWaehlen = async (file: File) => {
     const dataUrl = await komprimiere(file);
@@ -60,70 +106,135 @@ function ErnaehrungPage() {
   };
 
   const summe = (feld: "kcal" | "protein_g" | "kh_g" | "fett_g") =>
-    Math.round(
-      (analyse?.items ?? []).reduce((acc, it, i) => acc + it[feld] * (faktoren[i] ?? 1), 0),
-    );
-  const offenKcal = heute.kalorien.ziel - heute.kalorien.ist;
-  const offenProtein = heute.protein.ziel - heute.protein.ist;
+    Math.round((analyse?.items ?? []).reduce((acc, it, i) => acc + it[feld] * (faktoren[i] ?? 1), 0));
 
   return (
     <div className="space-y-8">
       <header>
         <p className="label-xs">Ernährung</p>
         <h1 className="mt-1 font-display text-3xl font-extrabold">Dein Tag</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Ziele aus deinem Profil: {plan.kalorien.toLocaleString("de-DE")} kcal · {plan.protein} g Protein
+        </p>
       </header>
 
       <Card>
         <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-5">
           <Ring
-            value={(heute.kalorien.ist / heute.kalorien.ziel) * 100}
-            label={heute.kalorien.ist.toLocaleString("de-DE")}
-            sub="von 2.180 kcal"
+            value={(heuteSumme.kcal / plan.kalorien) * 100}
+            label={heuteSumme.kcal.toLocaleString("de-DE")}
+            sub={`von ${plan.kalorien.toLocaleString("de-DE")} kcal`}
           />
           <div className="min-w-0 space-y-3">
-            <Makro label="Protein" ist={heute.protein.ist} ziel={heute.protein.ziel} unit="g" tone="primary" />
-            <Makro label="Kohlenhydrate" ist={148} ziel={profile.kohlenhydrateZiel} unit="g" tone="info" />
-            <Makro label="Fett" ist={49} ziel={profile.fettZiel} unit="g" tone="accent" />
-            <Makro label="Ballaststoffe" ist={21} ziel={profile.ballaststoffeZiel} unit="g" tone="warning" />
+            <Makro label="Protein" ist={heuteSumme.protein} ziel={plan.protein} unit="g" tone="primary" />
+            <Makro label="Kohlenhydrate" ist={heuteSumme.kh} ziel={plan.kohlenhydrate} unit="g" tone="info" />
+            <Makro label="Fett" ist={heuteSumme.fett} ziel={plan.fett} unit="g" tone="accent" />
           </div>
         </div>
-        <div className="mt-4 flex items-center gap-3 rounded-xl bg-secondary/40 p-3 text-sm">
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl bg-secondary/40 p-3 text-sm">
           <Droplets className="h-4 w-4 shrink-0 text-info" />
-          Wasser {heute.wasser.ist} / {heute.wasser.ziel} l
-          <button
-            onClick={() => toast("250 ml hinzugefügt")}
-            className="ml-auto rounded-lg bg-secondary px-3 py-1.5 text-xs font-bold"
-          >
-            +250 ml
-          </button>
+          Wasser {(wasserHeute / 1000).toFixed(2).replace(".", ",")} / 2,5 l
+          <span className="ml-auto flex gap-2">
+            <button
+              onClick={() => wasserHinzufuegen(250)}
+              className="rounded-lg bg-secondary px-3 py-1.5 text-xs font-bold"
+            >
+              +250 ml
+            </button>
+            <button
+              onClick={() => wasserHinzufuegen(-250)}
+              className="rounded-lg bg-secondary px-3 py-1.5 text-xs font-bold text-muted-foreground"
+              aria-label="250 ml abziehen"
+            >
+              −250 ml
+            </button>
+          </span>
         </div>
+        <Bar className="mt-2" value={(wasserHeute / wasserZiel) * 100} tone="info" />
       </Card>
 
       <Section titel="Schnell erfassen">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {[
-            { icon: Search, label: "Suche" },
-            { icon: Barcode, label: "Barcode" },
-            { icon: Camera, label: "Foto" },
-            { icon: Mic, label: "Sprache" },
-            { icon: Utensils, label: "Favoriten" },
-          ].map((a) => (
-            <button
-              key={a.label}
-              onClick={() =>
-                a.label === "Foto"
-                  ? kamera.current?.click()
-                  : a.label === "Favoriten"
-                    ? setDemoFoto(true)
-                    : toast(`${a.label}-Erfassung (Demo)`)
-              }
-              className="surface flex flex-col items-center gap-2 p-4 text-xs font-bold transition-colors hover:border-primary/50"
-            >
-              <a.icon className="h-5 w-5 text-primary" />
-              {a.label}
-            </button>
-          ))}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => kamera.current?.click()}
+            className="surface flex flex-col items-center gap-2 p-4 text-xs font-bold transition-colors hover:border-primary/50"
+          >
+            <Camera className="h-5 w-5 text-primary" />
+            Foto analysieren
+          </button>
+          <button
+            onClick={() => setErfassenOffen((o) => !o)}
+            className="surface flex flex-col items-center gap-2 p-4 text-xs font-bold transition-colors hover:border-primary/50"
+          >
+            <Search className="h-5 w-5 text-primary" />
+            Lebensmittel suchen
+          </button>
         </div>
+
+        {erfassenOffen && (
+          <Card className="mt-3">
+            <div className="flex items-center gap-2">
+              <input
+                value={suche}
+                onChange={(e) => setSuche(e.target.value)}
+                placeholder="z. B. Hähnchenbrust"
+                aria-label="Lebensmittel suchen"
+                className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm"
+              />
+              <button onClick={() => setErfassenOffen(false)} aria-label="Suche schließen">
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </div>
+            <ul className="mt-3 divide-y divide-border">
+              {gefiltert.map((l) => {
+                const g = menge[l.name] ?? 100;
+                return (
+                  <li key={l.name} className="py-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-semibold">{l.name}</p>
+                      <p className="num text-xs text-muted-foreground">
+                        {Math.round((l.kcal * g) / 100)} kcal · {Math.round((l.protein * g) / 100)} g Protein
+                      </p>
+                    </div>
+                    <div className="mt-2 flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={10}
+                        step={10}
+                        value={g}
+                        onChange={(e) => setMenge((m) => ({ ...m, [l.name]: Number(e.target.value) }))}
+                        aria-label={`Menge ${l.name} in Gramm`}
+                        className="num w-24 rounded-lg border border-border bg-card px-2 py-1.5 text-sm"
+                      />
+                      <span className="text-xs text-muted-foreground">g</span>
+                      <button
+                        onClick={() => {
+                          mahlzeitHinzufuegen({
+                            name: `${l.name} (${g} g)`,
+                            kcal: Math.round((l.kcal * g) / 100),
+                            protein: Math.round((l.protein * g) / 100),
+                            kh: Math.round((l.kh * g) / 100),
+                            fett: Math.round((l.fett * g) / 100),
+                            quelle: "datenbank",
+                          });
+                          toast.success(`${l.name} erfasst`);
+                        }}
+                        className="ml-auto flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground"
+                      >
+                        <Plus className="h-3.5 w-3.5" /> Erfassen
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+              {gefiltert.length === 0 && (
+                <li className="py-3 text-sm text-muted-foreground">
+                  Nichts gefunden – erfasse die Mahlzeit per Foto.
+                </li>
+              )}
+            </ul>
+          </Card>
+        )}
       </Section>
 
       <input
@@ -144,11 +255,7 @@ function ErnaehrungPage() {
           <Card className="border-info/30">
             <div className="grid gap-4 sm:grid-cols-[160px_minmax(0,1fr)]">
               {bild && (
-                <img
-                  src={bild}
-                  alt="Foto der erfassten Mahlzeit"
-                  className="h-40 w-full rounded-2xl object-cover sm:h-40"
-                />
+                <img src={bild} alt="Foto der erfassten Mahlzeit" className="h-40 w-full rounded-2xl object-cover" />
               )}
               <div className="min-w-0">
                 {laedt ? (
@@ -162,7 +269,9 @@ function ErnaehrungPage() {
                       <p className="text-xs text-muted-foreground">
                         Geschätzt · Unsicherheit ca. ±{analyse.unsicherheitProzent}%
                       </p>
-                      <p className="num mt-3 text-2xl font-extrabold">{summe("kcal").toLocaleString("de-DE")} kcal</p>
+                      <p className="num mt-3 text-2xl font-extrabold">
+                        {summe("kcal").toLocaleString("de-DE")} kcal
+                      </p>
                       <p className="text-sm text-muted-foreground">
                         {summe("protein_g")} g Protein · {summe("kh_g")} g KH · {summe("fett_g")} g Fett
                       </p>
@@ -204,9 +313,7 @@ function ErnaehrungPage() {
                       max={2.5}
                       step={0.05}
                       value={faktoren[i] ?? 1}
-                      onChange={(e) =>
-                        setFaktoren((f) => f.map((v, j) => (j === i ? Number(e.target.value) : v)))
-                      }
+                      onChange={(e) => setFaktoren((f) => f.map((v, j) => (j === i ? Number(e.target.value) : v)))}
                       className="mt-3 w-full accent-[var(--primary)]"
                       aria-label={`Portion ${it.name}`}
                     />
@@ -218,12 +325,20 @@ function ErnaehrungPage() {
             {analyse && (
               <>
                 <Disclaimer>
-                  {analyse.hinweis} Eine Fotoanalyse kann Kalorien nicht exakt bestimmen – korrigiere die Portionen,
-                  dann wird die Schätzung deutlich genauer.
+                  {analyse.hinweis} Eine Fotoanalyse kann Kalorien nicht exakt bestimmen – korrigiere die
+                  Portionen, dann wird die Schätzung deutlich genauer.
                 </Disclaimer>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button
                     onClick={() => {
+                      mahlzeitHinzufuegen({
+                        name: analyse.gericht,
+                        kcal: summe("kcal"),
+                        protein: summe("protein_g"),
+                        kh: summe("kh_g"),
+                        fett: summe("fett_g"),
+                        quelle: "foto",
+                      });
                       setBild(null);
                       setAnalyse(null);
                       toast.success("Mahlzeit gespeichert – Tageswerte aktualisiert");
@@ -240,115 +355,38 @@ function ErnaehrungPage() {
         </Section>
       )}
 
-      {demoFoto && !bild && (
-        <Section titel="Beispiel-Erkennung">
-          <Card className="border-info/30">
-            <ul className="mt-1 space-y-3">
-              {fotoErkennung.items.map((it, i) => (
-                <li key={it.name} className="rounded-xl bg-secondary/40 p-3">
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold">{it.name}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {it.menge} · {it.kcal} · {it.protein} Protein
-                      </p>
-                    </div>
-                    <div className="num shrink-0 rounded-lg bg-card px-3 py-1.5 text-sm font-bold">
-                      {mengen[i] ?? 0} g
-                    </div>
-                  </div>
-                  <input
-                    type="range"
-                    min={50}
-                    max={400}
-                    value={mengen[i] ?? 0}
-                    onChange={(e) => setMengen((m) => m.map((v, j) => (j === i ? Number(e.target.value) : v)))}
-                    className="mt-3 w-full accent-[var(--primary)]"
-                    aria-label={`Menge ${it.name}`}
-                  />
-                </li>
-              ))}
-            </ul>
-            <p className="num mt-4 text-lg font-bold">
-              Geschätzt: {fotoErkennung.summe} · {fotoErkennung.proteinSumme} Protein
-            </p>
-            <button
-              onClick={() => setDemoFoto(false)}
-              className="mt-4 w-full rounded-2xl border border-border py-3 text-sm font-bold"
-            >
-              Beispiel schließen
-            </button>
-          </Card>
-        </Section>
-      )}
-
       <Section titel="Heutige Mahlzeiten">
         <Card className="p-2">
           <ul className="divide-y divide-border">
-            {mahlzeiten.map((m) => (
-              <li key={m.name} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-3">
+            {heutigeMahlzeiten.map((m) => (
+              <li key={m.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 px-3 py-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold">
-                    {m.name} <span className="text-muted-foreground">· {m.zeit}</span>
+                    {m.name}{" "}
+                    <span className="text-muted-foreground">
+                      ·{" "}
+                      {new Date(m.datum).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
+                    </span>
                   </p>
                   <p className="truncate text-xs text-muted-foreground">
                     {m.protein} g Protein · {m.kh} g KH · {m.fett} g Fett
                   </p>
                 </div>
                 <span className="num shrink-0 text-sm font-bold">{m.kcal} kcal</span>
+                <button
+                  onClick={() => mahlzeitEntfernen(m.id)}
+                  aria-label={`${m.name} löschen`}
+                  className="shrink-0 rounded-lg p-2 text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </li>
             ))}
-          </ul>
-          <button
-            onClick={() => toast("Mahlzeit hinzufügen (Demo)")}
-            className="m-2 flex w-[calc(100%-1rem)] items-center justify-center gap-2 rounded-xl border border-border py-2.5 text-sm font-bold"
-          >
-            <Plus className="h-4 w-4" /> Mahlzeit hinzufügen
-          </button>
-        </Card>
-      </Section>
-
-      <Section titel="Noch offen heute">
-        <Card className="border-primary/30">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="label-xs">Kalorien</p>
-              <p className="num text-2xl font-extrabold">{offenKcal.toLocaleString("de-DE")} kcal</p>
-            </div>
-            <div>
-              <p className="label-xs">Protein</p>
-              <p className="num text-2xl font-extrabold">{offenProtein} g</p>
-            </div>
-          </div>
-          <p className="label-xs mt-5">Vorschläge, die passen</p>
-          <ul className="mt-2 space-y-3">
-            {rezeptVorschlaege.map((r) => (
-              <li key={r.name} className="rounded-2xl border border-border bg-secondary/40 p-4">
-                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate font-display font-bold">{r.name}</p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {r.zeit} Min. · {r.tags.join(" · ")}
-                    </p>
-                  </div>
-                  <span className="num shrink-0 text-sm font-bold">
-                    {r.kcal} kcal · {r.protein} g
-                  </span>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {["Rezept anzeigen", "Portion anpassen", "Zutat ersetzen"].map((b) => (
-                    <Chip key={b} onClick={() => toast(`${b} (Demo)`)}>
-                      {b}
-                    </Chip>
-                  ))}
-                  <Chip onClick={() => toast.success("Zur Einkaufsliste hinzugefügt")}>
-                    <span className="inline-flex items-center gap-1.5">
-                      <ShoppingCart className="h-3.5 w-3.5" /> Einkaufsliste
-                    </span>
-                  </Chip>
-                </div>
+            {heutigeMahlzeiten.length === 0 && (
+              <li className="px-3 py-6 text-center text-sm text-muted-foreground">
+                Noch nichts erfasst. Nutze Foto-Analyse oder die Lebensmittelsuche.
               </li>
-            ))}
+            )}
           </ul>
         </Card>
       </Section>
@@ -356,52 +394,216 @@ function ErnaehrungPage() {
       <Section titel="Was habe ich zu Hause?">
         <Card>
           <p className="text-sm text-muted-foreground">
-            Gib vorhandene Zutaten ein – EVION berücksichtigt deine offenen Kalorien, dein Protein-Ziel,
-            deine Ernährungsform und Unverträglichkeiten ({profile.allergien.join(", ")}).
+            Trage ein, was da ist – EVION gleicht deinen Vorrat mit den Rezepten ab und berücksichtigt deine
+            Ernährungsform ({profil.ernaehrungsform})
+            {profil.allergien.length > 0 ? ` und Unverträglichkeiten (${profil.allergien.join(", ")})` : ""}.
           </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {["Hähnchen", "Reis", "Skyr", "Brokkoli", "Eier", "Tomaten"].map((z) => (
-              <Chip key={z} active>
-                {z}
-              </Chip>
-            ))}
-          </div>
-          <button
-            onClick={() => toast("3 passende Gerichte gefunden (Demo)")}
-            className="mt-4 w-full rounded-2xl border border-border py-3 text-sm font-bold"
+          <form
+            className="mt-3 flex gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!neueZutat.trim()) return;
+              vorratHinzufuegen(neueZutat);
+              setNeueZutat("");
+            }}
           >
-            Passende Gerichte finden
-          </button>
+            <input
+              value={neueZutat}
+              onChange={(e) => setNeueZutat(e.target.value)}
+              placeholder="Zutat hinzufügen …"
+              aria-label="Zutat hinzufügen"
+              className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm"
+            />
+            <button
+              type="submit"
+              className="shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </form>
+
+          {daten.vorrat.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {daten.vorrat.map((v) => (
+                <button
+                  key={v}
+                  onClick={() => vorratEntfernen(v)}
+                  className="flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1.5 text-xs font-bold text-primary"
+                >
+                  {v} <X className="h-3 w-3" />
+                </button>
+              ))}
+            </div>
+          )}
+
+          <p className="label-xs mt-5">Häufige Zutaten</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {vorratVorschlaege
+              .filter((v) => !daten.vorrat.some((x) => x.toLowerCase() === v.toLowerCase()))
+              .slice(0, 24)
+              .map((v) => (
+                <Chip key={v} onClick={() => vorratHinzufuegen(v)}>
+                  {v}
+                </Chip>
+              ))}
+          </div>
         </Card>
       </Section>
 
-      <Section titel="Adaptive Kalorien">
-        <Card>
+      <Section titel="Rezepte für dich">
+        <Card className="border-primary/30">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="label-xs">Zielrate</p>
-              <p className="num text-2xl font-extrabold">{adaptiveKalorien.zielRate} kg / Woche</p>
+              <p className="label-xs">Noch offen</p>
+              <p className="num text-2xl font-extrabold">{offenKcal.toLocaleString("de-DE")} kcal</p>
             </div>
             <div>
-              <p className="label-xs">Tatsächlich ({adaptiveKalorien.beobachtung})</p>
-              <p className="num text-2xl font-extrabold text-warning">
-                {adaptiveKalorien.istRate} kg / Woche
-              </p>
+              <p className="label-xs">Protein offen</p>
+              <p className="num text-2xl font-extrabold">{offenProtein} g</p>
             </div>
           </div>
-          <p className="mt-4 rounded-xl bg-secondary/50 p-4 text-sm">
-            Vorschlag: {adaptiveKalorien.vorschlag}
-          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Chip active={!nurVorrat} onClick={() => setNurVorrat(false)}>
+              Alle Rezepte
+            </Chip>
+            <Chip active={nurVorrat} onClick={() => setNurVorrat(true)}>
+              Nur mit meinem Vorrat
+            </Chip>
+          </div>
           <Why
             punkte={[
-              "Beobachtungszeitraum: 3 Wochen gleitender Durchschnitt, keine Reaktion auf einzelne Tage.",
-              "Berücksichtigt: Gewichtstrend, Taillenumfang, protokollierte Aufnahme, Aktivität.",
-              adaptiveKalorien.hinweis,
+              "Sortiert nach: Anteil vorhandener Zutaten, Protein-Beitrag und Nähe zu deinen offenen Kalorien.",
+              "Rezepte mit Zutaten aus deinen Unverträglichkeiten werden ausgeschlossen.",
+              "„Gegessen“ überträgt die Nährwerte direkt in deine Tagesbilanz.",
             ]}
           />
         </Card>
+
+        <div className="mt-3 space-y-3">
+          {sichtbareRezepte.map((t) => (
+            <RezeptKarte
+              key={t.rezept.id}
+              treffer={t}
+              offen={offenesRezept === t.rezept.id}
+              onToggle={() => setOffenesRezept(offenesRezept === t.rezept.id ? null : t.rezept.id)}
+              onGegessen={() => {
+                mahlzeitHinzufuegen({
+                  name: t.rezept.name,
+                  kcal: t.rezept.kcal,
+                  protein: t.rezept.protein,
+                  kh: t.rezept.kh,
+                  fett: t.rezept.fett,
+                  quelle: "rezept",
+                });
+                toast.success(`${t.rezept.name} erfasst`);
+              }}
+              onEinkauf={() => {
+                t.fehlt.forEach((f) => vorratHinzufuegen(f.replace(/^[\d.,]+\s*(g|ml|EL|TL|Dose|Scheiben)?\s*/i, "")));
+                toast.success("Fehlende Zutaten in den Vorrat übernommen");
+              }}
+            />
+          ))}
+          {sichtbareRezepte.length === 0 && (
+            <Card className="text-sm text-muted-foreground">
+              Keine Treffer – füge weitere Zutaten hinzu oder zeige alle Rezepte an.
+            </Card>
+          )}
+        </div>
       </Section>
+
+      <Disclaimer>
+        Alle Nährwerte sind Durchschnitts- bzw. Schätzwerte je Portion. Sie ersetzen keine
+        ernährungsmedizinische Beratung.
+      </Disclaimer>
     </div>
+  );
+}
+
+function RezeptKarte({
+  treffer,
+  offen,
+  onToggle,
+  onGegessen,
+  onEinkauf,
+}: {
+  treffer: RezeptTreffer;
+  offen: boolean;
+  onToggle: () => void;
+  onGegessen: () => void;
+  onEinkauf: () => void;
+}) {
+  const r = treffer.rezept;
+  return (
+    <Card className="p-0">
+      <button onClick={onToggle} className="w-full p-5 text-left">
+        <div className="flex flex-col gap-2 sm:grid sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-3">
+          <div className="min-w-0">
+            <p className="font-display text-lg font-bold">{r.name}</p>
+            <p className="text-xs text-muted-foreground">
+              {r.zeit} Min. · {r.portionen} Portion{r.portionen > 1 ? "en" : ""} · {r.tags.join(" · ")}
+            </p>
+          </div>
+          <span className="flex shrink-0 items-center gap-2">
+            <span className="num text-sm font-bold">
+              {r.kcal} kcal · {r.protein} g
+            </span>
+            <ChevronDown className={cn("h-4 w-4 transition-transform", offen && "rotate-180")} />
+          </span>
+        </div>
+        <p
+          className={cn(
+            "mt-2 inline-block rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider",
+            treffer.abdeckung === 1
+              ? "bg-primary/15 text-primary"
+              : treffer.abdeckung >= 0.5
+                ? "bg-success/15 text-success"
+                : "bg-secondary text-muted-foreground",
+          )}
+        >
+          {treffer.passung}
+        </p>
+      </button>
+
+      {offen && (
+        <div className="border-t border-border p-5 text-sm">
+          <p className="label-xs">Zutaten</p>
+          <ul className="mt-2 space-y-1">
+            {r.zutaten.map((zt) => (
+              <li key={zt.text} className="flex items-center gap-2">
+                <Utensils className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <span className={cn(treffer.fehlt.includes(zt.text) && "text-muted-foreground")}>{zt.text}</span>
+                {treffer.vorhanden.includes(zt.text) && (
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-primary">vorhanden</span>
+                )}
+              </li>
+            ))}
+          </ul>
+
+          <p className="label-xs mt-4">Zubereitung</p>
+          <ol className="mt-2 list-decimal space-y-1 pl-5 text-muted-foreground">
+            {r.schritte.map((s) => (
+              <li key={s}>{s}</li>
+            ))}
+          </ol>
+
+          <p className="mt-4 rounded-xl bg-secondary/50 p-3 text-xs text-muted-foreground">
+            Je Portion: {r.kcal} kcal · {r.protein} g Protein · {r.kh} g KH · {r.fett} g Fett
+          </p>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              onClick={onGegessen}
+              className="flex-1 rounded-2xl bg-primary px-4 py-3 font-display text-sm font-extrabold uppercase tracking-wide text-primary-foreground"
+            >
+              Gegessen – erfassen
+            </button>
+            {treffer.fehlt.length > 0 && (
+              <Chip onClick={onEinkauf}>Fehlende Zutaten übernehmen</Chip>
+            )}
+          </div>
+        </div>
+      )}
+    </Card>
   );
 }
 

@@ -106,17 +106,62 @@ export function mappeEquipment(labels: string[]): Equipment[] {
 
 type Session = { titel: string; muster: Muster[] };
 
+/**
+ * Fokus-spezifische Wochenvorlagen.
+ *
+ * Jede Vorlage ist eine Liste von Einheiten mit Bewegungsmustern in der
+ * Reihenfolge ihrer Priorität. Die Muster des Fokus stehen bewusst vorne,
+ * damit sie bei knappem Zeitbudget nicht herausfallen.
+ */
+const fokusVorlagen: Record<Exclude<Fokus, "ausgewogen" | "maximalkraft">, Session[]> = {
+  "arme-straffen": [
+    { titel: "Arme & Drücken", muster: ["arme", "schulter", "arme", "druecken", "core"] },
+    { titel: "Arme & Ziehen", muster: ["arme", "ziehen", "arme", "schulter", "core"] },
+    { titel: "Schultern & Arme", muster: ["schulter", "arme", "arme", "schulter", "core"] },
+    { titel: "Arme & Oberkörper", muster: ["arme", "arme", "druecken", "ziehen", "schulter"] },
+    { titel: "Beine & Rumpf (Ausgleich)", muster: ["kniebeuge", "huefte", "core", "arme", "schulter"] },
+    { titel: "Arme intensiv", muster: ["arme", "arme", "schulter", "arme", "core"] },
+  ],
+  "bauch-weg": [
+    { titel: "Rumpf & Ganzkörper A", muster: ["core", "core", "kniebeuge", "druecken", "core"] },
+    { titel: "Rumpf & Ganzkörper B", muster: ["core", "core", "huefte", "ziehen", "core"] },
+    { titel: "Bauch intensiv", muster: ["core", "core", "core", "kniebeuge", "ziehen"] },
+    { titel: "Rumpf & Oberkörper", muster: ["core", "core", "druecken", "ziehen", "schulter"] },
+    { titel: "Rumpf & Unterkörper", muster: ["core", "core", "huefte", "kniebeuge", "core"] },
+    { titel: "Bauch & Stoffwechsel", muster: ["core", "core", "kniebeuge", "huefte", "core"] },
+  ],
+  "gesaess-beine": [
+    { titel: "Gesäß – Hüftstreckung", muster: ["huefte", "huefte", "huefte", "kniebeuge", "core"] },
+    { titel: "Beine – Kniebeuge", muster: ["kniebeuge", "kniebeuge", "huefte", "kniebeuge", "core"] },
+    { titel: "Gesäß & Rumpf", muster: ["huefte", "huefte", "kniebeuge", "core", "core"] },
+    { titel: "Beine & Gesäß gemischt", muster: ["kniebeuge", "huefte", "kniebeuge", "huefte", "core"] },
+    { titel: "Oberkörper (Ausgleich)", muster: ["ziehen", "druecken", "schulter", "huefte", "core"] },
+    { titel: "Gesäß-Feinschliff", muster: ["huefte", "huefte", "kniebeuge", "core", "huefte"] },
+  ],
+  "ruecken-schonend": [
+    { titel: "Oberkörper geführt", muster: ["druecken", "ziehen", "schulter", "arme", "core"] },
+    { titel: "Beine geführt", muster: ["kniebeuge", "huefte", "kniebeuge", "core", "mobility"] },
+    { titel: "Rücken & Haltung", muster: ["ziehen", "ziehen", "core", "mobility", "arme"] },
+    { titel: "Ganzkörper schonend", muster: ["huefte", "druecken", "ziehen", "kniebeuge", "core"] },
+    { titel: "Rumpf & Mobilität", muster: ["core", "mobility", "ziehen", "huefte", "core"] },
+    { titel: "Oberkörper & Arme", muster: ["druecken", "ziehen", "arme", "schulter", "core"] },
+  ],
+  rueckbildung: [
+    { titel: "Beckenboden & Rumpf", muster: ["mobility", "core", "huefte", "mobility"] },
+    { titel: "Ganzkörper sanft", muster: ["mobility", "kniebeuge", "ziehen", "core"] },
+    { titel: "Kraft & Haltung", muster: ["huefte", "ziehen", "schulter", "mobility"] },
+    { titel: "Aufbau Ganzkörper", muster: ["kniebeuge", "druecken", "ziehen", "core"] },
+  ],
+};
+
 function wochenVorlage(k: PlanKontext): Session[] {
   const tage = Math.max(2, Math.min(6, k.tage || 3));
 
-  if (k.fokus === "rueckbildung") {
-    const s: Session[] = [
-      { titel: "Beckenboden & Rumpf", muster: ["mobility", "core", "huefte"] },
-      { titel: "Ganzkörper sanft", muster: ["mobility", "kniebeuge", "ziehen", "core"] },
-      { titel: "Kraft & Haltung", muster: ["huefte", "ziehen", "schulter", "mobility"] },
-      { titel: "Aufbau Ganzkörper", muster: ["kniebeuge", "druecken", "ziehen", "core"] },
-    ];
-    return s.slice(0, Math.min(tage, 4));
+  const vorlage = fokusVorlagen[k.fokus as keyof typeof fokusVorlagen];
+  if (vorlage) {
+    return Array.from({ length: Math.min(tage, 6) }, (_, i) => vorlage[i % vorlage.length]!).map(
+      (s, i) => ({ ...s, titel: i < vorlage.length ? s.titel : `${s.titel} II` }),
+    );
   }
 
   /** Echtes Ganzkörpertraining: jede Einheit deckt Beine, Hüfte, Drücken, Ziehen und Rumpf ab. */
@@ -131,70 +176,13 @@ function wochenVorlage(k: PlanKontext): Session[] {
 
   if (tage <= 3) return ganzkoerper(tage);
 
-  // Fokus-spezifische Splits ab 4 Trainingstagen
   if (tage === 4) {
-    switch (k.fokus) {
-      case "arme-straffen":
-        return [
-          { titel: "Oberkörper – Drücken & Arme", muster: ["druecken", "schulter", "arme"] },
-          { titel: "Unterkörper", muster: ["kniebeuge", "huefte", "core"] },
-          { titel: "Oberkörper – Ziehen & Arme", muster: ["ziehen", "arme", "schulter"] },
-          { titel: "Arme & Schultern intensiv", muster: ["arme", "schulter", "arme"] },
-        ];
-      case "gesaess-beine":
-        return [
-          { titel: "Gesäß – Hüftstreckung", muster: ["huefte", "huefte", "core"] },
-          { titel: "Oberkörper", muster: ["ziehen", "druecken", "schulter"] },
-          { titel: "Beine – Kniebeuge", muster: ["kniebeuge", "kniebeuge", "huefte"] },
-          { titel: "Gesäß & Rumpf", muster: ["huefte", "core", "kniebeuge"] },
-        ];
-      case "bauch-weg":
-        return [
-          { titel: "Ganzkörper & Rumpf A", muster: ["kniebeuge", "druecken", "core", "core"] },
-          { titel: "Ganzkörper & Rumpf B", muster: ["huefte", "ziehen", "core", "core"] },
-          { titel: "Oberkörper & Rumpf", muster: ["druecken", "ziehen", "schulter", "core"] },
-          { titel: "Unterkörper & Rumpf", muster: ["huefte", "kniebeuge", "core", "core"] },
-        ];
-      case "ruecken-schonend":
-        return [
-          { titel: "Oberkörper geführt", muster: ["druecken", "ziehen", "schulter"] },
-          { titel: "Beine geführt", muster: ["kniebeuge", "huefte", "core"] },
-          { titel: "Rücken & Haltung", muster: ["ziehen", "ziehen", "core"] },
-          { titel: "Beine & Gesäß", muster: ["huefte", "kniebeuge", "core"] },
-        ];
-      default:
-        return [
-          { titel: "Oberkörper – Drücken", muster: ["druecken", "schulter", "arme"] },
-          { titel: "Unterkörper – Kniebeuge", muster: ["kniebeuge", "huefte", "core"] },
-          { titel: "Oberkörper – Ziehen", muster: ["ziehen", "ziehen", "arme"] },
-          { titel: "Unterkörper – Hüfte", muster: ["huefte", "kniebeuge", "core"] },
-        ];
-    }
-  }
-
-  if (k.fokus === "gesaess-beine") {
-    return ([
-
-      { titel: "Gesäß – Hüftstreckung", muster: ["huefte", "huefte", "core"] },
-      { titel: "Push", muster: ["druecken", "schulter", "arme"] },
-      { titel: "Beine – Kniebeuge", muster: ["kniebeuge", "kniebeuge", "huefte"] },
-      { titel: "Pull", muster: ["ziehen", "ziehen", "arme"] },
-      { titel: "Gesäß & Rumpf", muster: ["huefte", "core", "kniebeuge"] },
-      { titel: "Schwachstellen", muster: ["huefte", "core", "schulter"] },
-    ] as Session[]).slice(0, tage);
-
-  }
-
-  if (k.fokus === "arme-straffen") {
-    return ([
-      { titel: "Push & Trizeps", muster: ["druecken", "schulter", "arme"] },
-      { titel: "Pull & Bizeps", muster: ["ziehen", "ziehen", "arme"] },
-      { titel: "Beine", muster: ["kniebeuge", "huefte", "core"] },
-      { titel: "Schultern & Arme", muster: ["schulter", "arme", "arme"] },
-      { titel: "Oberkörper gemischt", muster: ["druecken", "ziehen", "arme"] },
-      { titel: "Unterkörper & Rumpf", muster: ["huefte", "kniebeuge", "core"] },
-    ] as Session[]).slice(0, tage);
-
+    return [
+      { titel: "Oberkörper – Drücken", muster: ["druecken", "schulter", "arme", "core"] },
+      { titel: "Unterkörper – Kniebeuge", muster: ["kniebeuge", "huefte", "core"] },
+      { titel: "Oberkörper – Ziehen", muster: ["ziehen", "ziehen", "arme", "core"] },
+      { titel: "Unterkörper – Hüfte", muster: ["huefte", "kniebeuge", "core"] },
+    ];
   }
 
   const split: Session[] = [
@@ -208,23 +196,12 @@ function wochenVorlage(k: PlanKontext): Session[] {
   return split.slice(0, tage);
 }
 
-/** Zusätzliche Muster, die der gewählte Fokus in jede Einheit einstreut. */
+/** Zusätzliche Muster, die ohne Fokus-Vorlage eingestreut werden. */
 function fokusMuster(fokus: Fokus): Muster[] {
-  switch (fokus) {
-    case "arme-straffen":
-      return ["arme", "schulter"];
-    case "bauch-weg":
-      return ["core", "core"];
-    case "gesaess-beine":
-      return ["huefte", "huefte"];
-    case "ruecken-schonend":
-      return ["core"];
-    case "rueckbildung":
-      return ["mobility"];
-    default:
-      return ["core"];
-  }
+  return fokus in fokusVorlagen ? [] : ["core"];
 }
+
+
 
 
 function bewerte(u: LibUebung, k: PlanKontext): number {

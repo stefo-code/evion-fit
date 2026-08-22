@@ -112,7 +112,7 @@ function TrainingPage() {
                 key={f.id}
                 active={f.id === einstellungen.fokus}
                 onClick={() => {
-                  speichere({ fokus: f.id as Fokus });
+                  speichere({ fokus: f.id as Fokus, tausch: {}, entfernt: {}, zusatz: {} });
                   toast.success(`Plan neu berechnet: ${f.titel}`);
                 }}
               >
@@ -197,17 +197,17 @@ function TrainingPage() {
                 className="h-40 w-full bg-secondary object-cover"
               />
               <div className="p-4">
-                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+                <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                   <div className="min-w-0">
-                    <p className="truncate font-display font-bold">{u.name}</p>
-                    <p className="truncate text-xs text-muted-foreground">
+                    <p className="font-display font-bold">{u.name}</p>
+                    <p className="text-xs text-muted-foreground">
                       {u.muskel} · {u.zielSaetze} Sätze · {u.wdhBereich} Wdh.
                     </p>
                   </div>
                   <div className="flex shrink-0 gap-2">
                     <button
                       onClick={() => setTauschFuer(tauschFuer === u.id ? null : u.id)}
-                      className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-xs font-bold"
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-bold sm:flex-none sm:py-1.5"
                     >
                       <Repeat className="h-3.5 w-3.5" /> Tauschen
                     </button>
@@ -217,12 +217,13 @@ function TrainingPage() {
                         toast(`${u.name} entfernt`);
                       }}
                       aria-label={`${u.name} aus dem Tag entfernen`}
-                      className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-xs font-bold text-muted-foreground"
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-bold text-muted-foreground sm:flex-none sm:py-1.5"
                     >
                       <Trash2 className="h-3.5 w-3.5" /> Entfernen
                     </button>
                   </div>
                 </div>
+
                 <p className="mt-2 text-xs text-muted-foreground">{u.hinweis}</p>
                 <p className="mt-1 text-xs text-primary">Warum: {u.begruendung}</p>
 
