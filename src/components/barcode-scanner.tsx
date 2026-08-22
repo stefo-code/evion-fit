@@ -29,12 +29,59 @@ export function BarcodeScanner({ offen, onSchliessen, onCode }: Props) {
     let stream: MediaStream | null = null;
     let stop = false;
     let timer: number | undefined;
+    let zxingControls: { stop: () => void } | null = null;
+
+    const treffer = (roh?: string) => {
+      const code = roh?.replace(/\D/g, "");
+      if (code && code.length >= 8) {
+        onCode(code);
+        return true;
+      }
+      return false;
+    };
+
+    // Fallback für Safari/iOS: ZXing dekodiert direkt aus dem Videostream.
+    const startZxing = async () => {
+      try {
+        const [{ BrowserMultiFormatReader }, { DecodeHintType, BarcodeFormat }] = await Promise.all([
+          import("@zxing/browser"),
+          import("@zxing/library"),
+        ]);
+        const hints = new Map();
+        hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+          BarcodeFormat.EAN_13,
+          BarcodeFormat.EAN_8,
+          BarcodeFormat.UPC_A,
+          BarcodeFormat.UPC_E,
+          BarcodeFormat.CODE_128,
+        ]);
+        const reader = new BrowserMultiFormatReader(hints);
+        if (stop || !video.current) return;
+        setStatus("aktiv");
+        zxingControls = await reader.decodeFromConstraints(
+          { video: { facingMode: { ideal: "environment" } } },
+          video.current,
+          (result) => {
+            if (stop || !result) return;
+            if (treffer(result.getText())) {
+              zxingControls?.stop();
+            }
+          },
+        );
+      } catch {
+        setStatus("fehler");
+      }
+    };
 
     const start = async () => {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setStatus("nicht-unterstuetzt");
+        return;
+      }
       const Ctor = (window as unknown as { BarcodeDetector?: new (o: { formats: string[] }) => Detector })
         .BarcodeDetector;
-      if (!Ctor || !navigator.mediaDevices?.getUserMedia) {
-        setStatus("nicht-unterstuetzt");
+      if (!Ctor) {
+        await startZxing();
         return;
       }
       try {
@@ -51,12 +98,8 @@ export function BarcodeScanner({ offen, onSchliessen, onCode }: Props) {
         const tick = async () => {
           if (stop || !video.current) return;
           try {
-            const treffer = await detector.detect(video.current);
-            const code = treffer[0]?.rawValue?.replace(/\D/g, "");
-            if (code && code.length >= 8) {
-              onCode(code);
-              return;
-            }
+            const funde = await detector.detect(video.current);
+            if (treffer(funde[0]?.rawValue)) return;
           } catch {
             /* einzelne Frames dürfen fehlschlagen */
           }
@@ -72,9 +115,11 @@ export function BarcodeScanner({ offen, onSchliessen, onCode }: Props) {
     return () => {
       stop = true;
       if (timer) window.clearTimeout(timer);
+      zxingControls?.stop();
       stream?.getTracks().forEach((t) => t.stop());
     };
   }, [offen, onCode]);
+
 
   useEffect(() => {
     if (!offen) {
