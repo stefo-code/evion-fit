@@ -28,9 +28,9 @@ function portionAus(text: unknown): number {
   if (typeof text !== "string") return 0;
   const m = text.replace(",", ".").match(/([\d.]+)\s*(kg|g|l|ml|cl)/i);
   if (!m) return 0;
-  const wert = Number(m[1]);
+  const wert = Number(m[1] ?? "");
   if (!Number.isFinite(wert)) return 0;
-  const einheit = m[2].toLowerCase();
+  const einheit = (m[2] ?? "").toLowerCase();
   if (einheit === "kg" || einheit === "l") return Math.round(wert * 1000);
   if (einheit === "cl") return Math.round(wert * 10);
   return Math.round(wert);
@@ -67,7 +67,7 @@ export async function sucheBarcode(code: string): Promise<BarcodeProdukt | null>
   return {
     code,
     name,
-    marke: typeof p["brands"] === "string" && p["brands"] ? String(p["brands"]).split(",")[0].trim() : null,
+    marke: typeof p["brands"] === "string" && p["brands"] ? (String(p["brands"]).split(",")[0] ?? "").trim() : null,
     kcal: Math.round(kcal),
     protein: Math.round(zahl(n["proteins_100g"])),
     kh: Math.round(zahl(n["carbohydrates_100g"])),
