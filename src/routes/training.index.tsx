@@ -117,10 +117,11 @@ function TrainingPage() {
       <Section titel="Trainingsfokus wählen">
         <Card>
           <div className="flex flex-wrap gap-2">
-            {fokusOptionen.map((f) => (
+            {verfuegbareFokus.map((f) => (
               <Chip
                 key={f.id}
-                active={f.id === einstellungen.fokus}
+                active={f.id === aktiverFokus}
+
                 onClick={() => {
                   speichere({ fokus: f.id as Fokus, tausch: {}, entfernt: {}, zusatz: {} });
                   toast.success(`Plan neu berechnet: ${f.titel}`);
