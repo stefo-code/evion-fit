@@ -5,6 +5,7 @@ import { zeitModi, muskelStatus, goalLabels, type MuscleKey } from "@/lib/demo-d
 import { useOnboardingProfil } from "@/lib/onboarding-store";
 import {
   erzeugePlan,
+  fokusFuerGeschlecht,
   fokusOptionen,
   mappeEquipment,
   usePlanEinstellungen,
@@ -14,6 +15,7 @@ import {
   type Fokus,
   type PlanKontext,
 } from "@/lib/training-plan";
+
 import {
   alternativenFuer,
   bildFuer,
@@ -411,6 +413,8 @@ const musterLabels: { id: Muster; label: string }[] = [
   { id: "arme", label: "Arme" },
   { id: "core", label: "Rumpf" },
   { id: "mobility", label: "Mobility" },
+  { id: "kondition", label: "Ausdauer" },
+
 ];
 
 const equipmentOptionen: Equipment[] = [
