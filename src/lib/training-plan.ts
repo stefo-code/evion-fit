@@ -20,6 +20,9 @@ import {
 
 export type Fokus =
   | "ausgewogen"
+  | "muskelaufbau"
+  | "fettverbrennung"
+  | "ausdauer"
   | "arme-straffen"
   | "bauch-weg"
   | "gesaess-beine"
@@ -27,11 +30,35 @@ export type Fokus =
   | "rueckbildung"
   | "maximalkraft";
 
-export const fokusOptionen: { id: Fokus; titel: string; beschreibung: string }[] = [
+export const fokusOptionen: {
+  id: Fokus;
+  titel: string;
+  beschreibung: string;
+  /** Nur für dieses Geschlecht sinnvoll (z. B. Rückbildung nach Schwangerschaft). */
+  nurFuer?: Geschlecht;
+}[] = [
   {
     id: "ausgewogen",
     titel: "Ausgewogen",
     beschreibung: "Alle Muskelgruppen gleichmäßig – solide Basis für jedes Ziel.",
+  },
+  {
+    id: "muskelaufbau",
+    titel: "Muskelaufbau",
+    beschreibung:
+      "Mehrgelenkige Grundübungen plus gezielte Isolation im Bereich 6–12 Wiederholungen – maximaler Wachstumsreiz.",
+  },
+  {
+    id: "fettverbrennung",
+    titel: "Fettverbrennung / Definition",
+    beschreibung:
+      "Ganzkörper-Zirkel aus großen Kraftübungen und Konditionsblöcken: hoher Kalorienverbrauch bei Muskelerhalt.",
+  },
+  {
+    id: "ausdauer",
+    titel: "Ausdauer & Herz-Kreislauf",
+    beschreibung:
+      "Rudern, Ergometer, Intervalle und Ganzkörperkraft für Grundlagenausdauer und ein belastbares Herz-Kreislauf-System.",
   },
   {
     id: "arme-straffen",
@@ -57,6 +84,7 @@ export const fokusOptionen: { id: Fokus; titel: string; beschreibung: string }[]
     id: "rueckbildung",
     titel: "Rückbildung",
     beschreibung: "Sanfter Wiedereinstieg nach der Schwangerschaft: Beckenboden, Tiefenmuskulatur, Haltung.",
+    nurFuer: "weiblich",
   },
   {
     id: "maximalkraft",
@@ -64,6 +92,12 @@ export const fokusOptionen: { id: Fokus; titel: string; beschreibung: string }[]
     beschreibung: "Schwere Grundübungen mit niedrigen Wiederholungen.",
   },
 ];
+
+/** Fokus-Optionen, die zum Geschlecht passen. */
+export function fokusFuerGeschlecht(geschlecht: Geschlecht | null | undefined) {
+  return fokusOptionen.filter((f) => !f.nurFuer || !geschlecht || f.nurFuer === geschlecht);
+}
+
 
 export type PlanKontext = {
   ziel: Goal;
