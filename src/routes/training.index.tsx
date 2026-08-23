@@ -5,6 +5,7 @@ import { zeitModi, muskelStatus, goalLabels, type MuscleKey } from "@/lib/demo-d
 import { useOnboardingProfil } from "@/lib/onboarding-store";
 import {
   erzeugePlan,
+  fokusFuerGeschlecht,
   fokusOptionen,
   mappeEquipment,
   usePlanEinstellungen,
@@ -14,6 +15,7 @@ import {
   type Fokus,
   type PlanKontext,
 } from "@/lib/training-plan";
+
 import {
   alternativenFuer,
   bildFuer,
@@ -91,7 +93,15 @@ function TrainingPage() {
 
 
   const tag = plan[Math.min(tagIndex, plan.length - 1)] ?? plan[0]!;
-  const fokusInfo = fokusOptionen.find((f) => f.id === einstellungen.fokus)!;
+  const verfuegbareFokus = useMemo(
+    () => fokusFuerGeschlecht(profil.geschlecht),
+    [profil.geschlecht],
+  );
+  const aktiverFokus = verfuegbareFokus.some((f) => f.id === einstellungen.fokus)
+    ? einstellungen.fokus
+    : "ausgewogen";
+  const fokusInfo = fokusOptionen.find((f) => f.id === aktiverFokus)!;
+
 
   return (
     <div className="space-y-8">
@@ -107,10 +117,11 @@ function TrainingPage() {
       <Section titel="Trainingsfokus wählen">
         <Card>
           <div className="flex flex-wrap gap-2">
-            {fokusOptionen.map((f) => (
+            {verfuegbareFokus.map((f) => (
               <Chip
                 key={f.id}
-                active={f.id === einstellungen.fokus}
+                active={f.id === aktiverFokus}
+
                 onClick={() => {
                   speichere({ fokus: f.id as Fokus, tausch: {}, entfernt: {}, zusatz: {} });
                   toast.success(`Plan neu berechnet: ${f.titel}`);
@@ -411,6 +422,8 @@ const musterLabels: { id: Muster; label: string }[] = [
   { id: "arme", label: "Arme" },
   { id: "core", label: "Rumpf" },
   { id: "mobility", label: "Mobility" },
+  { id: "kondition", label: "Ausdauer" },
+
 ];
 
 const equipmentOptionen: Equipment[] = [

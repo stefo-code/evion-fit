@@ -44,12 +44,26 @@ const basisBilder: Record<string, BildPaar> = {
   "rudern-lh": { m: "/__l5e/assets-v1/11d54acd-7c44-4643-9499-be95e4a7abb4/ex-rudern-lh-m.jpg", w: "/__l5e/assets-v1/fc397d92-71a9-4341-964b-8fd29cafe702/ex-rudern-lh-w.jpg" },
 };
 
+/** Übungen, die sich ein Motiv teilen (gleiche Bewegung, kein eigenes Foto). */
+const aliase: Record<string, string> = {
+  "fahrrad-ergometer": "rudergeraet",
+  burpee: "seilspringen",
+  bergsteiger: "seilspringen",
+  laufband: "seilspringen",
+};
+
 export const uebungsBilder: Record<string, BildPaar> = (() => {
   const alle: Record<string, BildPaar> = { ...basisBilder };
   for (const [id, paar] of Object.entries(lokalePaare)) {
-    const m = paar.m ?? paar.w ?? alle[id]?.m;
-    const w = paar.w ?? paar.m ?? alle[id]?.w;
+    // Wichtig: niemals ein Motiv des anderen Geschlechts übernehmen, solange
+    // für dieses Geschlecht bereits ein passendes Bild existiert.
+    const m = paar.m ?? alle[id]?.m ?? paar.w;
+    const w = paar.w ?? alle[id]?.w ?? paar.m;
     if (m && w) alle[id] = { m, w };
+  }
+  for (const [id, quelle] of Object.entries(aliase)) {
+    if (!alle[id] && alle[quelle]) alle[id] = alle[quelle]!;
   }
   return alle;
 })();
+

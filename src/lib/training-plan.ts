@@ -20,6 +20,9 @@ import {
 
 export type Fokus =
   | "ausgewogen"
+  | "muskelaufbau"
+  | "fettverbrennung"
+  | "ausdauer"
   | "arme-straffen"
   | "bauch-weg"
   | "gesaess-beine"
@@ -27,11 +30,35 @@ export type Fokus =
   | "rueckbildung"
   | "maximalkraft";
 
-export const fokusOptionen: { id: Fokus; titel: string; beschreibung: string }[] = [
+export const fokusOptionen: {
+  id: Fokus;
+  titel: string;
+  beschreibung: string;
+  /** Nur für dieses Geschlecht sinnvoll (z. B. Rückbildung nach Schwangerschaft). */
+  nurFuer?: Geschlecht;
+}[] = [
   {
     id: "ausgewogen",
     titel: "Ausgewogen",
     beschreibung: "Alle Muskelgruppen gleichmäßig – solide Basis für jedes Ziel.",
+  },
+  {
+    id: "muskelaufbau",
+    titel: "Muskelaufbau",
+    beschreibung:
+      "Mehrgelenkige Grundübungen plus gezielte Isolation im Bereich 6–12 Wiederholungen – maximaler Wachstumsreiz.",
+  },
+  {
+    id: "fettverbrennung",
+    titel: "Fettverbrennung / Definition",
+    beschreibung:
+      "Ganzkörper-Zirkel aus großen Kraftübungen und Konditionsblöcken: hoher Kalorienverbrauch bei Muskelerhalt.",
+  },
+  {
+    id: "ausdauer",
+    titel: "Ausdauer & Herz-Kreislauf",
+    beschreibung:
+      "Rudern, Ergometer, Intervalle und Ganzkörperkraft für Grundlagenausdauer und ein belastbares Herz-Kreislauf-System.",
   },
   {
     id: "arme-straffen",
@@ -57,6 +84,7 @@ export const fokusOptionen: { id: Fokus; titel: string; beschreibung: string }[]
     id: "rueckbildung",
     titel: "Rückbildung",
     beschreibung: "Sanfter Wiedereinstieg nach der Schwangerschaft: Beckenboden, Tiefenmuskulatur, Haltung.",
+    nurFuer: "weiblich",
   },
   {
     id: "maximalkraft",
@@ -64,6 +92,12 @@ export const fokusOptionen: { id: Fokus; titel: string; beschreibung: string }[]
     beschreibung: "Schwere Grundübungen mit niedrigen Wiederholungen.",
   },
 ];
+
+/** Fokus-Optionen, die zum Geschlecht passen. */
+export function fokusFuerGeschlecht(geschlecht: Geschlecht | null | undefined) {
+  return fokusOptionen.filter((f) => !f.nurFuer || !geschlecht || f.nurFuer === geschlecht);
+}
+
 
 export type PlanKontext = {
   ziel: Goal;
@@ -114,7 +148,32 @@ type Session = { titel: string; muster: Muster[] };
  * damit sie bei knappem Zeitbudget nicht herausfallen.
  */
 const fokusVorlagen: Record<Exclude<Fokus, "ausgewogen" | "maximalkraft">, Session[]> = {
+  muskelaufbau: [
+    { titel: "Oberkörper – Drücken", muster: ["druecken", "druecken", "schulter", "arme", "core"] },
+    { titel: "Unterkörper – Kniebeuge", muster: ["kniebeuge", "kniebeuge", "huefte", "core"] },
+    { titel: "Oberkörper – Ziehen", muster: ["ziehen", "ziehen", "schulter", "arme", "core"] },
+    { titel: "Unterkörper – Hüfte", muster: ["huefte", "huefte", "kniebeuge", "core"] },
+    { titel: "Oberkörper gemischt", muster: ["druecken", "ziehen", "schulter", "arme", "arme"] },
+    { titel: "Schwachstellen & Rumpf", muster: ["huefte", "arme", "schulter", "core", "kniebeuge"] },
+  ],
+  fettverbrennung: [
+    { titel: "Ganzkörper-Zirkel A", muster: ["kniebeuge", "druecken", "ziehen", "kondition", "core"] },
+    { titel: "Ganzkörper-Zirkel B", muster: ["huefte", "ziehen", "schulter", "kondition", "core"] },
+    { titel: "Kraft & Intervalle", muster: ["kniebeuge", "kondition", "druecken", "kondition", "core"] },
+    { titel: "Ganzkörper-Zirkel C", muster: ["huefte", "druecken", "ziehen", "kondition", "core"] },
+    { titel: "Metabolik & Rumpf", muster: ["kondition", "kniebeuge", "core", "kondition", "arme"] },
+    { titel: "Oberkörper & Kondition", muster: ["ziehen", "druecken", "schulter", "kondition", "core"] },
+  ],
+  ausdauer: [
+    { titel: "Grundlagenausdauer", muster: ["kondition", "kondition", "core", "huefte"] },
+    { titel: "Intervalle & Kraft", muster: ["kondition", "kniebeuge", "ziehen", "kondition"] },
+    { titel: "Herz-Kreislauf lang", muster: ["kondition", "kondition", "core", "mobility"] },
+    { titel: "Kraftausdauer Ganzkörper", muster: ["kniebeuge", "druecken", "ziehen", "kondition", "core"] },
+    { titel: "Intervalle intensiv", muster: ["kondition", "kondition", "kondition", "core"] },
+    { titel: "Locker & Mobilität", muster: ["kondition", "mobility", "core", "huefte"] },
+  ],
   "arme-straffen": [
+
     { titel: "Arme & Drücken", muster: ["arme", "schulter", "arme", "druecken", "core"] },
     { titel: "Arme & Ziehen", muster: ["arme", "ziehen", "arme", "schulter", "core"] },
     { titel: "Schultern & Arme", muster: ["schulter", "arme", "arme", "schulter", "core"] },
@@ -245,9 +304,27 @@ function bewerte(u: LibUebung, k: PlanKontext): number {
 
   // Fokus
   switch (k.fokus) {
+    case "muskelaufbau":
+      // Hypertrophie: mehrgelenkige Übungen mit hoher Spannung, ergänzt um Isolation.
+      if (u.grund) s += 4;
+      if (u.equipment.includes("kurzhantel") || u.equipment.includes("kabel")) s += 1;
+      if (u.muster === "kondition") s -= 8;
+      break;
+    case "fettverbrennung":
+      // Muskelerhalt über große Übungen + hoher Energieverbrauch über Kondition.
+      if (u.grund) s += 4;
+      if (u.muster === "kondition") s += 4;
+      if (u.muskel === "Ganzkörper") s += 2;
+      break;
+    case "ausdauer":
+      if (u.muster === "kondition") s += 8;
+      if (u.grund) s += 2;
+      if (u.equipment.includes("maschine")) s += 1;
+      break;
     case "arme-straffen":
       if (u.muster === "arme" || u.muster === "schulter") s += 5;
       break;
+
     case "bauch-weg":
       if (u.muster === "core") s += 5;
       if (u.grund) s += 2; // hoher Energieverbrauch
@@ -307,9 +384,15 @@ export type Trainingstag = {
 };
 
 /** Erzeugt den Wochenplan aus dem Kontext. */
-export function erzeugePlan(k: PlanKontext): Trainingstag[] {
+export function erzeugePlan(kontext: PlanKontext): Trainingstag[] {
+  // Rückbildung ist nur nach einer Schwangerschaft sinnvoll.
+  const k: PlanKontext =
+    kontext.fokus === "rueckbildung" && kontext.geschlecht === "maennlich"
+      ? { ...kontext, fokus: "ausgewogen" }
+      : kontext;
   const vorlage = wochenVorlage(k);
   const extra = fokusMuster(k.fokus);
+
 
   return vorlage.map((s, i) => {
     const benutzt = new Set<string>();

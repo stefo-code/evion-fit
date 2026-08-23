@@ -24,7 +24,8 @@ export type Muster =
   | "schulter"
   | "arme"
   | "core"
-  | "mobility";
+  | "mobility"
+  | "kondition";
 
 export const musterBild: Record<Muster, string> = {
   druecken: bildDruecken,
@@ -35,7 +36,9 @@ export const musterBild: Record<Muster, string> = {
   arme: bildArme,
   core: bildCore,
   mobility: bildMobility,
+  kondition: bildKniebeuge,
 };
+
 
 export type Equipment = "körpergewicht" | "kurzhantel" | "langhantel" | "maschine" | "kabel" | "band";
 
@@ -736,7 +739,99 @@ export const uebungsBibliothek: LibUebung[] = [
     rueckbildung: true,
     einsteiger: true,
   },
+  // --- Ausdauer & Herz-Kreislauf -------------------------------------------
+  {
+    id: "rudergeraet",
+    name: "Rudergerät (Intervalle)",
+    muskel: "Ganzkörper",
+    muster: "kondition",
+    equipment: ["maschine"],
+    grund: true,
+    zielSaetze: 5,
+    wdhBereich: "5 × 500 m",
+    startGewicht: 0,
+    hinweis: "Beine – Rumpf – Arme. Zwischen den Intervallen 60–90 s locker rudern.",
+    rueckenschonend: true,
+    rueckbildung: false,
+    einsteiger: true,
+  },
+  {
+    id: "fahrrad-ergometer",
+    name: "Ergometer (HIIT)",
+    muskel: "Herz-Kreislauf",
+    muster: "kondition",
+    equipment: ["maschine"],
+    grund: true,
+    zielSaetze: 8,
+    wdhBereich: "8 × 30 s / 90 s",
+    startGewicht: 0,
+    hinweis: "30 s maximal treten, 90 s locker – gelenkschonend und sehr effektiv.",
+    rueckenschonend: true,
+    rueckbildung: true,
+    einsteiger: true,
+  },
+  {
+    id: "laufband",
+    name: "Laufband – Zone 2 / Intervalle",
+    muskel: "Herz-Kreislauf",
+    muster: "kondition",
+    equipment: ["maschine"],
+    grund: true,
+    zielSaetze: 1,
+    wdhBereich: "20–35 min",
+    startGewicht: 0,
+    hinweis: "Zone 2: Du kannst noch sprechen. Alternativ 6 × 2 min zügig / 2 min locker.",
+    rueckenschonend: true,
+    rueckbildung: false,
+    einsteiger: true,
+  },
+  {
+    id: "seilspringen",
+    name: "Seilspringen",
+    muskel: "Waden & Herz-Kreislauf",
+    muster: "kondition",
+    equipment: ["körpergewicht"],
+    grund: false,
+    zielSaetze: 6,
+    wdhBereich: "6 × 60 s",
+    startGewicht: 0,
+    hinweis: "Kleine Sprünge, Landung über den Fußballen.",
+    rueckenschonend: true,
+    rueckbildung: false,
+    einsteiger: true,
+  },
+  {
+    id: "burpee",
+    name: "Burpees",
+    muskel: "Ganzkörper",
+    muster: "kondition",
+    equipment: ["körpergewicht"],
+    grund: true,
+    zielSaetze: 4,
+    wdhBereich: "8–12",
+    startGewicht: 0,
+    hinweis: "Höchster Kalorienverbrauch pro Minute – Tempo nur so hoch wie die Technik erlaubt.",
+    rueckenschonend: false,
+    rueckbildung: false,
+    einsteiger: false,
+  },
+  {
+    id: "bergsteiger",
+    name: "Bergsteiger (Mountain Climber)",
+    muskel: "Rumpf & Herz-Kreislauf",
+    muster: "kondition",
+    equipment: ["körpergewicht"],
+    grund: false,
+    zielSaetze: 4,
+    wdhBereich: "4 × 40 s",
+    startGewicht: 0,
+    hinweis: "Hüfte tief halten, Rumpf fest – Tempo steigern, sobald die Position stabil bleibt.",
+    rueckenschonend: true,
+    rueckbildung: false,
+    einsteiger: true,
+  },
 ];
+
 
 export const uebungById = new Map(uebungsBibliothek.map((u) => [u.id, u]));
 
