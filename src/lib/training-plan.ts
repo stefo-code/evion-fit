@@ -148,7 +148,32 @@ type Session = { titel: string; muster: Muster[] };
  * damit sie bei knappem Zeitbudget nicht herausfallen.
  */
 const fokusVorlagen: Record<Exclude<Fokus, "ausgewogen" | "maximalkraft">, Session[]> = {
+  muskelaufbau: [
+    { titel: "Oberkörper – Drücken", muster: ["druecken", "druecken", "schulter", "arme", "core"] },
+    { titel: "Unterkörper – Kniebeuge", muster: ["kniebeuge", "kniebeuge", "huefte", "core"] },
+    { titel: "Oberkörper – Ziehen", muster: ["ziehen", "ziehen", "schulter", "arme", "core"] },
+    { titel: "Unterkörper – Hüfte", muster: ["huefte", "huefte", "kniebeuge", "core"] },
+    { titel: "Oberkörper gemischt", muster: ["druecken", "ziehen", "schulter", "arme", "arme"] },
+    { titel: "Schwachstellen & Rumpf", muster: ["huefte", "arme", "schulter", "core", "kniebeuge"] },
+  ],
+  fettverbrennung: [
+    { titel: "Ganzkörper-Zirkel A", muster: ["kniebeuge", "druecken", "ziehen", "kondition", "core"] },
+    { titel: "Ganzkörper-Zirkel B", muster: ["huefte", "ziehen", "schulter", "kondition", "core"] },
+    { titel: "Kraft & Intervalle", muster: ["kniebeuge", "kondition", "druecken", "kondition", "core"] },
+    { titel: "Ganzkörper-Zirkel C", muster: ["huefte", "druecken", "ziehen", "kondition", "core"] },
+    { titel: "Metabolik & Rumpf", muster: ["kondition", "kniebeuge", "core", "kondition", "arme"] },
+    { titel: "Oberkörper & Kondition", muster: ["ziehen", "druecken", "schulter", "kondition", "core"] },
+  ],
+  ausdauer: [
+    { titel: "Grundlagenausdauer", muster: ["kondition", "kondition", "core", "huefte"] },
+    { titel: "Intervalle & Kraft", muster: ["kondition", "kniebeuge", "ziehen", "kondition"] },
+    { titel: "Herz-Kreislauf lang", muster: ["kondition", "kondition", "core", "mobility"] },
+    { titel: "Kraftausdauer Ganzkörper", muster: ["kniebeuge", "druecken", "ziehen", "kondition", "core"] },
+    { titel: "Intervalle intensiv", muster: ["kondition", "kondition", "kondition", "core"] },
+    { titel: "Locker & Mobilität", muster: ["kondition", "mobility", "core", "huefte"] },
+  ],
   "arme-straffen": [
+
     { titel: "Arme & Drücken", muster: ["arme", "schulter", "arme", "druecken", "core"] },
     { titel: "Arme & Ziehen", muster: ["arme", "ziehen", "arme", "schulter", "core"] },
     { titel: "Schultern & Arme", muster: ["schulter", "arme", "arme", "schulter", "core"] },
