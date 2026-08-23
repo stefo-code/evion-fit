@@ -384,9 +384,15 @@ export type Trainingstag = {
 };
 
 /** Erzeugt den Wochenplan aus dem Kontext. */
-export function erzeugePlan(k: PlanKontext): Trainingstag[] {
+export function erzeugePlan(kontext: PlanKontext): Trainingstag[] {
+  // Rückbildung ist nur nach einer Schwangerschaft sinnvoll.
+  const k: PlanKontext =
+    kontext.fokus === "rueckbildung" && kontext.geschlecht === "maennlich"
+      ? { ...kontext, fokus: "ausgewogen" }
+      : kontext;
   const vorlage = wochenVorlage(k);
   const extra = fokusMuster(k.fokus);
+
 
   return vorlage.map((s, i) => {
     const benutzt = new Set<string>();
