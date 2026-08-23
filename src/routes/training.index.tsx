@@ -93,7 +93,15 @@ function TrainingPage() {
 
 
   const tag = plan[Math.min(tagIndex, plan.length - 1)] ?? plan[0]!;
-  const fokusInfo = fokusOptionen.find((f) => f.id === einstellungen.fokus)!;
+  const verfuegbareFokus = useMemo(
+    () => fokusFuerGeschlecht(profil.geschlecht),
+    [profil.geschlecht],
+  );
+  const aktiverFokus = verfuegbareFokus.some((f) => f.id === einstellungen.fokus)
+    ? einstellungen.fokus
+    : "ausgewogen";
+  const fokusInfo = fokusOptionen.find((f) => f.id === aktiverFokus)!;
+
 
   return (
     <div className="space-y-8">
