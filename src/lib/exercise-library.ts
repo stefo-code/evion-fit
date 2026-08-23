@@ -24,7 +24,8 @@ export type Muster =
   | "schulter"
   | "arme"
   | "core"
-  | "mobility";
+  | "mobility"
+  | "kondition";
 
 export const musterBild: Record<Muster, string> = {
   druecken: bildDruecken,
@@ -35,7 +36,9 @@ export const musterBild: Record<Muster, string> = {
   arme: bildArme,
   core: bildCore,
   mobility: bildMobility,
+  kondition: bildKniebeuge,
 };
+
 
 export type Equipment = "körpergewicht" | "kurzhantel" | "langhantel" | "maschine" | "kabel" | "band";
 
