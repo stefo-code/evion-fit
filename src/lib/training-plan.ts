@@ -304,9 +304,27 @@ function bewerte(u: LibUebung, k: PlanKontext): number {
 
   // Fokus
   switch (k.fokus) {
+    case "muskelaufbau":
+      // Hypertrophie: mehrgelenkige Übungen mit hoher Spannung, ergänzt um Isolation.
+      if (u.grund) s += 4;
+      if (u.equipment.includes("kurzhantel") || u.equipment.includes("kabel")) s += 1;
+      if (u.muster === "kondition") s -= 8;
+      break;
+    case "fettverbrennung":
+      // Muskelerhalt über große Übungen + hoher Energieverbrauch über Kondition.
+      if (u.grund) s += 4;
+      if (u.muster === "kondition") s += 4;
+      if (u.muskel === "Ganzkörper") s += 2;
+      break;
+    case "ausdauer":
+      if (u.muster === "kondition") s += 8;
+      if (u.grund) s += 2;
+      if (u.equipment.includes("maschine")) s += 1;
+      break;
     case "arme-straffen":
       if (u.muster === "arme" || u.muster === "schulter") s += 5;
       break;
+
     case "bauch-weg":
       if (u.muster === "core") s += 5;
       if (u.grund) s += 2; // hoher Energieverbrauch
