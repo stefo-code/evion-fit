@@ -464,31 +464,56 @@ function Cockpit() {
       {/* KÖRPERSTATUS */}
       <Section titel="Körperstatus">
         <Card>
-          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-5">
-            <Ring value={readiness.score} tone="info" sub="Bereit" size={112} />
-            <div className="min-w-0 space-y-3">
-              {[
-                { l: "Schlaf", v: readiness.schlaf },
-                { l: "Regeneration", v: readiness.regeneration },
-                { l: "Muskelstatus", v: readiness.muskelstatus },
-              ].map((r) => (
-                <div key={r.l}>
-                  <div className="flex justify-between text-sm">
-                    <span className="font-semibold">{r.l}</span>
-                    <span className="num text-muted-foreground">{r.v}</span>
-                  </div>
-                  <Bar className="mt-1.5" value={r.v} tone="info" />
+          {eigeneReadiness ? (
+            <>
+              <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-5">
+                <Ring value={eigeneReadiness.score} tone="info" sub="Bereit" size={112} />
+                <div className="min-w-0 space-y-2 text-sm">
+                  <p className="font-semibold">
+                    {eigeneReadiness.score >= 75
+                      ? "Gute Voraussetzungen für eine schwere Einheit."
+                      : eigeneReadiness.score >= 55
+                        ? "Normales Training sinnvoll – Spitzenlasten dosieren."
+                        : "Heute eher locker: Technik, weniger Sätze, mehr Schlaf."}
+                  </p>
+                  <p className="text-muted-foreground">Aus deinen eingetragenen Erholungswerten berechnet.</p>
                 </div>
-              ))}
-            </div>
-          </div>
-          <p className="mt-4 rounded-xl bg-secondary/50 p-4 text-sm font-semibold">{readiness.empfehlung}</p>
-          <Why punkte={readiness.warum} />
+              </div>
+              <Why punkte={eigeneReadiness.gruende} />
+            </>
+          ) : (
+            <>
+              <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-5">
+                <Ring value={readiness.score} tone="info" sub="Bereit" size={112} />
+                <div className="min-w-0 space-y-3">
+                  {[
+                    { l: "Schlaf", v: readiness.schlaf },
+                    { l: "Regeneration", v: readiness.regeneration },
+                    { l: "Muskelstatus", v: readiness.muskelstatus },
+                  ].map((r) => (
+                    <div key={r.l}>
+                      <div className="flex justify-between text-sm">
+                        <span className="font-semibold">{r.l}</span>
+                        <span className="num text-muted-foreground">{r.v}</span>
+                      </div>
+                      <Bar className="mt-1.5" value={r.v} tone="info" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <p className="mt-4 rounded-xl bg-secondary/50 p-4 text-sm font-semibold">
+                Trage Schlaf, Ruhepuls, HRV oder dein Befinden ein – dann ersetzt EVION diese Beispielwerte
+                durch deinen echten Körperstatus.
+              </p>
+              <Why punkte={readiness.warum} />
+            </>
+          )}
           <Disclaimer>
             Der Körperstatus ist eine Schätzung auf Basis deiner Daten und keine medizinische Messung.
           </Disclaimer>
         </Card>
       </Section>
+
 
       {/* MUSKELSTATUS */}
       <Section titel="Muskelstatus">
