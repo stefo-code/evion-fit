@@ -114,6 +114,10 @@ function TrainingPage() {
         </p>
       </header>
 
+      <AutoregulationsHinweis />
+
+
+
       <Section titel="Trainingsfokus wählen">
         <Card>
           <div className="flex flex-wrap gap-2">
