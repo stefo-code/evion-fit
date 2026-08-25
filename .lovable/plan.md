@@ -1,36 +1,45 @@
-# Beurer BF 915 → EVION: echter Geräte-Sync über Health Connect
+# Körperwerte manuell erfassen – Geräte-Bereich entfällt
 
-## Einordnung deiner Frage
+## Ziel
 
-Am einfachsten *echt* umzusetzen ist Beurer – aber nicht per Cloud-API. Beurer hat keine offene Schnittstelle (es gibt auch keinen fertigen Beurer-Connector), Samsung Health und die Galaxy Watch ebenfalls nicht. Der einzige echte Weg für alle drei ist Android Health Connect. Der Vorteil: die BF 915 schreibt über HealthManager Pro Gewicht, Körperfett, Muskel- und Wasseranteil in Health Connect – genau die Werte, die du willst – und dieselbe Brücke liefert später Samsung Health und die Watch gratis mit.
-
-Ausgangslage im Projekt: Datenbank (`health_samples`, `health_sources`, `sync_runs`, `ingest_tokens`), der Ingest-Endpunkt `/api/public/health-ingest`, der Brücken-Vertrag `src/lib/health-bridge.ts` und die Geräte-Seite existieren bereits. Was fehlt, ist die Android-Hülle selbst und ein Beurer-Ablauf, der von der ersten Kopplung bis in Cockpit/Fortschritt durchgeht.
+Statt Geräte-Sync gibt es eine schnelle, gut gemachte manuelle Erfassung deiner Körperwerte, die überall in der App ausgewertet wird: Gewicht (kg), Körperfett (%), Wasser (%), Muskeln (%).
 
 ## Was gebaut wird
 
-### 1. Android-Hülle (Capacitor) im Projekt
-- Capacitor-Setup mit `android/`-Projekt, App-ID `app.evion.fitness`, Ladeziel = veröffentlichte EVION-URL.
-- Eigenes kleines Health-Connect-Plugin (Kotlin), das genau den bestehenden Vertrag `window.EvionHealth` (`requestPermissions`, `read`) erfüllt – für Weight, BodyFat, LeanBodyMass, Hydration, Steps, HeartRate, RestingHeartRate, HRV, SleepSession, ExerciseSession.
-- Health-Connect-Berechtigungen im Manifest plus die von Health Connect verlangte Datenschutz-Erklärungs-Activity (verlinkt auf `/datenschutz`).
-- Hintergrund-Sync per WorkManager: liest periodisch und postet mit dem Ingest-Token an `/api/public/health-ingest` – Sync läuft also auch bei geschlossener App.
-- Bauen/Installieren passiert einmalig in Android Studio (kann Lovable nicht für dich ausführen); dafür eine Schritt-für-Schritt-Anleitung mit Screenshots-Text und Fehlerbehebung.
+### 1. Eingabe der Körperwerte
+- Ein Formular „Messung eintragen" mit Datum (Standard: heute), Gewicht, Körperfett, Wasser, Muskeln – alle Felder außer Gewicht optional.
+- Erreichbar an drei Stellen: Fortschritt (Hauptplatz), Schnellzugriff auf dem Cockpit und im Profil.
+- Plausibilitätsprüfung mit freundlichem Hinweis statt harter Sperre (z. B. Körperfett 3–60 %, Wasser 30–75 %, Muskeln 20–60 %, Gewicht 30–250 kg) und Warnung bei ungewöhnlichen Sprüngen zum Vortag.
+- Eine Messung pro Tag; erneutes Eintragen überschreibt den Tag. Einträge lassen sich in einer Liste bearbeiten und löschen.
+- Werte werden – wie bisher Training und Ernährung – lokal auf dem Gerät gespeichert (bestehender Aktivitätsspeicher, um Körperfett/Wasser/Muskeln erweitert, inkl. Migration alter Gewichtseinträge).
 
-### 2. Beurer-Ablauf in der App
-- Beurer wird von „Datei-Import" auf primär „Health Connect" umgestellt, Datei-Import bleibt als Fallback.
-- Neuer Einrichtungs-Assistent auf `/geraete` speziell für die BF 915: Waage in HealthManager Pro koppeln → in HealthManager Pro „Health Connect / Google Health" Freigabe aktivieren → in Health Connect EVION Lesezugriff geben → Token in der Hülle hinterlegen → erster Sync. Jeder Schritt mit Prüf-Button und klarer Fehlermeldung, wenn Werte ausbleiben.
-- Statusanzeige pro Quelle: verbunden, letzte Sync-Zeit, letzte 8 Sync-Läufe, gelieferte Metriken, Auto-Sync-Intervall.
+### 2. Auswertung und Verläufe
+- Fortschritt: eigene Kurven für Gewicht, Körperfett, Wasser und Muskeln mit Zeitraumfilter (30/90/365 Tage), plus geglätteter 7-Tage-Trend, damit Tagesschwankungen nicht täuschen.
+- Abgeleitete Kennzahlen: Fettmasse und Magermasse in kg (aus Gewicht × Prozent), Veränderung seit Start und in den letzten 4 Wochen, BMI aus Größe im Profil.
+- Body-Recomposition-Signal: Fettmasse runter bei gehaltener/gestiegener Magermasse wird ausdrücklich als Erfolg dargestellt – auch wenn das Gewicht gleich bleibt.
+- Cockpit/Körperstatus: aktuelle Werte, Trendpfeil und Datum der letzten Messung statt Platzhaltern; klare „Noch keine Messung"-Zustände.
 
-### 3. Daten wirklich nutzen
-- Gewicht, Körperfett, Muskelmasse und Wasser aus `health_samples` fließen in Cockpit, Körperstatus und Fortschritts-Charts ein – mit Quellenangabe „Beurer BF 915" und Qualitätskennzeichnung (Gewicht = gemessen, BIA-Werte = geschätzt).
-- Konfliktregel bleibt: manuelle Eingabe > Beurer > sonstige Quellen; identische Zeitstempel werden dedupliziert.
+### 3. Erfolge und Empfehlungen
+- Neue Erfolge: erste Messung, 7/30 Messungen, 4 Wochen ohne Lücke gewogen, erste 1 % Körperfett runter, Magermasse gehalten während Fettabbau, Zielgewicht erreicht.
+- Coach-Empfehlungen nutzen die Werte: zu schneller Gewichtsverlust (> 1 % Körpergewicht/Woche) → Kalorien/Protein anpassen; Stagnation über 3 Wochen → Anpassung vorschlagen; niedriger Wasseranteil → Trinkmenge; Magermasse fällt → Protein und Krafttraining priorisieren. Alle Empfehlungen bleiben nicht-medizinisch formuliert.
+- Erinnerung: sanfter Hinweis, wenn seit 7 Tagen keine Messung eingetragen wurde.
+
+### 4. Geräte-Bereich entfernen
+- Seite `/geraete` und die Verlinkungen in Navigation, Profil, Einstellungen und Onboarding entfallen; der Onboarding-Schritt wird durch „Erste Messung eintragen" ersetzt.
+- Nicht mehr genutzte Sync-Bausteine (Brücke, Ingest-Route, Integrations-Datei, CSV-Import) werden entfernt. Die Cloud-Tabellen bleiben zunächst unangetastet, damit keine Daten verloren gehen – auf Wunsch räume ich sie später auf.
+
+## Vorschlag: weitere sinnvolle manuelle Werte
+
+Optional, jeweils klein und überspringbar gehalten – sag mir, welche davon rein sollen:
+- **Ruhepuls** (morgens, Galaxy Watch) und **HRV** – beste Indikatoren für Erholung und Trainingssteuerung.
+- **Schlafdauer und Schlafqualität** (Samsung Health) – steuert Empfehlungen zu Trainingsintensität.
+- **Schritte pro Tag** – Alltagsaktivität, wichtig für den Kalorienverbrauch.
+- **Taille** (bereits vorhanden) und optional Hüfte/Brust/Arm/Oberschenkel – oft aussagekräftiger als die Waage.
+- **Subjektive Werte**: Energie, Muskelkater, Stress (1–5) – schnell eingegeben, sehr nützlich für die Autoregulation.
 
 ## Technische Details
 
-- Neu: `android/` (Capacitor-Projekt), `capacitor.config.ts`, Kotlin-Plugin `EvionHealthPlugin.kt` + `EvionSyncWorker.kt`, erweiterte `docs/android-health-connect-bridge.md`.
-- Bestehende Brücke unverändert genutzt (`leseUeberBridge`, `healthConnectTypen`), Server-Seite unverändert: Upsert auf `(user_id, source, metric, measured_at)` bleibt idempotent.
-- Neue Server-Funktion für aggregierte Körperwerte pro Tag, damit Fortschritt/Cockpit direkt aus der Cloud lesen; localStorage bleibt Offline-Cache.
-- Token wird in der Hülle im Android-Keystore-gestützten `EncryptedSharedPreferences` gespeichert, nicht im WebView-Storage.
-
-## Ehrliche Einschränkung
-
-Ob HealthManager Pro auf deinem Handy tatsächlich in Health Connect schreibt, hängt von App-Version und Android-Version ab. Deshalb enthält der Assistent einen Prüfschritt „Werte in Health Connect sichtbar?" – schlägt der fehl, greift automatisch der Datei-/Auto-Import als Zwischenlösung, ohne dass du etwas umbauen musst.
+- `src/lib/activity-store.ts`: `GewichtsEintrag` → `KoerperMessung` mit `gewicht`, `koerperfett`, `wasser`, `muskeln`, `taille`; versionierte Migration bestehender Einträge, neue Selektoren für Trends, Fettmasse/Magermasse und Serien.
+- Neue Komponente für das Messformular, wiederverwendet in Fortschritt, Cockpit und Profil; Charts über Recharts analog zu den vorhandenen Verläufen.
+- Erfolgs-Definitionen und Coach-Regeln werden um die neuen Metriken erweitert.
+- Entfällt: `src/routes/geraete.tsx`, `src/lib/health-bridge.ts`, `src/lib/health-integrations.ts`, `src/lib/health-providers.ts`, `src/lib/health-sync.functions.ts`, `src/routes/api/public/health-ingest.ts`, `src/lib/ingest-token.server.ts`, `docs/android-health-connect-bridge.md`.
