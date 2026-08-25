@@ -344,20 +344,65 @@ function Cockpit() {
           </div>
 
           <p className="mt-3 rounded-xl bg-secondary/50 p-4 text-sm leading-relaxed">
-            Dein Gewicht und dein Taillenumfang sinken, während deine Kraft in den letzten acht Wochen
-            gestiegen ist. Dein aktueller Plan scheint gut zu funktionieren.
+            {recomp
+              ? recomp.positiv
+                ? `Fettmasse ${recomp.fett.toLocaleString("de-DE")} kg, Magermasse ${recomp.mager > 0 ? "+" : ""}${recomp.mager.toLocaleString("de-DE")} kg – genau das Muster einer gelungenen Body Recomposition.`
+                : `Fettmasse ${recomp.fett > 0 ? "+" : ""}${recomp.fett.toLocaleString("de-DE")} kg, Magermasse ${recomp.mager > 0 ? "+" : ""}${recomp.mager.toLocaleString("de-DE")} kg. Protein und Krafttraining hochhalten, damit die Substanz bleibt.`
+              : fettDelta !== null
+                ? `Dein Körperfettanteil hat sich in den letzten Wochen um ${fettDelta.toLocaleString("de-DE")} Prozentpunkte verändert.`
+                : "Trage regelmäßig Gewicht und Körperfett ein – daraus leitet EVION deinen echten Fortschritt ab."}
           </p>
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <QualityTag quality="gemessen" /> Gewicht, Taille
+            <QualityTag quality="gemessen" /> Gewicht, Umfänge
             <span className="mx-1 text-border">|</span>
-            <QualityTag quality="geschätzt" /> Körperfett, Muskelmasse (BIA)
+            <QualityTag quality="geschätzt" /> Körperfett, Muskeln, Wasser (Waage)
           </div>
           <Disclaimer>
-            Körperfett- und Muskelmassewerte aus Bioimpedanz-Waagen sind Schätzwerte und können vom
+            Körperfett-, Muskel- und Wasserwerte aus Bioimpedanz-Waagen sind Schätzwerte und können vom
             tatsächlichen Wert abweichen. Aussagekräftig ist vor allem der Trend.
           </Disclaimer>
         </Card>
+      </Section>
+
+      {/* KÖRPERWERTE ERFASSEN */}
+      <Section
+        titel="Körperwerte"
+        aktion={
+          <button
+            onClick={() => setMessungOffen((o) => !o)}
+            className="text-xs font-bold uppercase tracking-wider text-primary"
+          >
+            {messungOffen ? "Schließen" : "Messung eintragen"}
+          </button>
+        }
+      >
+        <Card>
+          <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
+            <Stat
+              label="Gewicht"
+              value={kennzahlen.gewicht?.toLocaleString("de-DE") ?? "—"}
+              unit="kg"
+              delta={kennzahlen.bmi !== null ? `BMI ${kennzahlen.bmi.toLocaleString("de-DE")}` : "noch kein BMI"}
+            />
+            <Stat label="Körperfett" value={kennzahlen.koerperfett?.toLocaleString("de-DE") ?? "—"} unit="%" />
+            <Stat label="Muskeln" value={kennzahlen.muskeln?.toLocaleString("de-DE") ?? "—"} unit="%" />
+            <Stat label="Wasser" value={kennzahlen.wasser?.toLocaleString("de-DE") ?? "—"} unit="%" />
+          </div>
+          <p className="mt-4 text-sm text-muted-foreground">
+            {tageOhneMessung === null
+              ? "Noch keine Messung erfasst – der erste Wert ist dein Startpunkt."
+              : tageOhneMessung === 0
+                ? "Heute schon gemessen – stark."
+                : `Letzte Messung vor ${tageOhneMessung} ${tageOhneMessung === 1 ? "Tag" : "Tagen"}.`}
+          </p>
+          {messungOffen && (
+            <div className="mt-4 border-t border-border pt-4">
+              <MessungForm onGespeichert={() => setMessungOffen(false)} />
+            </div>
+          )}
+        </Card>
+
       </Section>
 
       {/* DIESE WOCHE */}
