@@ -1,19 +1,30 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Card, Chip, Disclaimer, QualityTag, Section, Stat } from "@/components/ui-kit";
-import { datenquellen, ernaehrungsVerlauf, schlafVerlauf } from "@/lib/demo-data";
+import { MessungForm } from "@/components/messung-form";
 import { effektivesProfil, useOnboardingProfil } from "@/lib/onboarding-store";
 import {
   e1rmVerlauf,
   einheitenSeit,
+  ersterWert,
+  feldDef,
   gesamtVolumen,
+  kompositionsVerlauf,
+  koerperKennzahlen,
+  letzterWert,
+  messFelder,
+  readinessAusMessungen,
+  recompSignal,
   rekorde,
   streak,
   useAktivitaet,
+  veraenderung,
+  verlauf,
   volumen,
   volumenProWoche,
+  type MessFeld,
 } from "@/lib/activity-store";
-import { toast } from "sonner";
+import { Trash2 } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -34,7 +45,7 @@ export const Route = createFileRoute("/fortschritt")({
       { title: "Fortschritt – EVION" },
       {
         name: "description",
-        content: "Gewicht, Körperzusammensetzung, Kraft, Volumen, Schlaf und Aktivität im Verlauf.",
+        content: "Gewicht, Körperfett, Muskeln, Wasser, Umfänge, Kraft und Erholung im Verlauf.",
       },
       { property: "og:title", content: "Fortschritt – EVION" },
       { property: "og:description", content: "Sichtbarer Fortschritt – auch wenn das Gewicht stagniert." },
@@ -58,32 +69,36 @@ const tooltipStyle = {
   fontSize: 12,
 };
 
+const koerperFelder: MessFeld[] = ["gewicht", "koerperfett", "muskeln", "wasser"];
+const umfangFelder: MessFeld[] = ["taille", "huefte", "brust", "arm", "oberschenkel"];
+const erholungFelder: MessFeld[] = ["schlafStunden", "ruhepuls", "hrv", "schritte"];
+
 function FortschrittPage() {
   const { profil } = useOnboardingProfil();
   const eff = effektivesProfil(profil);
-  const { aktivitaet, geladen, gewichtLoggen } = useAktivitaet();
+  const { aktivitaet, geladen, messungLoeschen } = useAktivitaet();
   const [zeit, setZeit] = useState(zeitraeume[1]!);
+  const [metrik, setMetrik] = useState<MessFeld>("gewicht");
 
   const grenze = Date.now() - zeit.tage * 86400000;
   const einheiten = aktivitaet.einheiten.filter((e) => new Date(e.datum).getTime() >= grenze);
-  const gewichte = aktivitaet.gewichte.filter((g) => new Date(g.datum).getTime() >= grenze);
 
-  const gewichtsDaten = gewichte.map((g) => ({
-    datum: new Date(g.datum).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }),
-    gewicht: g.gewicht,
-    taille: g.taille ?? undefined,
-  }));
+  const kurve = verlauf(aktivitaet, metrik, zeit.tage);
+  const komposition = kompositionsVerlauf(aktivitaet, zeit.tage);
+  const kennzahlen = koerperKennzahlen(aktivitaet, eff.groesse);
+  const recomp = recompSignal(aktivitaet);
+  const readiness = readinessAusMessungen(aktivitaet);
 
   const prs = rekorde(aktivitaet);
   const topUebung = prs[0];
   const kraftDaten = topUebung ? e1rmVerlauf(aktivitaet, topUebung.uebungId) : [];
   const wochenVolumen = volumenProWoche(aktivitaet, 10);
 
-  const startGewicht = aktivitaet.gewichte[0]?.gewicht ?? profil.gewicht ?? null;
-  const aktuellGewicht = aktivitaet.gewichte[aktivitaet.gewichte.length - 1]?.gewicht ?? profil.gewicht ?? null;
+  const startGewicht = ersterWert(aktivitaet, "gewicht")?.wert ?? profil.gewicht ?? null;
+  const aktuellGewicht = letzterWert(aktivitaet, "gewicht")?.wert ?? profil.gewicht ?? null;
   const zielGewicht = profil.zielGewicht ?? null;
-  const gewichtDelta =
-    startGewicht !== null && aktuellGewicht !== null ? +(aktuellGewicht - startGewicht).toFixed(1) : null;
+  const gewichtDelta = veraenderung(aktivitaet, "gewicht", zeit.tage);
+  const fettDelta = veraenderung(aktivitaet, "koerperfett", zeit.tage);
   const zielFortschritt =
     startGewicht !== null && aktuellGewicht !== null && zielGewicht !== null && startGewicht !== zielGewicht
       ? Math.max(0, Math.min(100, Math.round(((startGewicht - aktuellGewicht) / (startGewicht - zielGewicht)) * 100)))
@@ -99,24 +114,37 @@ function FortschrittPage() {
     return Math.round(((b - a) / a) * 100);
   }, [kraftDaten]);
 
-  const [neuesGewicht, setNeuesGewicht] = useState("");
-  const [neueTaille, setNeueTaille] = useState("");
+  const umfangDaten = useMemo(() => {
+    const grenzeU = Date.now() - zeit.tage * 86400000;
+    return aktivitaet.messungen
+      .filter((m) => new Date(m.datum).getTime() >= grenzeU)
+      .filter((m) => umfangFelder.some((f) => typeof m[f] === "number"))
+      .map((m) => ({
+        datum: new Date(m.datum).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }),
+        taille: m.taille ?? undefined,
+        huefte: m.huefte ?? undefined,
+        brust: m.brust ?? undefined,
+        arm: m.arm ?? undefined,
+        oberschenkel: m.oberschenkel ?? undefined,
+      }));
+  }, [aktivitaet.messungen, zeit.tage]);
 
-  function gewichtSpeichern() {
-    const kg = Number(neuesGewicht.replace(",", "."));
-    if (!Number.isFinite(kg) || kg <= 20 || kg > 400) {
-      toast.error("Bitte ein realistisches Gewicht in kg eingeben.");
-      return;
-    }
-    const taille = neueTaille ? Number(neueTaille.replace(",", ".")) : null;
-    const neu = gewichtLoggen(kg, Number.isFinite(taille as number) ? taille : null);
-    setNeuesGewicht("");
-    setNeueTaille("");
-    toast.success("Messung gespeichert");
-    for (const e of neu) toast.success(`Erfolg freigeschaltet: ${e.titel}`);
-  }
+  const erholungsDaten = useMemo(() => {
+    const grenzeE = Date.now() - zeit.tage * 86400000;
+    return aktivitaet.messungen
+      .filter((m) => new Date(m.datum).getTime() >= grenzeE)
+      .filter((m) => erholungFelder.some((f) => typeof m[f] === "number"))
+      .map((m) => ({
+        datum: new Date(m.datum).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }),
+        schlaf: m.schlafStunden ?? undefined,
+        ruhepuls: m.ruhepuls ?? undefined,
+        hrv: m.hrv ?? undefined,
+        schritte: m.schritte ?? undefined,
+      }));
+  }, [aktivitaet.messungen, zeit.tage]);
 
-  const keineDaten = geladen && aktivitaet.einheiten.length === 0 && aktivitaet.gewichte.length === 0;
+  const keineDaten = geladen && aktivitaet.einheiten.length === 0 && aktivitaet.messungen.length === 0;
+  const def = feldDef(metrik);
 
   return (
     <div className="space-y-8">
@@ -124,7 +152,7 @@ function FortschrittPage() {
         <p className="label-xs">Fortschritt</p>
         <h1 className="mt-1 font-display text-3xl font-extrabold">Deine Entwicklung</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Alle Auswertungen entstehen aus deinen protokollierten Trainings und Messungen.
+          Alle Auswertungen entstehen aus deinen protokollierten Trainings und selbst erfassten Messwerten.
         </p>
       </header>
 
@@ -140,8 +168,8 @@ function FortschrittPage() {
         <Card className="border-primary/40 bg-primary/10">
           <p className="font-display text-lg font-extrabold">Noch keine eigenen Daten</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Trage unten dein Gewicht ein oder schließe ein Training ab – danach füllen sich alle Diagramme
-            automatisch.
+            Trage unten deine erste Messung ein oder schließe ein Training ab – danach füllen sich alle
+            Diagramme automatisch.
           </p>
           <Link
             to="/training/workout"
@@ -162,7 +190,13 @@ function FortschrittPage() {
               unit="kg"
               delta={zeit.label}
             />
-            <Stat label="Einheiten" value={String(einheiten.length)} delta={zeit.label} tone="good" />
+            <Stat
+              label="Körperfett"
+              value={fettDelta === null ? "—" : `${fettDelta > 0 ? "+" : ""}${fettDelta.toLocaleString("de-DE")}`}
+              unit="%"
+              delta={zeit.label}
+              tone={fettDelta !== null && fettDelta < 0 ? "good" : "default"}
+            />
             <Stat
               label="Volumen"
               value={volumenGesamt.toLocaleString("de-DE")}
@@ -183,19 +217,42 @@ function FortschrittPage() {
               Kraft- und Volumenentwicklung zeigen, ob die Substanz dabei erhalten bleibt.
             </p>
           )}
+          {recomp && (
+            <p className="mt-3 rounded-xl bg-primary/10 p-4 text-sm leading-relaxed">
+              Körperzusammensetzung: Fettmasse {recomp.fett > 0 ? "+" : ""}
+              {recomp.fett.toLocaleString("de-DE")} kg · Magermasse {recomp.mager > 0 ? "+" : ""}
+              {recomp.mager.toLocaleString("de-DE")} kg.{" "}
+              {recomp.positiv
+                ? "Das ist das typische Muster einer Body Recomposition – Kurs halten."
+                : "Halte Protein und Krafttraining hoch, damit die Magermasse erhalten bleibt."}
+            </p>
+          )}
           <Disclaimer>
-            Aus diesen Daten lässt sich kein garantierter Muskelaufbau ableiten. Körperfett- und
-            Muskelmassewerte aus Waagen sind Schätzungen.
+            Körperfett-, Wasser- und Muskelanteile aus Waagen sind Schätzungen. Aussagekräftig ist der
+            Trend über mehrere Wochen, nicht der Einzelwert.
           </Disclaimer>
         </Card>
       </Section>
 
-      <Section titel="Gewicht & Taille">
+      <Section titel="Messung eintragen">
         <Card>
-          {gewichtsDaten.length > 1 ? (
+          <MessungForm />
+        </Card>
+      </Section>
+
+      <Section titel="Körperwerte im Verlauf">
+        <Card>
+          <div className="mb-4 flex flex-wrap gap-2">
+            {[...koerperFelder, ...umfangFelder].map((f) => (
+              <Chip key={f} active={metrik === f} onClick={() => setMetrik(f)}>
+                {feldDef(f).label}
+              </Chip>
+            ))}
+          </div>
+          {kurve.length > 1 ? (
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={gewichtsDaten} margin={{ left: -18, right: 4, top: 8 }}>
+                <AreaChart data={kurve} margin={{ left: -18, right: 4, top: 8 }}>
                   <defs>
                     <linearGradient id="gw" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.45} />
@@ -208,58 +265,151 @@ function FortschrittPage() {
                   <Tooltip contentStyle={tooltipStyle} />
                   <Area
                     type="monotone"
-                    dataKey="gewicht"
-                    name="Gewicht (kg)"
+                    dataKey="wert"
+                    name={`${def.label} (${def.einheit})`}
                     stroke="var(--primary)"
                     strokeWidth={2.5}
                     fill="url(#gw)"
                   />
-                  <Line type="monotone" dataKey="taille" name="Taille (cm)" stroke="var(--info)" strokeWidth={2} dot={false} />
+                  <Line
+                    type="monotone"
+                    dataKey="trend"
+                    name="7-Tage-Trend"
+                    stroke="var(--info)"
+                    strokeWidth={2}
+                    dot={false}
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Ab der zweiten Messung siehst du hier deinen Verlauf.
+              Ab der zweiten Messung von „{def.label}“ siehst du hier deinen Verlauf.
             </p>
           )}
-
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-[1fr_1fr_auto]">
-            <label className="text-sm">
-              <span className="label-xs">Gewicht (kg)</span>
-              <input
-                inputMode="decimal"
-                value={neuesGewicht}
-                onChange={(e) => setNeuesGewicht(e.target.value)}
-                placeholder={String(eff.gewicht ?? 80)}
-                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2.5"
-              />
-            </label>
-            <label className="text-sm">
-              <span className="label-xs">Taille (cm, optional)</span>
-              <input
-                inputMode="decimal"
-                value={neueTaille}
-                onChange={(e) => setNeueTaille(e.target.value)}
-                placeholder="—"
-                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2.5"
-              />
-            </label>
-            <button
-              onClick={gewichtSpeichern}
-              className="mt-1 self-end rounded-xl bg-primary px-5 py-2.5 text-sm font-extrabold uppercase tracking-wide text-primary-foreground sm:mt-0"
-            >
-              Speichern
-            </button>
-          </div>
-          <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
             <span>
               {startGewicht !== null ? `Start ${startGewicht} kg` : "Noch kein Startwert"}
               {aktuellGewicht !== null && ` · aktuell ${aktuellGewicht} kg`}
               {zielGewicht !== null && ` · Ziel ${zielGewicht} kg`}
+              {kennzahlen.bmi !== null && ` · BMI ${kennzahlen.bmi.toLocaleString("de-DE")}`}
             </span>
-            <QualityTag quality="gemessen" />
+            <QualityTag quality={metrik === "gewicht" ? "gemessen" : "geschätzt"} />
           </div>
+        </Card>
+      </Section>
+
+      <Section titel="Fett- und Magermasse">
+        <Card>
+          {komposition.length > 1 ? (
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={komposition} margin={{ left: -18, right: 4, top: 8 }}>
+                  <CartesianGrid stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="datum" {...axis} />
+                  <YAxis domain={["dataMin - 2", "dataMax + 2"]} {...axis} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Area
+                    type="monotone"
+                    dataKey="magermasse"
+                    name="Magermasse (kg)"
+                    stroke="var(--primary)"
+                    fill="var(--primary)"
+                    fillOpacity={0.15}
+                    strokeWidth={2.5}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="fettmasse"
+                    name="Fettmasse (kg)"
+                    stroke="var(--warning)"
+                    fill="var(--warning)"
+                    fillOpacity={0.15}
+                    strokeWidth={2.5}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Trage Gewicht und Körperfett gemeinsam ein – dann berechnet EVION Fett- und Magermasse.
+            </p>
+          )}
+          <div className="mt-4 grid grid-cols-2 gap-5 sm:grid-cols-4">
+            <Stat label="Fettmasse" value={kennzahlen.fettmasse?.toLocaleString("de-DE") ?? "—"} unit="kg" />
+            <Stat label="Magermasse" value={kennzahlen.magermasse?.toLocaleString("de-DE") ?? "—"} unit="kg" />
+            <Stat label="Wasser" value={kennzahlen.wasser?.toLocaleString("de-DE") ?? "—"} unit="%" />
+            <Stat label="Muskeln" value={kennzahlen.muskeln?.toLocaleString("de-DE") ?? "—"} unit="%" />
+          </div>
+          <div className="mt-3">
+            <QualityTag quality="berechnet" />
+          </div>
+        </Card>
+      </Section>
+
+      {umfangDaten.length > 1 && (
+        <Section titel="Umfänge">
+          <Card>
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={umfangDaten} margin={{ left: -18, right: 4, top: 8 }}>
+                  <CartesianGrid stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="datum" {...axis} />
+                  <YAxis domain={["dataMin - 2", "dataMax + 2"]} {...axis} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Line type="monotone" dataKey="taille" name="Taille (cm)" stroke="var(--primary)" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="huefte" name="Hüfte (cm)" stroke="var(--info)" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="brust" name="Brust (cm)" stroke="var(--accent)" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="arm" name="Arm (cm)" stroke="var(--warning)" strokeWidth={2} dot={false} />
+                  <Line
+                    type="monotone"
+                    dataKey="oberschenkel"
+                    name="Oberschenkel (cm)"
+                    stroke="var(--muted-foreground)"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+        </Section>
+      )}
+
+      <Section titel="Erholung & Alltag">
+        <Card>
+          {readiness ? (
+            <>
+              <p className="text-sm leading-relaxed">
+                Geschätzte Bereitschaft: <span className="num font-bold">{readiness.score}</span> / 100 –{" "}
+                {readiness.score >= 75
+                  ? "gute Voraussetzungen für eine schwere Einheit."
+                  : readiness.score >= 55
+                    ? "normales Training sinnvoll, Spitzenlasten dosieren."
+                    : "eher lockere Einheit oder Technikfokus."}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">Basis: {readiness.gruende.join(" · ")}</p>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Trage Schlaf, Ruhepuls, HRV oder dein Befinden ein – daraus schätzt EVION deine Bereitschaft.
+            </p>
+          )}
+          {erholungsDaten.length > 1 && (
+            <div className="mt-4 h-44">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={erholungsDaten} margin={{ left: -18, right: 4, top: 8 }}>
+                  <CartesianGrid stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="datum" {...axis} />
+                  <YAxis {...axis} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Line type="monotone" dataKey="schlaf" name="Schlaf (h)" stroke="var(--info)" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="ruhepuls" name="Ruhepuls (bpm)" stroke="var(--warning)" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="hrv" name="HRV (ms)" stroke="var(--primary)" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </Card>
       </Section>
 
@@ -369,50 +519,44 @@ function FortschrittPage() {
         </Card>
       </Section>
 
-      <Section titel="Ernährung & Aktivität (Beispieldaten)">
-        <Card>
-          <div className="h-44">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={ernaehrungsVerlauf} margin={{ left: -18, right: 4, top: 8 }}>
-                <CartesianGrid stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="tag" {...axis} />
-                <YAxis {...axis} />
-                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--muted)" }} />
-                <RBar dataKey="kalorien" name="kcal" fill="var(--info)" radius={[6, 6, 0, 0]} />
-                <RBar dataKey="protein" name="Protein (g)" fill="var(--primary)" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-4 h-40">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={schlafVerlauf} margin={{ left: -18, right: 4, top: 8 }}>
-                <CartesianGrid stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="tag" {...axis} />
-                <YAxis {...axis} />
-                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--muted)" }} />
-                <RBar dataKey="schritte" name="Schritte" fill="var(--accent)" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <p className="mt-3 text-xs text-muted-foreground">
-            Schlaf- und Schrittdaten stammen aus der Beispielquelle, bis ein Gerät verbunden ist.
-          </p>
-        </Card>
-      </Section>
-
-      <Section titel="Datenherkunft">
+      <Section titel="Alle Messungen">
         <Card className="p-2">
-          <ul className="divide-y divide-border">
-            {datenquellen.map((d) => (
-              <li key={d.feld} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">{d.feld}</p>
-                  <p className="truncate text-xs text-muted-foreground">{d.quelle}</p>
-                </div>
-                <QualityTag quality={d.qualitaet} />
-              </li>
-            ))}
-          </ul>
+          {aktivitaet.messungen.length === 0 ? (
+            <p className="px-3 py-4 text-sm text-muted-foreground">Noch keine Messung erfasst.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {[...aktivitaet.messungen]
+                .reverse()
+                .slice(0, 20)
+                .map((m) => {
+                  const werte = messFelder
+                    .filter((f) => typeof m[f.key] === "number")
+                    .map((f) => `${f.label} ${(m[f.key] as number).toLocaleString("de-DE")} ${f.einheit}`);
+                  return (
+                    <li key={m.datum} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold">
+                          {new Date(m.datum).toLocaleDateString("de-DE", {
+                            weekday: "short",
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "2-digit",
+                          })}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{werte.join(" · ")}</p>
+                      </div>
+                      <button
+                        onClick={() => messungLoeschen(m.datum)}
+                        aria-label="Messung löschen"
+                        className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border text-muted-foreground"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </li>
+                  );
+                })}
+            </ul>
+          )}
         </Card>
       </Section>
     </div>
