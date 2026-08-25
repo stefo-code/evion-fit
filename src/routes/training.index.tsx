@@ -650,3 +650,25 @@ function UebungHinzufuegen({
     </Card>
   );
 }
+
+/** Zeigt eine Belastungsempfehlung aus den zuletzt erfassten Erholungswerten. */
+function AutoregulationsHinweis() {
+  const { aktivitaet } = useAktivitaet();
+  const r = readinessAusMessungen(aktivitaet);
+  if (!r) return null;
+  const stark = r.score >= 75;
+  const mittel = r.score >= 55;
+  return (
+    <Card className={stark ? "border-success/40" : mittel ? "border-info/30" : "border-warning/50"}>
+      <p className="text-sm leading-relaxed">
+        <span className="font-bold">Bereitschaft {r.score}/100 · </span>
+        {stark
+          ? "Gute Voraussetzungen: heute darfst du an den Grundübungen steigern."
+          : mittel
+            ? "Training wie geplant – letzte Sätze mit 1–2 Wiederholungen Reserve."
+            : "Reduziere Last und Volumen um rund 30 % oder mache heute eine lockere Einheit."}
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">Basis: {r.gruende.join(" · ")}</p>
+    </Card>
+  );
+}
