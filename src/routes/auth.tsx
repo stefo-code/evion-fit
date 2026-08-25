@@ -17,7 +17,7 @@ export const Route = createFileRoute("/auth")({
       { title: "Anmelden – EVION" },
       {
         name: "description",
-        content: "Melde dich an, um deine Health-Daten von Samsung Health, Galaxy Watch und Beurer zu synchronisieren.",
+        content: "Melde dich an, um deine Trainings-, Ernährungs- und Körperdaten in EVION zu sichern.",
       },
       { property: "og:title", content: "Anmelden – EVION" },
       { property: "og:description", content: "Konto für die automatische Health-Synchronisation." },

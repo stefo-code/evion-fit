@@ -3,6 +3,16 @@ import { useState } from "react";
 import { Card, Chip, Disclaimer, Section, Why } from "@/components/ui-kit";
 import { coachVorschlaege, heute, muskelStatus, profile, readiness } from "@/lib/demo-data";
 import { Send, Sparkles, User } from "lucide-react";
+import { Link as RLink } from "@tanstack/react-router";
+import {
+  koerperKennzahlen,
+  readinessAusMessungen,
+  recompSignal,
+  tageSeitMessung,
+  useAktivitaet,
+  veraenderung,
+} from "@/lib/activity-store";
+import { effektivesProfil, useOnboardingProfil } from "@/lib/onboarding-store";
 
 export const Route = createFileRoute("/coach")({
   head: () => ({
@@ -36,6 +46,94 @@ const antwort = (frage: string) => {
   return "Kurz zusammengefasst: Dein Trend passt zu deinem Ziel. Heute stehen noch offene Kalorien und Protein an – eine proteinreiche Hauptmahlzeit schließt beides gut ab. Ich bin kein Arzt und stelle keine Diagnosen.";
 };
 
+/** Empfehlungen, die ausschließlich aus selbst erfassten Werten entstehen. */
+function KoerperEmpfehlungen() {
+  const { aktivitaet } = useAktivitaet();
+  const { profil } = useOnboardingProfil();
+  const eff = effektivesProfil(profil);
+  const kennzahlen = koerperKennzahlen(aktivitaet, eff.groesse);
+  const bereitschaft = readinessAusMessungen(aktivitaet);
+  const recomp = recompSignal(aktivitaet);
+  const gewicht30 = veraenderung(aktivitaet, "gewicht", 30);
+  const tage = tageSeitMessung(aktivitaet);
+
+  const karten: { ton: string; text: string; warum?: string[] }[] = [];
+
+  if (tage === null) {
+    karten.push({
+      ton: "border-primary/40",
+      text: "Trage deine erste Messung ein (Gewicht reicht). Ab dem zweiten Wert kann ich deinen Trend bewerten und Kalorien konkret anpassen.",
+    });
+  } else if (tage > 7) {
+    karten.push({
+      ton: "border-warning/40",
+      text: `Deine letzte Messung ist ${tage} Tage her. Für belastbare Trends reicht ein Wert pro Woche – am besten morgens, nüchtern, nach dem Toilettengang.`,
+    });
+  }
+
+  if (bereitschaft) {
+    karten.push({
+      ton: "border-info/30",
+      text:
+        bereitschaft.score >= 75
+          ? `Deine Bereitschaft liegt bei ${bereitschaft.score}/100 – heute ist ein guter Tag für schwere Grundübungen und einen Steigerungsversuch.`
+          : bereitschaft.score >= 55
+            ? `Bereitschaft ${bereitschaft.score}/100: Training wie geplant, aber die letzten Sätze mit 1–2 Wiederholungen Reserve.`
+            : `Bereitschaft ${bereitschaft.score}/100: Reduziere heute Volumen und Last um rund 30 % oder lege einen Erholungstag ein.`,
+      warum: bereitschaft.gruende,
+    });
+  }
+
+  if (gewicht30 !== null) {
+    const ziel = eff.ziel;
+    const text =
+      ziel === "fettabbau"
+        ? gewicht30 <= -0.4
+          ? `Gewicht ${gewicht30.toLocaleString("de-DE")} kg in 30 Tagen – gutes Tempo. Kalorien beibehalten, Protein hoch.`
+          : `Gewicht ${gewicht30 > 0 ? "+" : ""}${gewicht30.toLocaleString("de-DE")} kg in 30 Tagen. Wenn du abnehmen willst: rund 150–200 kcal weniger pro Tag oder 1.500 Schritte mehr.`
+        : ziel === "muskelaufbau"
+          ? gewicht30 >= 0.3
+            ? `Gewicht +${gewicht30.toLocaleString("de-DE")} kg in 30 Tagen – solider Aufbau. Weiter progressiv steigern.`
+            : `Gewicht ${gewicht30.toLocaleString("de-DE")} kg in 30 Tagen. Für Aufbau fehlen dir vermutlich 150–250 kcal pro Tag.`
+          : `Gewicht ${gewicht30 > 0 ? "+" : ""}${gewicht30.toLocaleString("de-DE")} kg in 30 Tagen. Für Recomposition ist ein stabiles Gewicht bei sinkendem Körperfett das Ziel.`;
+    karten.push({ ton: "border-primary/30", text });
+  }
+
+  if (recomp) {
+    karten.push({
+      ton: recomp.positiv ? "border-success/40" : "border-border",
+      text: recomp.positiv
+        ? `Fettmasse ${recomp.fett.toLocaleString("de-DE")} kg bei Magermasse ${recomp.mager > 0 ? "+" : ""}${recomp.mager.toLocaleString("de-DE")} kg – das ist genau der Verlauf, den wir sehen wollen.`
+        : `Fettmasse ${recomp.fett > 0 ? "+" : ""}${recomp.fett.toLocaleString("de-DE")} kg, Magermasse ${recomp.mager > 0 ? "+" : ""}${recomp.mager.toLocaleString("de-DE")} kg. Erhöhe Protein auf etwa 2 g je kg Körpergewicht und halte die schweren Grundübungen.`,
+    });
+  }
+
+  if (kennzahlen.gewicht !== null && kennzahlen.koerperfett === null) {
+    karten.push({
+      ton: "border-border",
+      text: "Wenn deine Waage Körperfett, Wasser und Muskeln anzeigt: trage sie mit ein. Dann trenne ich Fett- und Magermasse statt nur Gewicht zu betrachten.",
+    });
+  }
+
+  if (karten.length === 0) return null;
+
+  return (
+    <Section titel="Aus deinen Messwerten">
+      <div className="space-y-3">
+        {karten.map((k, i) => (
+          <Card key={i} className={k.ton}>
+            <p className="text-sm leading-relaxed">{k.text}</p>
+            {k.warum && <Why punkte={k.warum} />}
+          </Card>
+        ))}
+        <RLink to="/fortschritt" className="inline-flex text-xs font-bold uppercase tracking-wider text-primary">
+          Messung eintragen
+        </RLink>
+      </div>
+    </Section>
+  );
+}
+
 function CoachPage() {
   const [msgs, setMsgs] = useState<Msg[]>([
     {
@@ -57,6 +155,8 @@ function CoachPage() {
         <p className="label-xs">KI-Coach</p>
         <h1 className="mt-1 font-display text-3xl font-extrabold">Dein Coach</h1>
       </header>
+
+      <KoerperEmpfehlungen />
 
       <Section titel="Proaktive Empfehlungen">
         <div className="space-y-3">

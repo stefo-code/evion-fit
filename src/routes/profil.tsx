@@ -25,7 +25,7 @@ export const Route = createFileRoute("/profil")({
       { title: "Dein Profil – EVION" },
       {
         name: "description",
-        content: "Persönliche Daten, Ziele, Training, Ernährung, Gesundheit, Geräte und Datenschutz verwalten.",
+        content: "Persönliche Daten, Ziele, Training, Ernährung, Gesundheit, Körperwerte und Datenschutz verwalten.",
       },
       { property: "og:title", content: "Dein Profil – EVION" },
       { property: "og:description", content: "Alle Onboarding-Angaben jederzeit anpassbar." },
