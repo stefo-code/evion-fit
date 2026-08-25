@@ -95,16 +95,6 @@ function EinstellungenPage() {
         </Card>
       </Section>
 
-      <Section titel="Verbundene Quellen">
-        <Card className="flex items-center gap-3 text-sm">
-          <Watch className="h-4 w-4 shrink-0 text-muted-foreground" />
-          Health-Integrationen verwalten
-          <Link to="/geraete" className="ml-auto shrink-0 text-xs font-bold uppercase tracking-wider text-primary">
-            Öffnen
-          </Link>
-        </Card>
-      </Section>
-
       <Section titel="Deine Daten">
         <div className="space-y-3">
           <Card className="flex items-center gap-3 text-sm">

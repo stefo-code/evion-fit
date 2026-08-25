@@ -36,7 +36,7 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [passwort, setPasswort] = useState("");
   const [busy, setBusy] = useState(false);
-  const ziel = weiter && weiter.startsWith("/") ? weiter : "/geraete";
+  const ziel = weiter && weiter.startsWith("/") ? weiter : "/";
 
   useEffect(() => {
     if (session) void navigate({ to: ziel });

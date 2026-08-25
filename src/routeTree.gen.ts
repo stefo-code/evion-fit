@@ -17,14 +17,12 @@ import { Route as EinstellungenRouteImport } from './routes/einstellungen'
 import { Route as ErfolgeRouteImport } from './routes/erfolge'
 import { Route as ErnaehrungRouteImport } from './routes/ernaehrung'
 import { Route as FortschrittRouteImport } from './routes/fortschritt'
-import { Route as GeraeteRouteImport } from './routes/geraete'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as ProfilRouteImport } from './routes/profil'
 import { Route as SupplementsRouteImport } from './routes/supplements'
 import { Route as WochenrueckblickRouteImport } from './routes/wochenrueckblick'
 import { Route as TrainingIndexRouteImport } from './routes/training.index'
 import { Route as TrainingWorkoutRouteImport } from './routes/training.workout'
-import { Route as ApiPublicHealthIngestRouteImport } from './routes/api/public/health-ingest'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -66,11 +64,6 @@ const FortschrittRoute = FortschrittRouteImport.update({
   path: '/fortschritt',
   getParentRoute: () => rootRouteImport,
 } as any)
-const GeraeteRoute = GeraeteRouteImport.update({
-  id: '/geraete',
-  path: '/geraete',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -101,11 +94,6 @@ const TrainingWorkoutRoute = TrainingWorkoutRouteImport.update({
   path: '/training/workout',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicHealthIngestRoute = ApiPublicHealthIngestRouteImport.update({
-  id: '/api/public/health-ingest',
-  path: '/api/public/health-ingest',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -116,14 +104,12 @@ export interface FileRoutesByFullPath {
   '/erfolge': typeof ErfolgeRoute
   '/ernaehrung': typeof ErnaehrungRoute
   '/fortschritt': typeof FortschrittRoute
-  '/geraete': typeof GeraeteRoute
   '/onboarding': typeof OnboardingRoute
   '/profil': typeof ProfilRoute
   '/supplements': typeof SupplementsRoute
   '/wochenrueckblick': typeof WochenrueckblickRoute
   '/training/workout': typeof TrainingWorkoutRoute
   '/training/': typeof TrainingIndexRoute
-  '/api/public/health-ingest': typeof ApiPublicHealthIngestRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -134,14 +120,12 @@ export interface FileRoutesByTo {
   '/erfolge': typeof ErfolgeRoute
   '/ernaehrung': typeof ErnaehrungRoute
   '/fortschritt': typeof FortschrittRoute
-  '/geraete': typeof GeraeteRoute
   '/onboarding': typeof OnboardingRoute
   '/profil': typeof ProfilRoute
   '/supplements': typeof SupplementsRoute
   '/wochenrueckblick': typeof WochenrueckblickRoute
   '/training/workout': typeof TrainingWorkoutRoute
   '/training': typeof TrainingIndexRoute
-  '/api/public/health-ingest': typeof ApiPublicHealthIngestRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -153,14 +137,12 @@ export interface FileRoutesById {
   '/erfolge': typeof ErfolgeRoute
   '/ernaehrung': typeof ErnaehrungRoute
   '/fortschritt': typeof FortschrittRoute
-  '/geraete': typeof GeraeteRoute
   '/onboarding': typeof OnboardingRoute
   '/profil': typeof ProfilRoute
   '/supplements': typeof SupplementsRoute
   '/wochenrueckblick': typeof WochenrueckblickRoute
   '/training/workout': typeof TrainingWorkoutRoute
   '/training/': typeof TrainingIndexRoute
-  '/api/public/health-ingest': typeof ApiPublicHealthIngestRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -173,14 +155,12 @@ export interface FileRouteTypes {
     | '/erfolge'
     | '/ernaehrung'
     | '/fortschritt'
-    | '/geraete'
     | '/onboarding'
     | '/profil'
     | '/supplements'
     | '/wochenrueckblick'
     | '/training/workout'
     | '/training/'
-    | '/api/public/health-ingest'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -191,14 +171,12 @@ export interface FileRouteTypes {
     | '/erfolge'
     | '/ernaehrung'
     | '/fortschritt'
-    | '/geraete'
     | '/onboarding'
     | '/profil'
     | '/supplements'
     | '/wochenrueckblick'
     | '/training/workout'
     | '/training'
-    | '/api/public/health-ingest'
   id:
     | '__root__'
     | '/'
@@ -209,14 +187,12 @@ export interface FileRouteTypes {
     | '/erfolge'
     | '/ernaehrung'
     | '/fortschritt'
-    | '/geraete'
     | '/onboarding'
     | '/profil'
     | '/supplements'
     | '/wochenrueckblick'
     | '/training/workout'
     | '/training/'
-    | '/api/public/health-ingest'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -228,14 +204,12 @@ export interface RootRouteChildren {
   ErfolgeRoute: typeof ErfolgeRoute
   ErnaehrungRoute: typeof ErnaehrungRoute
   FortschrittRoute: typeof FortschrittRoute
-  GeraeteRoute: typeof GeraeteRoute
   OnboardingRoute: typeof OnboardingRoute
   ProfilRoute: typeof ProfilRoute
   SupplementsRoute: typeof SupplementsRoute
   WochenrueckblickRoute: typeof WochenrueckblickRoute
   TrainingWorkoutRoute: typeof TrainingWorkoutRoute
   TrainingIndexRoute: typeof TrainingIndexRoute
-  ApiPublicHealthIngestRoute: typeof ApiPublicHealthIngestRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -296,13 +270,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FortschrittRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/geraete': {
-      id: '/geraete'
-      path: '/geraete'
-      fullPath: '/geraete'
-      preLoaderRoute: typeof GeraeteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/onboarding': {
       id: '/onboarding'
       path: '/onboarding'
@@ -345,13 +312,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TrainingWorkoutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/health-ingest': {
-      id: '/api/public/health-ingest'
-      path: '/api/public/health-ingest'
-      fullPath: '/api/public/health-ingest'
-      preLoaderRoute: typeof ApiPublicHealthIngestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -364,14 +324,12 @@ const rootRouteChildren: RootRouteChildren = {
   ErfolgeRoute: ErfolgeRoute,
   ErnaehrungRoute: ErnaehrungRoute,
   FortschrittRoute: FortschrittRoute,
-  GeraeteRoute: GeraeteRoute,
   OnboardingRoute: OnboardingRoute,
   ProfilRoute: ProfilRoute,
   SupplementsRoute: SupplementsRoute,
   WochenrueckblickRoute: WochenrueckblickRoute,
   TrainingWorkoutRoute: TrainingWorkoutRoute,
   TrainingIndexRoute: TrainingIndexRoute,
-  ApiPublicHealthIngestRoute: ApiPublicHealthIngestRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
