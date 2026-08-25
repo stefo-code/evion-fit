@@ -28,14 +28,15 @@ Statt Geräte-Sync gibt es eine schnelle, gut gemachte manuelle Erfassung deiner
 - Seite `/geraete` und die Verlinkungen in Navigation, Profil, Einstellungen und Onboarding entfallen; der Onboarding-Schritt wird durch „Erste Messung eintragen" ersetzt.
 - Nicht mehr genutzte Sync-Bausteine (Brücke, Ingest-Route, Integrations-Datei, CSV-Import) werden entfernt. Die Cloud-Tabellen bleiben zunächst unangetastet, damit keine Daten verloren gehen – auf Wunsch räume ich sie später auf.
 
-## Vorschlag: weitere sinnvolle manuelle Werte
+## Zusätzliche manuelle Werte (mit umgesetzt)
 
-Optional, jeweils klein und überspringbar gehalten – sag mir, welche davon rein sollen:
-- **Ruhepuls** (morgens, Galaxy Watch) und **HRV** – beste Indikatoren für Erholung und Trainingssteuerung.
-- **Schlafdauer und Schlafqualität** (Samsung Health) – steuert Empfehlungen zu Trainingsintensität.
-- **Schritte pro Tag** – Alltagsaktivität, wichtig für den Kalorienverbrauch.
-- **Taille** (bereits vorhanden) und optional Hüfte/Brust/Arm/Oberschenkel – oft aussagekräftiger als die Waage.
-- **Subjektive Werte**: Energie, Muskelkater, Stress (1–5) – schnell eingegeben, sehr nützlich für die Autoregulation.
+Ein zweiter, optionaler Abschnitt „Erholung & Alltag" im selben Formular – alles überspringbar:
+- **Ruhepuls** und **HRV** (Galaxy Watch) → fließen in eine Readiness-Einschätzung ein, die Trainingsintensität empfiehlt.
+- **Schlafdauer und Schlafqualität** (Samsung Health) → dämpft Empfehlungen bei schlechtem Schlaf.
+- **Schritte pro Tag** → Alltagsaktivität im Cockpit und in der Kalorienbetrachtung.
+- **Umfänge**: Taille (vorhanden), Hüfte, Brust, Arm, Oberschenkel – mit eigenen Verläufen.
+- **Subjektiv**: Energie, Muskelkater, Stress (je 1–5) → Autoregulation im Training (Sätze/Intensität anpassen).
+
 
 ## Technische Details
 
