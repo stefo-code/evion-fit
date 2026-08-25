@@ -11,7 +11,7 @@ import {
   Sparkles,
   Target,
   User,
-  Watch,
+  Scale,
 } from "lucide-react";
 import { Card, Disclaimer, Section } from "@/components/ui-kit";
 import { goalLabels } from "@/lib/demo-data";
@@ -25,7 +25,7 @@ export const Route = createFileRoute("/profil")({
       { title: "Dein Profil – EVION" },
       {
         name: "description",
-        content: "Persönliche Daten, Ziele, Training, Ernährung, Gesundheit, Geräte und Datenschutz verwalten.",
+        content: "Persönliche Daten, Ziele, Training, Ernährung, Gesundheit, Körperwerte und Datenschutz verwalten.",
       },
       { property: "og:title", content: "Dein Profil – EVION" },
       { property: "og:description", content: "Alle Onboarding-Angaben jederzeit anpassbar." },
@@ -193,7 +193,7 @@ function ProfilPage() {
 
       <Section titel="Verwaltung">
         <div className="space-y-3">
-          <LinkZeile to="/geraete" icon={Watch} titel="Geräte & Apps" sub="Health Connect, Samsung Health, Beurer" />
+          <LinkZeile to="/fortschritt" icon={Scale} titel="Körperwerte erfassen" sub="Gewicht, Körperfett, Wasser, Muskeln, Umfänge" />
           <LinkZeile to="/einstellungen" icon={Bell} titel="Benachrichtigungen" sub="Erinnerungen und Intensität" />
           <LinkZeile to="/datenschutz" icon={Shield} titel="Datenschutz & Daten" sub="Export, Löschung, Freigaben" />
           <LinkZeile to="/einstellungen" icon={Settings} titel="EVION Einstellungen" sub="Profil, Ziel, Vorgaben" />

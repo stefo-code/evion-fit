@@ -36,12 +36,22 @@ import { Nudge } from "@/components/nudge";
 import { effektivesProfil, useOnboardingProfil } from "@/lib/onboarding-store";
 import {
   einheitenSeit,
+  ersterWert,
   gesamtVolumen,
+  koerperKennzahlen,
+  letzterWert,
+  readinessAusMessungen,
+  recompSignal,
   rekorde,
   streak as serie,
+  tageSeitMessung,
   useAktivitaet,
+  veraenderung,
+  verlauf,
   volumen as satzVolumen,
 } from "@/lib/activity-store";
+import { MessungForm } from "@/components/messung-form";
+
 import {
   erzeugePlan,
   mappeEquipment,
@@ -105,9 +115,8 @@ function Cockpit() {
   const naechsterTagIndex = plan.length > 0 ? aktivitaet.einheiten.length % plan.length : 0;
   const naechsterTag = plan[naechsterTagIndex];
 
-  const gewichte = aktivitaet.gewichte;
-  const startGewicht = gewichte[0]?.gewicht ?? profil.gewicht ?? profile.startGewicht;
-  const aktuellesGewicht = gewichte[gewichte.length - 1]?.gewicht ?? profil.gewicht ?? profile.gewicht;
+  const startGewicht = ersterWert(aktivitaet, "gewicht")?.wert ?? profil.gewicht ?? profile.startGewicht;
+  const aktuellesGewicht = letzterWert(aktivitaet, "gewicht")?.wert ?? profil.gewicht ?? profile.gewicht;
   const zielGewichtWert = profil.zielGewicht ?? profile.zielGewicht;
   const gewichtDelta = +(startGewicht - aktuellesGewicht).toFixed(1);
   const zielFortschritt =
@@ -115,13 +124,18 @@ function Cockpit() {
       ? 100
       : Math.max(0, Math.min(100, Math.round((gewichtDelta / (startGewicht - zielGewichtWert)) * 100)));
 
+  const gewichtsKurve = verlauf(aktivitaet, "gewicht", 180);
   const gewichtsDaten =
-    gewichte.length > 1
-      ? gewichte.map((g) => ({
-          woche: new Date(g.datum).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }),
-          gewicht: g.gewicht,
-        }))
+    gewichtsKurve.length > 1
+      ? gewichtsKurve.map((p) => ({ woche: p.datum, gewicht: p.wert }))
       : gewichtsVerlauf;
+  const kennzahlen = koerperKennzahlen(aktivitaet, eff.groesse);
+  const recomp = recompSignal(aktivitaet);
+  const eigeneReadiness = readinessAusMessungen(aktivitaet);
+  const tageOhneMessung = tageSeitMessung(aktivitaet);
+  const fettDelta = veraenderung(aktivitaet, "koerperfett", 90);
+  const [messungOffen, setMessungOffen] = useState(false);
+
 
   const letzteEinheit = aktivitaet.einheiten[aktivitaet.einheiten.length - 1];
   const topRekord = rekorde(aktivitaet)[0];
@@ -330,20 +344,65 @@ function Cockpit() {
           </div>
 
           <p className="mt-3 rounded-xl bg-secondary/50 p-4 text-sm leading-relaxed">
-            Dein Gewicht und dein Taillenumfang sinken, während deine Kraft in den letzten acht Wochen
-            gestiegen ist. Dein aktueller Plan scheint gut zu funktionieren.
+            {recomp
+              ? recomp.positiv
+                ? `Fettmasse ${recomp.fett.toLocaleString("de-DE")} kg, Magermasse ${recomp.mager > 0 ? "+" : ""}${recomp.mager.toLocaleString("de-DE")} kg – genau das Muster einer gelungenen Body Recomposition.`
+                : `Fettmasse ${recomp.fett > 0 ? "+" : ""}${recomp.fett.toLocaleString("de-DE")} kg, Magermasse ${recomp.mager > 0 ? "+" : ""}${recomp.mager.toLocaleString("de-DE")} kg. Protein und Krafttraining hochhalten, damit die Substanz bleibt.`
+              : fettDelta !== null
+                ? `Dein Körperfettanteil hat sich in den letzten Wochen um ${fettDelta.toLocaleString("de-DE")} Prozentpunkte verändert.`
+                : "Trage regelmäßig Gewicht und Körperfett ein – daraus leitet EVION deinen echten Fortschritt ab."}
           </p>
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <QualityTag quality="gemessen" /> Gewicht, Taille
+            <QualityTag quality="gemessen" /> Gewicht, Umfänge
             <span className="mx-1 text-border">|</span>
-            <QualityTag quality="geschätzt" /> Körperfett, Muskelmasse (BIA)
+            <QualityTag quality="geschätzt" /> Körperfett, Muskeln, Wasser (Waage)
           </div>
           <Disclaimer>
-            Körperfett- und Muskelmassewerte aus Bioimpedanz-Waagen sind Schätzwerte und können vom
+            Körperfett-, Muskel- und Wasserwerte aus Bioimpedanz-Waagen sind Schätzwerte und können vom
             tatsächlichen Wert abweichen. Aussagekräftig ist vor allem der Trend.
           </Disclaimer>
         </Card>
+      </Section>
+
+      {/* KÖRPERWERTE ERFASSEN */}
+      <Section
+        titel="Körperwerte"
+        aktion={
+          <button
+            onClick={() => setMessungOffen((o) => !o)}
+            className="text-xs font-bold uppercase tracking-wider text-primary"
+          >
+            {messungOffen ? "Schließen" : "Messung eintragen"}
+          </button>
+        }
+      >
+        <Card>
+          <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
+            <Stat
+              label="Gewicht"
+              value={kennzahlen.gewicht?.toLocaleString("de-DE") ?? "—"}
+              unit="kg"
+              delta={kennzahlen.bmi !== null ? `BMI ${kennzahlen.bmi.toLocaleString("de-DE")}` : "noch kein BMI"}
+            />
+            <Stat label="Körperfett" value={kennzahlen.koerperfett?.toLocaleString("de-DE") ?? "—"} unit="%" />
+            <Stat label="Muskeln" value={kennzahlen.muskeln?.toLocaleString("de-DE") ?? "—"} unit="%" />
+            <Stat label="Wasser" value={kennzahlen.wasser?.toLocaleString("de-DE") ?? "—"} unit="%" />
+          </div>
+          <p className="mt-4 text-sm text-muted-foreground">
+            {tageOhneMessung === null
+              ? "Noch keine Messung erfasst – der erste Wert ist dein Startpunkt."
+              : tageOhneMessung === 0
+                ? "Heute schon gemessen – stark."
+                : `Letzte Messung vor ${tageOhneMessung} ${tageOhneMessung === 1 ? "Tag" : "Tagen"}.`}
+          </p>
+          {messungOffen && (
+            <div className="mt-4 border-t border-border pt-4">
+              <MessungForm onGespeichert={() => setMessungOffen(false)} />
+            </div>
+          )}
+        </Card>
+
       </Section>
 
       {/* DIESE WOCHE */}
@@ -405,31 +464,56 @@ function Cockpit() {
       {/* KÖRPERSTATUS */}
       <Section titel="Körperstatus">
         <Card>
-          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-5">
-            <Ring value={readiness.score} tone="info" sub="Bereit" size={112} />
-            <div className="min-w-0 space-y-3">
-              {[
-                { l: "Schlaf", v: readiness.schlaf },
-                { l: "Regeneration", v: readiness.regeneration },
-                { l: "Muskelstatus", v: readiness.muskelstatus },
-              ].map((r) => (
-                <div key={r.l}>
-                  <div className="flex justify-between text-sm">
-                    <span className="font-semibold">{r.l}</span>
-                    <span className="num text-muted-foreground">{r.v}</span>
-                  </div>
-                  <Bar className="mt-1.5" value={r.v} tone="info" />
+          {eigeneReadiness ? (
+            <>
+              <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-5">
+                <Ring value={eigeneReadiness.score} tone="info" sub="Bereit" size={112} />
+                <div className="min-w-0 space-y-2 text-sm">
+                  <p className="font-semibold">
+                    {eigeneReadiness.score >= 75
+                      ? "Gute Voraussetzungen für eine schwere Einheit."
+                      : eigeneReadiness.score >= 55
+                        ? "Normales Training sinnvoll – Spitzenlasten dosieren."
+                        : "Heute eher locker: Technik, weniger Sätze, mehr Schlaf."}
+                  </p>
+                  <p className="text-muted-foreground">Aus deinen eingetragenen Erholungswerten berechnet.</p>
                 </div>
-              ))}
-            </div>
-          </div>
-          <p className="mt-4 rounded-xl bg-secondary/50 p-4 text-sm font-semibold">{readiness.empfehlung}</p>
-          <Why punkte={readiness.warum} />
+              </div>
+              <Why punkte={eigeneReadiness.gruende} />
+            </>
+          ) : (
+            <>
+              <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-5">
+                <Ring value={readiness.score} tone="info" sub="Bereit" size={112} />
+                <div className="min-w-0 space-y-3">
+                  {[
+                    { l: "Schlaf", v: readiness.schlaf },
+                    { l: "Regeneration", v: readiness.regeneration },
+                    { l: "Muskelstatus", v: readiness.muskelstatus },
+                  ].map((r) => (
+                    <div key={r.l}>
+                      <div className="flex justify-between text-sm">
+                        <span className="font-semibold">{r.l}</span>
+                        <span className="num text-muted-foreground">{r.v}</span>
+                      </div>
+                      <Bar className="mt-1.5" value={r.v} tone="info" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <p className="mt-4 rounded-xl bg-secondary/50 p-4 text-sm font-semibold">
+                Trage Schlaf, Ruhepuls, HRV oder dein Befinden ein – dann ersetzt EVION diese Beispielwerte
+                durch deinen echten Körperstatus.
+              </p>
+              <Why punkte={readiness.warum} />
+            </>
+          )}
           <Disclaimer>
             Der Körperstatus ist eine Schätzung auf Basis deiner Daten und keine medizinische Messung.
           </Disclaimer>
         </Card>
       </Section>
+
 
       {/* MUSKELSTATUS */}
       <Section titel="Muskelstatus">

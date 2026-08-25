@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Card, Chip, Disclaimer, Section } from "@/components/ui-kit";
 import { profile, goalLabels, type Goal } from "@/lib/demo-data";
-import { Bell, Download, Trash2, User, Watch } from "lucide-react";
+import { Bell, Download, Trash2, User } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/einstellungen")({
@@ -92,16 +92,6 @@ function EinstellungenPage() {
               </Chip>
             ))}
           </div>
-        </Card>
-      </Section>
-
-      <Section titel="Verbundene Quellen">
-        <Card className="flex items-center gap-3 text-sm">
-          <Watch className="h-4 w-4 shrink-0 text-muted-foreground" />
-          Health-Integrationen verwalten
-          <Link to="/geraete" className="ml-auto shrink-0 text-xs font-bold uppercase tracking-wider text-primary">
-            Öffnen
-          </Link>
         </Card>
       </Section>
 

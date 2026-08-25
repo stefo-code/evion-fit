@@ -16,7 +16,6 @@ import {
   Scale,
   Shield,
   Timer,
-  Watch,
   Zap,
 } from "lucide-react";
 import { EvionLogo } from "@/components/logo";
@@ -30,6 +29,7 @@ import {
   type OnboardingProfil,
 } from "@/lib/onboarding-store";
 import { cn } from "@/lib/utils";
+import { MessungForm } from "@/components/messung-form";
 import heroBild from "@/assets/onboarding-hero.png";
 
 export const Route = createFileRoute("/onboarding")({
@@ -55,7 +55,7 @@ const SCHRITTE = [
   "equipment",
   "ernaehrung",
   "gesundheit",
-  "geraete",
+  "messung",
 ] as const;
 
 function OnboardingPage() {
@@ -117,7 +117,7 @@ function OnboardingPage() {
     );
 
   const aktuell = SCHRITTE[i]!;
-  const optional = aktuell === "gesundheit" || aktuell === "geraete" || aktuell === "equipment";
+  const optional = aktuell === "gesundheit" || aktuell === "messung" || aktuell === "equipment";
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-5 pb-10 pt-6">
@@ -155,7 +155,7 @@ function OnboardingPage() {
         {aktuell === "equipment" && <EquipmentSchritt p={p} set={set} />}
         {aktuell === "ernaehrung" && <ErnaehrungSchritt p={p} set={set} />}
         {aktuell === "gesundheit" && <GesundheitSchritt p={p} set={set} />}
-        {aktuell === "geraete" && <GeraeteSchritt p={p} set={set} />}
+        {aktuell === "messung" && <MessungSchritt />}
       </div>
 
       <div className="mt-10 space-y-3">
@@ -803,43 +803,14 @@ function GesundheitSchritt({ p, set }: SchrittProps) {
   );
 }
 
-const geraeteKarten = [
-  { key: "samsung-health", titel: "Samsung Health", sub: "Schlaf, Schritte, Aktivität, Workouts", icon: Activity },
-  { key: "galaxy-watch-6", titel: "Galaxy Watch 6", sub: "Daten werden über Samsung Health synchronisiert.", icon: Watch },
-  { key: "health-connect", titel: "Health Connect", sub: "Herzfrequenz, HRV (sofern verfügbar), Schlaf", icon: Heart },
-  { key: "beurer", titel: "Beurer HealthManager Pro", sub: "Gewicht, Körperfett, Muskelmasse", icon: Scale },
-];
-
-function GeraeteSchritt({ p, set }: SchrittProps) {
+function MessungSchritt() {
   return (
     <>
-      <Titel titel="Verbinde deine Daten" sub="Weniger eingeben. Mehr verstehen." />
-      <div className="space-y-3">
-        {geraeteKarten.map((g) => (
-          <button
-            key={g.key}
-            onClick={() => set({ geraete: toggle(p.geraete, g.key) })}
-            className={cn(
-              "flex w-full items-start gap-3 rounded-2xl border bg-card p-4 text-left transition-all",
-              p.geraete.includes(g.key) ? "border-primary bg-primary/5" : "border-border",
-            )}
-          >
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-secondary text-muted-foreground">
-              <g.icon className="h-5 w-5" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block font-semibold">{g.titel}</span>
-              <span className="block text-xs text-muted-foreground">{g.sub}</span>
-            </span>
-            <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              {p.geraete.includes(g.key) ? "Vorgemerkt" : "Nicht verbunden"}
-            </span>
-          </button>
-        ))}
-      </div>
+      <Titel titel="Deine Startwerte" sub="Einmal messen – ab jetzt sieht EVION jede Veränderung." />
+      <MessungForm />
       <PrivacyCard>
-        Die echte Verbindung erfolgt später über Health Connect in der Android-Hülle. Bis dahin zeigt EVION
-        klar gekennzeichnete Demo-Werte – jede Datenquelle bleibt einzeln widerrufbar.
+        Gewicht reicht für den Start. Körperfett, Wasser und Muskeln kannst du von deiner Waage ablesen –
+        sie sind Schätzwerte und rein optional. Alles bleibt lokal auf deinem Gerät.
       </PrivacyCard>
     </>
   );

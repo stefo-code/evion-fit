@@ -11,7 +11,6 @@ import {
   Shield,
   Sparkles,
   User,
-  Watch,
   X,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -32,7 +31,6 @@ const secondary = [
   { to: "/profil", label: "Dein Profil", icon: User },
   { to: "/erfolge", label: "Erfolge", icon: Trophy },
   { to: "/supplements", label: "Supplements", icon: Pill },
-  { to: "/geraete", label: "Geräte", icon: Watch },
   { to: "/einstellungen", label: "Einstellungen", icon: Settings },
   { to: "/datenschutz", label: "Datenschutz", icon: Shield },
 ] as const;
