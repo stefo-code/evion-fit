@@ -11,7 +11,7 @@ import {
   Sparkles,
   Target,
   User,
-  Watch,
+  Scale,
 } from "lucide-react";
 import { Card, Disclaimer, Section } from "@/components/ui-kit";
 import { goalLabels } from "@/lib/demo-data";

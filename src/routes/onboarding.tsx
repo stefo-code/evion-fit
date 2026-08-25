@@ -16,7 +16,6 @@ import {
   Scale,
   Shield,
   Timer,
-  Watch,
   Zap,
 } from "lucide-react";
 import { EvionLogo } from "@/components/logo";

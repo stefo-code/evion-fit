@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Card, Chip, Disclaimer, Section } from "@/components/ui-kit";
 import { profile, goalLabels, type Goal } from "@/lib/demo-data";
-import { Bell, Download, Trash2, User, Watch } from "lucide-react";
+import { Bell, Download, Trash2, User } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/einstellungen")({
