@@ -36,12 +36,22 @@ import { Nudge } from "@/components/nudge";
 import { effektivesProfil, useOnboardingProfil } from "@/lib/onboarding-store";
 import {
   einheitenSeit,
+  ersterWert,
   gesamtVolumen,
+  koerperKennzahlen,
+  letzterWert,
+  readinessAusMessungen,
+  recompSignal,
   rekorde,
   streak as serie,
+  tageSeitMessung,
   useAktivitaet,
+  veraenderung,
+  verlauf,
   volumen as satzVolumen,
 } from "@/lib/activity-store";
+import { MessungForm } from "@/components/messung-form";
+
 import {
   erzeugePlan,
   mappeEquipment,
@@ -105,9 +115,8 @@ function Cockpit() {
   const naechsterTagIndex = plan.length > 0 ? aktivitaet.einheiten.length % plan.length : 0;
   const naechsterTag = plan[naechsterTagIndex];
 
-  const gewichte = aktivitaet.gewichte;
-  const startGewicht = gewichte[0]?.gewicht ?? profil.gewicht ?? profile.startGewicht;
-  const aktuellesGewicht = gewichte[gewichte.length - 1]?.gewicht ?? profil.gewicht ?? profile.gewicht;
+  const startGewicht = ersterWert(aktivitaet, "gewicht")?.wert ?? profil.gewicht ?? profile.startGewicht;
+  const aktuellesGewicht = letzterWert(aktivitaet, "gewicht")?.wert ?? profil.gewicht ?? profile.gewicht;
   const zielGewichtWert = profil.zielGewicht ?? profile.zielGewicht;
   const gewichtDelta = +(startGewicht - aktuellesGewicht).toFixed(1);
   const zielFortschritt =
@@ -115,13 +124,18 @@ function Cockpit() {
       ? 100
       : Math.max(0, Math.min(100, Math.round((gewichtDelta / (startGewicht - zielGewichtWert)) * 100)));
 
+  const gewichtsKurve = verlauf(aktivitaet, "gewicht", 180);
   const gewichtsDaten =
-    gewichte.length > 1
-      ? gewichte.map((g) => ({
-          woche: new Date(g.datum).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }),
-          gewicht: g.gewicht,
-        }))
+    gewichtsKurve.length > 1
+      ? gewichtsKurve.map((p) => ({ woche: p.datum, gewicht: p.wert }))
       : gewichtsVerlauf;
+  const kennzahlen = koerperKennzahlen(aktivitaet, eff.groesse);
+  const recomp = recompSignal(aktivitaet);
+  const eigeneReadiness = readinessAusMessungen(aktivitaet);
+  const tageOhneMessung = tageSeitMessung(aktivitaet);
+  const fettDelta = veraenderung(aktivitaet, "koerperfett", 90);
+  const [messungOffen, setMessungOffen] = useState(false);
+
 
   const letzteEinheit = aktivitaet.einheiten[aktivitaet.einheiten.length - 1];
   const topRekord = rekorde(aktivitaet)[0];
