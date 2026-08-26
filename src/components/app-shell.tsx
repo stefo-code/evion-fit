@@ -43,6 +43,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const [mehrOffen, setMehrOffen] = useState(false);
+  const [eintragenOffen, setEintragenOffen] = useState(false);
+  const [messungOffen, setMessungOffen] = useState(false);
 
   // Erststart: Onboarding automatisch öffnen (kein Menüpunkt).
   useEffect(() => {
