@@ -7,7 +7,8 @@ import {
   streak,
   useAktivitaet,
 } from "@/lib/activity-store";
-import { Lock, Trophy } from "lucide-react";
+import { Check, Lock, Star, Trophy } from "lucide-react";
+import { journey } from "@/lib/demo-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/erfolge")({
@@ -67,6 +68,46 @@ function ErfolgePage() {
           </Link>
         </Card>
       )}
+
+      <Section titel="Deine Journey">
+        <Card>
+          <ol className="relative space-y-1 pl-2">
+            {journey.map((j, i) => (
+              <li key={j.titel} className="relative flex gap-4 pb-5 last:pb-0">
+                {i < journey.length - 1 && (
+                  <span className="absolute left-[15px] top-8 h-full w-0.5 rounded bg-border" />
+                )}
+                <span
+                  className={cn(
+                    "z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full border-2",
+                    j.state === "done" && "border-transparent bg-success text-background",
+                    j.state === "current" && "border-primary bg-primary/20 text-primary",
+                    (j.state === "open" || j.state === "locked") &&
+                      "border-border bg-card text-muted-foreground",
+                  )}
+                >
+                  {j.state === "done" && <Check className="h-4 w-4" />}
+                  {j.state === "current" && <Star className="h-4 w-4" />}
+                  {j.state === "open" && <span className="h-2 w-2 rounded-full bg-muted-foreground" />}
+                  {j.state === "locked" && <Lock className="h-3.5 w-3.5" />}
+                </span>
+                <div className="min-w-0 pt-1">
+                  <p
+                    className={cn(
+                      "truncate font-display font-bold",
+                      j.state === "current" && "text-primary",
+                      (j.state === "locked" || j.state === "open") && "text-muted-foreground",
+                    )}
+                  >
+                    {j.titel}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">{j.detail}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </Card>
+      </Section>
 
       <Section titel="Abzeichen">
         <div className="grid gap-3 sm:grid-cols-2">

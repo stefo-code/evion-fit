@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import type { DataQuality } from "@/lib/demo-data";
-import { Info } from "lucide-react";
+import { Info, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 export function Section({
@@ -173,20 +173,55 @@ export function QualityTag({ quality }: { quality: DataQuality }) {
   );
 }
 
+/**
+ * Einheitliche Erklärung: ⓘ-Icon öffnet ein Bottom-Sheet.
+ * Wird appweit für „Warum?“, „Wie wird berechnet?“ usw. verwendet.
+ */
 export function Why({ punkte, titel = "Warum?" }: { punkte: string[]; titel?: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="mt-3">
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+        onClick={() => setOpen(true)}
+        aria-label={titel}
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
       >
-        <Info className="h-3.5 w-3.5" />
-        {titel}
+        <Info className="h-4 w-4" />
+        <span className="sr-only sm:not-sr-only">{titel}</span>
       </button>
-      {open && (
-        <ul className="mt-3 space-y-1.5 rounded-xl bg-secondary/60 p-4 text-sm text-muted-foreground animate-in fade-in slide-in-from-top-1">
+      <InfoSheet titel={titel} punkte={punkte} open={open} onClose={() => setOpen(false)} />
+    </div>
+  );
+}
+
+export function InfoSheet({
+  titel,
+  punkte,
+  open,
+  onClose,
+}: {
+  titel: string;
+  punkte: string[];
+  open: boolean;
+  onClose: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50">
+      <button aria-label="Schließen" onClick={onClose} className="absolute inset-0 bg-foreground/30 backdrop-blur-sm" />
+      <div className="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-3xl border-t border-border bg-card p-5 pb-8 animate-in slide-in-from-bottom">
+        <div className="flex items-center gap-3">
+          <p className="font-display text-base font-extrabold">{titel}</p>
+          <button
+            onClick={onClose}
+            aria-label="Schließen"
+            className="ml-auto grid h-8 w-8 place-items-center rounded-full bg-secondary text-muted-foreground"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
           {punkte.map((p) => (
             <li key={p} className="flex gap-2">
               <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-primary" />
@@ -194,10 +229,11 @@ export function Why({ punkte, titel = "Warum?" }: { punkte: string[]; titel?: st
             </li>
           ))}
         </ul>
-      )}
+      </div>
     </div>
   );
 }
+
 
 export function Chip({
   children,

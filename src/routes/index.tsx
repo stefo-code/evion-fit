@@ -1,57 +1,23 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import {
-  ChevronRight,
-  Flame,
-  Footprints,
-  Beef,
-  Dumbbell,
-  Lock,
-  Star,
-  Check,
-  Trophy,
-  Sparkles,
-  Timer,
-} from "lucide-react";
-import { Bar, Card, Chip, Disclaimer, QualityTag, Ring, Section, Stat, Why } from "@/components/ui-kit";
-import { MuscleMap } from "@/components/muscle-map";
-import {
-  coachInsight,
-  computeGoalScore,
-  erfolg,
-  gewichtsVerlauf,
-  goalLabels,
-  heute,
-  journey,
-  naechsterMeilenstein,
-  profile,
-  readiness,
-  scoreWeights,
-  woche,
-  wochenKennzahlen,
-  zeitModi,
-} from "@/lib/demo-data";
+import { ChevronRight, Info } from "lucide-react";
+import { Bar, Card, Disclaimer, InfoSheet, Ring, Section } from "@/components/ui-kit";
+import { computeGoalScore, goalLabels, profile } from "@/lib/demo-data";
 import { cn } from "@/lib/utils";
 import { Nudge } from "@/components/nudge";
 import { effektivesProfil, useOnboardingProfil } from "@/lib/onboarding-store";
 import {
   einheitenSeit,
+  erfolgsStatus,
   ersterWert,
-  gesamtVolumen,
-  koerperKennzahlen,
   letzterWert,
   readinessAusMessungen,
-  recompSignal,
   rekorde,
-  streak as serie,
-  tageSeitMessung,
   useAktivitaet,
-  veraenderung,
   verlauf,
   volumen as satzVolumen,
 } from "@/lib/activity-store";
-import { MessungForm } from "@/components/messung-form";
-
+import { readiness } from "@/lib/demo-data";
 import {
   erzeugePlan,
   mappeEquipment,
@@ -61,37 +27,35 @@ import {
   type PlanKontext,
 } from "@/lib/training-plan";
 
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Fitness-Cockpit – EVION" },
+      { title: "Status-Dashboard – EVION" },
       {
         name: "description",
         content:
-          "Goal Score, Tagesfokus, Wochenfortschritt, Körperstatus und KI-Empfehlungen auf einen Blick.",
+          "Goal Score, Veränderungen der letzten 7 Tage, Momentum, Körperstatus und der nächste Meilenstein auf einen Blick.",
       },
-      { property: "og:title", content: "Fitness-Cockpit – EVION" },
+      { property: "og:title", content: "Status-Dashboard – EVION" },
       {
         property: "og:description",
-        content: "Was soll ich heute tun? Mache ich Fortschritte? Bin ich bereit? Alles auf einem Screen.",
+        content: "Wie entwickle ich mich? Ein ruhiges Statusbild aus Training, Körperwerten und Erholung.",
       },
       { property: "og:image", content: "https://evion-fit.lovable.app/og-evion-cockpit.jpg" },
       { name: "twitter:image", content: "https://evion-fit.lovable.app/og-evion-cockpit.jpg" },
       { property: "og:url", content: "https://evion-fit.lovable.app/" },
     ],
     links: [{ rel: "canonical", href: "https://evion-fit.lovable.app/" }],
-
   }),
   component: Cockpit,
 });
+
+const wochentage = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"] as const;
 
 function Cockpit() {
   const { profil } = useOnboardingProfil();
   const eff = effektivesProfil(profil);
   const { score, parts } = computeGoalScore(eff.ziel);
-  const [zeit, setZeit] = useState<number | null>(null);
   const { aktivitaet } = useAktivitaet();
   const { einstellungen } = usePlanEinstellungen();
 
@@ -115,41 +79,81 @@ function Cockpit() {
   const naechsterTagIndex = plan.length > 0 ? aktivitaet.einheiten.length % plan.length : 0;
   const naechsterTag = plan[naechsterTagIndex];
 
-  const startGewicht = ersterWert(aktivitaet, "gewicht")?.wert ?? profil.gewicht ?? profile.startGewicht;
-  const aktuellesGewicht = letzterWert(aktivitaet, "gewicht")?.wert ?? profil.gewicht ?? profile.gewicht;
-  const zielGewichtWert = profil.zielGewicht ?? profile.zielGewicht;
-  const gewichtDelta = +(startGewicht - aktuellesGewicht).toFixed(1);
-  const zielFortschritt =
-    startGewicht === zielGewichtWert
-      ? 100
-      : Math.max(0, Math.min(100, Math.round((gewichtDelta / (startGewicht - zielGewichtWert)) * 100)));
+  const einheitenGesamt = aktivitaet.einheiten.length;
+  const onboardingModus = einheitenGesamt < 1;
 
-  const gewichtsKurve = verlauf(aktivitaet, "gewicht", 180);
-  const gewichtsDaten =
-    gewichtsKurve.length > 1
-      ? gewichtsKurve.map((p) => ({ woche: p.datum, gewicht: p.wert }))
-      : gewichtsVerlauf;
-  const kennzahlen = koerperKennzahlen(aktivitaet, eff.groesse);
-  const recomp = recompSignal(aktivitaet);
+  // --- Sektion 2: Was sich verändert hat -----------------------------------
+  const gewichtsKurve = verlauf(aktivitaet, "gewicht", 365);
+  const gewichtStart = ersterWert(aktivitaet, "gewicht")?.wert ?? null;
+  const gewichtJetzt = letzterWert(aktivitaet, "gewicht")?.wert ?? null;
+  const gewichtDelta =
+    gewichtStart !== null && gewichtJetzt !== null ? +(gewichtJetzt - gewichtStart).toFixed(1) : null;
+  const fettStart = ersterWert(aktivitaet, "koerperfett")?.wert ?? null;
+  const fettJetzt = letzterWert(aktivitaet, "koerperfett")?.wert ?? null;
+  const fettDelta = fettStart !== null && fettJetzt !== null ? +(fettJetzt - fettStart).toFixed(1) : null;
+
+  const volumen7 = einheitenSeit(aktivitaet, 7).reduce((s, e) => s + satzVolumen(e.saetze), 0);
+  const volumen14 = einheitenSeit(aktivitaet, 14).reduce((s, e) => s + satzVolumen(e.saetze), 0);
+  const volumenDelta = volumen7 - (volumen14 - volumen7);
+  const anzahlRekorde = rekorde(aktivitaet).length;
+
+  // --- Sektion 3: Momentum -------------------------------------------------
+  const heuteIdx = (new Date().getDay() + 6) % 7;
+  const trainingsTage = useMemo(() => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - heuteIdx);
+    const erledigt = new Set<number>();
+    for (const e of aktivitaet.einheiten) {
+      const d = new Date(e.datum);
+      const diff = Math.floor((d.getTime() - start.getTime()) / 86400000);
+      if (diff >= 0 && diff < 7) erledigt.add(diff);
+    }
+    const geplant = Math.max(0, (profil.tage || 4) - erledigt.size);
+    let offen = geplant;
+    return wochentage.map((tag, i) => {
+      if (erledigt.has(i)) return { tag, state: "erledigt" as const };
+      if (i > heuteIdx && offen > 0) {
+        offen -= 1;
+        return { tag, state: "geplant" as const };
+      }
+      return { tag, state: "leer" as const };
+    });
+  }, [aktivitaet.einheiten, heuteIdx, profil.tage]);
+  const einheitenWoche = trainingsTage.filter((t) => t.state === "erledigt").length;
+
+  // --- Sektion 4: Körperstatus --------------------------------------------
   const eigeneReadiness = readinessAusMessungen(aktivitaet);
-  const tageOhneMessung = tageSeitMessung(aktivitaet);
-  const fettDelta = veraenderung(aktivitaet, "koerperfett", 90);
-  const [messungOffen, setMessungOffen] = useState(false);
+  const bereitschaft = eigeneReadiness?.score ?? readiness.score;
+  const koerperWerte = [
+    { l: "Schlaf", v: readiness.schlaf },
+    { l: "Regeneration", v: readiness.regeneration },
+    { l: "Muskelstatus", v: readiness.muskelstatus },
+  ];
 
+  // --- Sektion 5: Nächster Meilenstein -------------------------------------
+  const meilenstein = erfolgsStatus(aktivitaet).find((e) => !e.erreicht) ?? null;
 
-  const letzteEinheit = aktivitaet.einheiten[aktivitaet.einheiten.length - 1];
-  const topRekord = rekorde(aktivitaet)[0];
-  const wocheEinheiten = einheitenSeit(aktivitaet, 7);
-  const trainingsSerie = serie(aktivitaet);
+  // --- Sektion 6: Coach ----------------------------------------------------
+  const coachText = onboardingModus
+    ? "Deine Auswertung entsteht, sobald die erste Einheit protokolliert ist."
+    : volumenDelta > 0
+      ? `Dein Trainingsvolumen liegt in den letzten 7 Tagen um ${Math.round(volumenDelta).toLocaleString("de-DE")} kg über der Vorwoche.`
+      : gewichtDelta !== null && Math.abs(gewichtDelta) < 0.3
+        ? "Dein Gewicht ist seit Start weitgehend stabil – bei steigendem Volumen ein typisches Recomposition-Muster."
+        : `In den letzten 7 Tagen wurden ${einheitenWoche} Einheiten protokolliert.`;
+
+  const [scoreInfo, setScoreInfo] = useState(false);
+  const [koerperInfo, setKoerperInfo] = useState(false);
 
   return (
     <div className="space-y-8">
-      {/* HERO */}
+      {/* 1 — HEADER */}
       <header className="hero-glow surface relative overflow-hidden p-6">
         <div className="space-y-4">
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
-              <p className="label-xs truncate whitespace-nowrap">Guten Morgen, {eff.name}</p>
+              <p className="label-xs truncate whitespace-nowrap">Hallo, {eff.name}</p>
               <h1 className="mt-1 truncate whitespace-nowrap font-display text-lg font-extrabold leading-tight sm:text-xl md:text-2xl">
                 Ziel: {goalLabels[eff.ziel]}
               </h1>
@@ -162,489 +166,269 @@ function Cockpit() {
               {eff.name.slice(0, 1).toUpperCase()}
             </Link>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-4">
             <Ring value={score} label={String(score)} sub="Goal Score" />
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-primary/15 px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary">
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-success">
+                +{profile.goalScoreDelta} ggü. Vorwoche
+              </p>
+              <span className="inline-flex rounded-full bg-primary/12 px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary">
                 Auf Kurs
               </span>
-              <span className="text-xs font-semibold text-muted-foreground">
-                +{profile.goalScoreDelta} Punkte ggü. letzter Woche
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-3 py-1 text-xs font-bold text-accent">
-                <Flame className="h-3.5 w-3.5" /> {trainingsSerie} Einheiten Serie
-              </span>
+              <button
+                onClick={() => setScoreInfo(true)}
+                aria-label="Wie wird mein Score berechnet?"
+                className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground"
+              >
+                <Info className="h-4 w-4" /> Wie wird mein Score berechnet?
+              </button>
             </div>
           </div>
         </div>
-        <ScoreErklaerung parts={parts} score={score} />
+        <InfoSheet
+          titel="Wie wird mein Score berechnet?"
+          open={scoreInfo}
+          onClose={() => setScoreInfo(false)}
+          punkte={[
+            `Gewichtung passend zu deinem Ziel „${goalLabels[eff.ziel]}“.`,
+            ...parts.map((p) => `${p.key}: ${p.value} % erfüllt × ${p.weight} % Gewicht`),
+            `Ergebnis: ${score} von 100. Supplements fließen bewusst nicht in den Score ein.`,
+          ]}
+        />
       </header>
 
-      {/* PROGRESSIVE PROFILING */}
+      {/* Adaptive Rückfrage – dismissbar, maximal eine */}
       <Nudge
         frage={{
           id: "dauer-40",
           text: "Deine Trainings dauern durchschnittlich 38 Minuten statt der geplanten 60 Minuten.",
-          hinweis: "Soll EVION zukünftige Workouts auf etwa 40 Minuten optimieren?",
+          hinweis: "Soll EVION zukünftige Workouts auf etwa 40 Minuten auslegen?",
           antworten: ["Ja, anpassen", "Nein"],
         }}
       />
 
-
-      {/* ERFOLG */}
-      <div className="surface flex items-center gap-4 border-primary/40 bg-primary/10 p-5">
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground">
-          <Trophy className="h-6 w-6" />
-        </span>
-        <div className="min-w-0">
-          <p className="label-xs text-primary">
-            {topRekord ? "Aktueller Rekord" : letzteEinheit ? "Letzte Einheit" : "Erster Schritt"}
-          </p>
-          <p className="num truncate text-xl font-extrabold">
-            {topRekord
-              ? `${topRekord.name}: ${topRekord.gewicht} kg × ${topRekord.wdh}`
-              : letzteEinheit
-                ? `${satzVolumen(letzteEinheit.saetze).toLocaleString("de-DE")} kg Volumen`
-                : "Noch kein Training protokolliert"}
-          </p>
-          <p className="truncate text-sm text-muted-foreground">
-            {aktivitaet.einheiten.length > 0
-              ? `${aktivitaet.einheiten.length} Einheiten · ${gesamtVolumen(aktivitaet).toLocaleString("de-DE")} kg gesamt`
-              : "Starte dein erstes Training – Auswertung und Erfolge entstehen automatisch."}
-          </p>
-        </div>
-        <Link
-          to="/erfolge"
-          className="ml-auto shrink-0 text-xs font-bold uppercase tracking-wider text-primary"
-        >
-          Erfolge
-        </Link>
-      </div>
-
-      {/* HEUTE */}
-      <Section titel="Heute">
-        <Card>
-          <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
-            <TagesZiel
-              icon={Dumbbell}
-              label="Training"
-              value={naechsterTag?.titel ?? heute.workoutName}
-              sub={`${profil.dauer || heute.dauer} Minuten · ${naechsterTag?.uebungen.length ?? 0} Übungen`}
-            />
-            <TagesZiel
-              icon={Beef}
-              label="Protein"
-              value={`${heute.protein.ist} / ${heute.protein.ziel} g`}
-              pct={(heute.protein.ist / heute.protein.ziel) * 100}
-            />
-            <TagesZiel
-              icon={Flame}
-              label="Kalorien"
-              value={`${heute.kalorien.ist.toLocaleString("de-DE")} / ${heute.kalorien.ziel.toLocaleString("de-DE")}`}
-              pct={(heute.kalorien.ist / heute.kalorien.ziel) * 100}
-            />
-            <TagesZiel
-              icon={Footprints}
-              label="Schritte"
-              value={`${heute.schritte.ist.toLocaleString("de-DE")} / ${heute.schritte.ziel.toLocaleString("de-DE")}`}
-              pct={(heute.schritte.ist / heute.schritte.ziel) * 100}
-            />
-          </div>
-
-          <Link
-            to="/training/workout"
-            search={{ tag: naechsterTagIndex }}
-            className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 font-display text-base font-extrabold uppercase tracking-wide text-primary-foreground transition-transform hover:scale-[1.01]"
-          >
-            Training starten <ChevronRight className="h-5 w-5" />
-          </Link>
-
-          <div className="mt-4 rounded-2xl border border-border bg-secondary/40 p-4">
-            <p className="flex items-center gap-2 text-sm font-semibold">
-              <Timer className="h-4 w-4 text-primary" /> Heute nur wenig Zeit?
+      {/* 2 — WAS SICH VERÄNDERT HAT */}
+      <Section titel="Was sich verändert hat">
+        <Link to="/fortschritt" className="block">
+          <Card className="transition-colors hover:border-primary/40">
+            {gewichtsKurve.length > 1 ? (
+              <Sparkline werte={gewichtsKurve.map((p) => p.wert)} />
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Noch keine Trendkurve — ab der zweiten Messung sichtbar.
+              </p>
+            )}
+            <div className="mt-4 grid grid-cols-3 gap-4">
+              <Delta label="Gewicht" wert={gewichtDelta} einheit="kg" gutWennNegativ />
+              <Delta label="Körperfett" wert={fettDelta} einheit="%" gutWennNegativ />
+              <Delta
+                label="Volumen"
+                wert={onboardingModus ? null : Math.round(volumenDelta)}
+                einheit="kg"
+              />
+            </div>
+            <p className="mt-4 text-sm text-muted-foreground">
+              Rekorde: <span className="num font-semibold text-foreground">{anzahlRekorde}</span>
             </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {zeitModi.map((m) => (
-                <Chip key={m.minuten} active={zeit === m.minuten} onClick={() => setZeit(m.minuten)}>
-                  {m.titel}
-                </Chip>
+          </Card>
+        </Link>
+      </Section>
+
+      {/* 3 — DEIN MOMENTUM */}
+      <Section titel="Dein Momentum">
+        <Link to="/wochenrueckblick" className="block">
+          <Card className="transition-colors hover:border-primary/40">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
+              <div className="min-w-0">
+                <div className="flex gap-2">
+                  {trainingsTage.map((t) => (
+                    <div key={t.tag} className="flex flex-col items-center gap-1.5">
+                      <span className="label-xs">{t.tag}</span>
+                      <span
+                        className={cn(
+                          "h-6 w-6 rounded-full border-2",
+                          t.state === "erledigt" && "border-transparent bg-primary",
+                          t.state === "geplant" && "border-primary/50 bg-transparent",
+                          t.state === "leer" && "border-border bg-transparent",
+                        )}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  {onboardingModus
+                    ? "Noch keine Einheiten in den letzten 7 Tagen erfasst."
+                    : `${einheitenWoche} ${einheitenWoche === 1 ? "Einheit" : "Einheiten"} in den letzten 7 Tagen`}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="label-xs">Wochen-Score</p>
+                <p className="num text-2xl font-extrabold">{profile.weeklyScore}</p>
+                <p className="text-xs font-semibold text-success">+{profile.weeklyScoreDelta}</p>
+              </div>
+            </div>
+          </Card>
+        </Link>
+      </Section>
+
+      {/* 4 — KÖRPERSTATUS */}
+      <Section titel="Körperstatus">
+        <Card>
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-5">
+            <Ring value={bereitschaft} tone="info" sub="Bereit" size={112} />
+            <div className="min-w-0 space-y-3">
+              {koerperWerte.map((r) => (
+                <div key={r.l}>
+                  <div className="flex justify-between text-sm">
+                    <span className="font-semibold">{r.l}</span>
+                    <span className="num text-muted-foreground">{r.v}</span>
+                  </div>
+                  <Bar className="mt-1.5" value={r.v} tone="info" />
+                </div>
               ))}
             </div>
-            {zeit !== null && (
-              <p className="mt-3 text-sm text-muted-foreground">
-                {zeitModi.find((m) => m.minuten === zeit)?.beschreibung}. Grundübungen bleiben erhalten,
-                Isolationsarbeit wird zuerst gekürzt.
-              </p>
-            )}
           </div>
-        </Card>
-      </Section>
-
-      {/* FORTSCHRITT */}
-      <Section
-        titel="Dein Fortschritt"
-        aktion={
-          <Link to="/fortschritt" className="text-xs font-bold uppercase tracking-wider text-primary">
-            Alle Daten
-          </Link>
-        }
-      >
-        <Card>
-          <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
-            <Stat
-              label="Gewicht"
-              value={`${gewichtDelta > 0 ? "−" : "+"}${Math.abs(gewichtDelta).toLocaleString("de-DE")}`}
-              unit="kg"
-              delta="seit Start"
-              tone="good"
-            />
-            <Stat label="Einheiten" value={String(aktivitaet.einheiten.length)} delta="gesamt" tone="good" />
-            <Stat
-              label="Volumen"
-              value={gesamtVolumen(aktivitaet).toLocaleString("de-DE")}
-              unit="kg"
-              delta="gesamt"
-            />
-            <Stat label="Rekorde" value={String(rekorde(aktivitaet).length)} delta="Übungen" tone="good" />
-          </div>
-
-          <div className="mt-5">
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-semibold">{zielFortschritt} % des Ziels erreicht</span>
-              <span className="text-muted-foreground">
-                {aktuellesGewicht} kg → {zielGewichtWert} kg
-              </span>
-            </div>
-            <Bar className="mt-2 h-3" value={zielFortschritt} />
-          </div>
-
-          <div className="mt-5 h-40">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={gewichtsDaten} margin={{ left: -18, right: 4, top: 6 }}>
-                <defs>
-                  <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.5} />
-                    <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="woche" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} />
-                <YAxis domain={["dataMin - 1", "dataMax + 1"]} tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: "var(--popover)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 12,
-                    fontSize: 12,
-                  }}
-                  formatter={(v: number) => [`${v} kg`, "Gewicht"]}
-                />
-                <Area type="monotone" dataKey="gewicht" stroke="var(--primary)" strokeWidth={2.5} fill="url(#g1)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-
-          <p className="mt-3 rounded-xl bg-secondary/50 p-4 text-sm leading-relaxed">
-            {recomp
-              ? recomp.positiv
-                ? `Fettmasse ${recomp.fett.toLocaleString("de-DE")} kg, Magermasse ${recomp.mager > 0 ? "+" : ""}${recomp.mager.toLocaleString("de-DE")} kg – genau das Muster einer gelungenen Body Recomposition.`
-                : `Fettmasse ${recomp.fett > 0 ? "+" : ""}${recomp.fett.toLocaleString("de-DE")} kg, Magermasse ${recomp.mager > 0 ? "+" : ""}${recomp.mager.toLocaleString("de-DE")} kg. Protein und Krafttraining hochhalten, damit die Substanz bleibt.`
-              : fettDelta !== null
-                ? `Dein Körperfettanteil hat sich in den letzten Wochen um ${fettDelta.toLocaleString("de-DE")} Prozentpunkte verändert.`
-                : "Trage regelmäßig Gewicht und Körperfett ein – daraus leitet EVION deinen echten Fortschritt ab."}
-          </p>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <QualityTag quality="gemessen" /> Gewicht, Umfänge
-            <span className="mx-1 text-border">|</span>
-            <QualityTag quality="geschätzt" /> Körperfett, Muskeln, Wasser (Waage)
-          </div>
-          <Disclaimer>
-            Körperfett-, Muskel- und Wasserwerte aus Bioimpedanz-Waagen sind Schätzwerte und können vom
-            tatsächlichen Wert abweichen. Aussagekräftig ist vor allem der Trend.
-          </Disclaimer>
-        </Card>
-      </Section>
-
-      {/* KÖRPERWERTE ERFASSEN */}
-      <Section
-        titel="Körperwerte"
-        aktion={
           <button
-            onClick={() => setMessungOffen((o) => !o)}
-            className="text-xs font-bold uppercase tracking-wider text-primary"
+            onClick={() => setKoerperInfo(true)}
+            aria-label="Wie entsteht der Körperstatus?"
+            className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground"
           >
-            {messungOffen ? "Schließen" : "Messung eintragen"}
+            <Info className="h-4 w-4" /> Wie entsteht der Körperstatus?
           </button>
-        }
-      >
-        <Card>
-          <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
-            <Stat
-              label="Gewicht"
-              value={kennzahlen.gewicht?.toLocaleString("de-DE") ?? "—"}
-              unit="kg"
-              delta={kennzahlen.bmi !== null ? `BMI ${kennzahlen.bmi.toLocaleString("de-DE")}` : "noch kein BMI"}
-            />
-            <Stat label="Körperfett" value={kennzahlen.koerperfett?.toLocaleString("de-DE") ?? "—"} unit="%" />
-            <Stat label="Muskeln" value={kennzahlen.muskeln?.toLocaleString("de-DE") ?? "—"} unit="%" />
-            <Stat label="Wasser" value={kennzahlen.wasser?.toLocaleString("de-DE") ?? "—"} unit="%" />
-          </div>
-          <p className="mt-4 text-sm text-muted-foreground">
-            {tageOhneMessung === null
-              ? "Noch keine Messung erfasst – der erste Wert ist dein Startpunkt."
-              : tageOhneMessung === 0
-                ? "Heute schon gemessen – stark."
-                : `Letzte Messung vor ${tageOhneMessung} ${tageOhneMessung === 1 ? "Tag" : "Tagen"}.`}
-          </p>
-          {messungOffen && (
-            <div className="mt-4 border-t border-border pt-4">
-              <MessungForm onGespeichert={() => setMessungOffen(false)} />
-            </div>
-          )}
-        </Card>
-
-      </Section>
-
-      {/* DIESE WOCHE */}
-      <Section
-        titel="Diese Woche"
-        aktion={
-          <Link to="/wochenrueckblick" className="text-xs font-bold uppercase tracking-wider text-primary">
-            Wochenreview
-          </Link>
-        }
-      >
-        <Card>
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
-            <div className="min-w-0">
-              <p className="num text-2xl font-extrabold">
-                {wocheEinheiten.length} / {profil.tage || 4} Einheiten diese Woche
-              </p>
-              <div className="mt-3 flex gap-2">
-                {woche.map((d) => (
-                  <div key={d.tag} className="flex flex-col items-center gap-1.5">
-                    <span className="label-xs">{d.tag}</span>
-                    <span
-                      className={cn(
-                        "h-7 w-7 rounded-full border-2",
-                        d.state === "gruen" && "border-transparent bg-success",
-                        d.state === "gelb" && "border-transparent bg-warning",
-                        d.state === "offen" && "border-border bg-transparent",
-                      )}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="label-xs">Wochen-Score</p>
-              <p className="num text-4xl font-extrabold text-primary">{profile.weeklyScore}</p>
-              <p className="text-xs font-semibold text-success">+{profile.weeklyScoreDelta} ggü. Vorwoche</p>
-            </div>
-          </div>
-
-          <div className="mt-5 space-y-3">
-            {wochenKennzahlen.map((k) => (
-              <div key={k.label} className="grid grid-cols-[6rem_minmax(0,1fr)_3.5rem] items-center gap-3">
-                <span className="truncate text-sm font-semibold">{k.label}</span>
-                <Bar value={k.pct} tone={k.pct >= 90 ? "primary" : k.pct >= 80 ? "info" : "warning"} />
-                <span className="num text-right text-sm text-muted-foreground">{k.value}</span>
-              </div>
-            ))}
-          </div>
-          <Why
-            titel="Wie wird gewichtet?"
-            punkte={Object.entries(scoreWeights[profile.goal]).map(
-              ([k, v]) => `${k}: ${v} % Anteil am Score (Ziel: ${goalLabels[profile.goal]})`,
-            )}
+          <InfoSheet
+            titel="Wie entsteht der Körperstatus?"
+            open={koerperInfo}
+            onClose={() => setKoerperInfo(false)}
+            punkte={eigeneReadiness ? eigeneReadiness.gruende : readiness.warum}
           />
         </Card>
       </Section>
 
-      {/* KÖRPERSTATUS */}
-      <Section titel="Körperstatus">
-        <Card>
-          {eigeneReadiness ? (
-            <>
-              <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-5">
-                <Ring value={eigeneReadiness.score} tone="info" sub="Bereit" size={112} />
-                <div className="min-w-0 space-y-2 text-sm">
-                  <p className="font-semibold">
-                    {eigeneReadiness.score >= 75
-                      ? "Gute Voraussetzungen für eine schwere Einheit."
-                      : eigeneReadiness.score >= 55
-                        ? "Normales Training sinnvoll – Spitzenlasten dosieren."
-                        : "Heute eher locker: Technik, weniger Sätze, mehr Schlaf."}
-                  </p>
-                  <p className="text-muted-foreground">Aus deinen eingetragenen Erholungswerten berechnet.</p>
-                </div>
-              </div>
-              <Why punkte={eigeneReadiness.gruende} />
-            </>
-          ) : (
-            <>
-              <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-5">
-                <Ring value={readiness.score} tone="info" sub="Bereit" size={112} />
-                <div className="min-w-0 space-y-3">
-                  {[
-                    { l: "Schlaf", v: readiness.schlaf },
-                    { l: "Regeneration", v: readiness.regeneration },
-                    { l: "Muskelstatus", v: readiness.muskelstatus },
-                  ].map((r) => (
-                    <div key={r.l}>
-                      <div className="flex justify-between text-sm">
-                        <span className="font-semibold">{r.l}</span>
-                        <span className="num text-muted-foreground">{r.v}</span>
-                      </div>
-                      <Bar className="mt-1.5" value={r.v} tone="info" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <p className="mt-4 rounded-xl bg-secondary/50 p-4 text-sm font-semibold">
-                Trage Schlaf, Ruhepuls, HRV oder dein Befinden ein – dann ersetzt EVION diese Beispielwerte
-                durch deinen echten Körperstatus.
+      {/* 5 — NÄCHSTER MEILENSTEIN */}
+      {meilenstein && (
+        <Section titel="Nächster Meilenstein">
+          <Link to="/erfolge" className="block">
+            <Card className="transition-colors hover:border-primary/40">
+              <p className="font-display text-base font-extrabold">{meilenstein.titel}</p>
+              <Bar className="mt-3" value={(meilenstein.aktuell / meilenstein.ziel) * 100} />
+              <p className="mt-2 text-sm text-muted-foreground">
+                {onboardingModus
+                  ? meilenstein.beschreibung
+                  : `noch ${Math.max(0, meilenstein.ziel - meilenstein.aktuell).toLocaleString("de-DE")} bis zum Ziel · ${meilenstein.beschreibung}`}
               </p>
-              <Why punkte={readiness.warum} />
-            </>
-          )}
-          <Disclaimer>
-            Der Körperstatus ist eine Schätzung auf Basis deiner Daten und keine medizinische Messung.
-          </Disclaimer>
-        </Card>
-      </Section>
+            </Card>
+          </Link>
+        </Section>
+      )}
 
-
-      {/* MUSKELSTATUS */}
-      <Section titel="Muskelstatus">
+      {/* 6 — COACH */}
+      <Section titel="Coach">
         <Card>
-          <MuscleMap />
+          <p className="text-sm leading-relaxed">{coachText}</p>
+          <Link
+            to="/coach"
+            className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-primary"
+          >
+            Zum Coach <ChevronRight className="h-4 w-4" />
+          </Link>
         </Card>
       </Section>
 
-      {/* JOURNEY */}
-      <Section titel="Deine Journey">
-        <Card>
-          <ol className="relative space-y-1 pl-2">
-            {journey.map((j, i) => (
-              <li key={j.titel} className="relative flex gap-4 pb-5 last:pb-0">
-                {i < journey.length - 1 && (
-                  <span className="absolute left-[15px] top-8 h-full w-0.5 rounded bg-border" />
-                )}
-                <span
-                  className={cn(
-                    "z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full border-2",
-                    j.state === "done" && "border-transparent bg-success text-background",
-                    j.state === "current" && "border-primary bg-primary/20 text-primary",
-                    j.state === "open" && "border-border bg-card text-muted-foreground",
-                    j.state === "locked" && "border-border bg-card text-muted-foreground",
-                  )}
-                >
-                  {j.state === "done" && <Check className="h-4 w-4" />}
-                  {j.state === "current" && <Star className="h-4 w-4" />}
-                  {j.state === "open" && <span className="h-2 w-2 rounded-full bg-muted-foreground" />}
-                  {j.state === "locked" && <Lock className="h-3.5 w-3.5" />}
-                </span>
-                <div className="min-w-0 pt-1">
-                  <p
-                    className={cn(
-                      "truncate font-display font-bold",
-                      j.state === "current" && "text-primary",
-                      (j.state === "locked" || j.state === "open") && "text-muted-foreground",
-                    )}
-                  >
-                    {j.titel}
-                  </p>
-                  <p className="truncate text-xs text-muted-foreground">{j.detail}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-
-          <div className="mt-4 rounded-2xl border border-primary/30 bg-primary/10 p-4">
-            <p className="label-xs text-primary">Nächster Meilenstein</p>
-            <p className="mt-1 font-display text-lg font-extrabold">{naechsterMeilenstein.titel}</p>
-            <Bar
-              className="mt-2"
-              value={(naechsterMeilenstein.ist / naechsterMeilenstein.ziel) * 100}
-            />
-            <p className="mt-2 text-sm text-muted-foreground">
-              {naechsterMeilenstein.ist} / {naechsterMeilenstein.ziel} · {naechsterMeilenstein.rest}
-            </p>
-          </div>
+      {/* Onboarding: erster Schritt */}
+      {onboardingModus && (
+        <Card className="border-primary/40 bg-primary/8">
+          <p className="label-xs text-primary">Erster Schritt</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Mit der ersten protokollierten Einheit entstehen Trends, Momentum und Meilensteine automatisch.
+          </p>
+          <Link
+            to="/training/workout"
+            search={{ tag: naechsterTagIndex }}
+            className="mt-4 inline-flex rounded-xl bg-primary px-5 py-2.5 text-sm font-extrabold uppercase tracking-wide text-primary-foreground"
+          >
+            Erstes Training
+          </Link>
         </Card>
-      </Section>
+      )}
 
-      {/* COACH */}
-      <Section titel="KI-Coach">
-        <Card className="border-info/30">
-          <div className="flex gap-3">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-info/20 text-info">
-              <Sparkles className="h-5 w-5" />
+      {/* 7 — HEUTE (zurückgenommen) */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border pt-4 text-sm">
+        {naechsterTag ? (
+          <>
+            <span className="text-muted-foreground">
+              Heute geplant: {naechsterTag.titel}, {profil.dauer || 45} Min
             </span>
-            <div className="min-w-0">
-              <p className="text-sm leading-relaxed">{coachInsight.text}</p>
-              <Why punkte={coachInsight.warum} />
-              <Link
-                to="/ernaehrung"
-                className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-border px-4 py-2 text-sm font-bold transition-colors hover:border-primary/60"
-              >
-                {coachInsight.aktion} <ChevronRight className="h-4 w-4" />
-              </Link>
-            </div>
-          </div>
-        </Card>
-      </Section>
+            <Link
+              to="/training/workout"
+              search={{ tag: naechsterTagIndex }}
+              className="font-semibold text-primary"
+            >
+              Starten
+            </Link>
+            <Link to="/training" className="font-semibold text-muted-foreground underline">
+              Weniger Zeit?
+            </Link>
+          </>
+        ) : (
+          <>
+            <span className="text-muted-foreground">Heute kein Training geplant</span>
+            <Link to="/training" className="font-semibold text-primary">
+              Trotzdem trainieren
+            </Link>
+          </>
+        )}
+      </div>
 
       <Disclaimer>
-        EVION ersetzt keine medizinische Beratung. Empfehlungen basieren auf deinen erfassten Daten und
-        allgemeinen Trainings- und Ernährungsprinzipien. Bei Beschwerden, Verletzungen oder Erkrankungen
-        wende dich bitte an medizinisches Fachpersonal.
+        EVION ersetzt keine medizinische Beratung. Auswertungen basieren auf deinen erfassten Daten und
+        allgemeinen Trainings- und Ernährungsprinzipien.
       </Disclaimer>
     </div>
   );
 }
 
-function TagesZiel({
-  icon: Icon,
+function Delta({
   label,
-  value,
-  sub,
-  pct,
+  wert,
+  einheit,
+  gutWennNegativ,
 }: {
-  icon: typeof Flame;
   label: string;
-  value: string;
-  sub?: string;
-  pct?: number;
+  wert: number | null;
+  einheit: string;
+  gutWennNegativ?: boolean;
 }) {
+  const positivGut = wert === null ? false : gutWennNegativ ? wert < 0 : wert > 0;
   return (
     <div className="min-w-0">
-      <p className="label-xs flex items-center gap-1.5">
-        <Icon className="h-3.5 w-3.5 text-primary" /> {label}
+      <p className="label-xs truncate">{label}</p>
+      <p className={cn("num mt-1 text-lg font-bold", positivGut ? "text-success" : "text-foreground")}>
+        {wert === null ? "—" : `${wert > 0 ? "+" : wert < 0 ? "−" : ""}${Math.abs(wert).toLocaleString("de-DE")}`}
+        {wert !== null && <span className="ml-1 text-xs font-semibold text-muted-foreground">{einheit}</span>}
       </p>
-      <p className="num mt-1.5 truncate text-base font-bold">{value}</p>
-      {sub && <p className="truncate text-xs text-muted-foreground">{sub}</p>}
-      {pct !== undefined && <Bar className="mt-2" value={pct} tone={pct >= 90 ? "primary" : "info"} />}
+      <p className="text-[11px] text-muted-foreground">seit Start</p>
     </div>
   );
 }
 
-function ScoreErklaerung({
-  parts,
-  score,
-}: {
-  parts: { key: string; weight: number; value: number; beitrag: number }[];
-  score: number;
-}) {
+function Sparkline({ werte }: { werte: number[] }) {
+  const min = Math.min(...werte);
+  const max = Math.max(...werte);
+  const spanne = max - min || 1;
+  const punkte = werte
+    .map((w, i) => `${(i / (werte.length - 1)) * 100},${28 - ((w - min) / spanne) * 24}`)
+    .join(" ");
   return (
-    <Why
-      titel="Wie wird mein Score berechnet?"
-      punkte={[
-        `Gewichtung passend zu deinem Ziel „${goalLabels[profile.goal]}“.`,
-        ...parts.map((p) => `${p.key}: ${p.value} % erfüllt × ${p.weight} % Gewicht`),
-        `Ergebnis: ${score} von 100. Supplements fließen bewusst nicht relevant in den Score ein.`,
-      ]}
-    />
+    <svg viewBox="0 0 100 32" preserveAspectRatio="none" className="h-14 w-full" aria-hidden>
+      <polyline
+        points={punkte}
+        fill="none"
+        stroke="var(--primary)"
+        strokeWidth={1.5}
+        vectorEffect="non-scaling-stroke"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
