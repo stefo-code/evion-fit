@@ -4,8 +4,11 @@ import {
   Dumbbell,
   Home,
   LineChart,
+  Moon,
   MoreHorizontal,
   Pill,
+  Plus,
+  Scale,
   Settings,
   Trophy,
   Shield,
@@ -15,6 +18,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { EvionLogo } from "@/components/logo";
+import { MessungForm } from "@/components/messung-form";
 import { ladeProfil } from "@/lib/onboarding-store";
 import { cn } from "@/lib/utils";
 
