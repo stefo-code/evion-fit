@@ -124,6 +124,84 @@ export function AppShell({ children }: { children: ReactNode }) {
         </ul>
       </nav>
 
+      {/* Globaler „+ Eintragen“-Einstieg */}
+      <button
+        onClick={() => setEintragenOffen(true)}
+        aria-label="Eintragen"
+        className="fixed bottom-20 right-4 z-40 grid h-14 w-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg lg:bottom-6 lg:right-6"
+      >
+        <Plus className="h-6 w-6" />
+      </button>
+
+      {eintragenOffen && (
+        <div className="fixed inset-0 z-50">
+          <button
+            aria-label="Schließen"
+            onClick={() => setEintragenOffen(false)}
+            className="absolute inset-0 bg-foreground/30 backdrop-blur-sm"
+          />
+          <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-3xl border-t border-border bg-card p-5 pb-8 animate-in slide-in-from-bottom">
+            <div className="flex items-center">
+              <p className="font-display text-base font-extrabold">Eintragen</p>
+              <button
+                onClick={() => setEintragenOffen(false)}
+                aria-label="Schließen"
+                className="ml-auto grid h-8 w-8 place-items-center rounded-full bg-secondary"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {messungOffen ? (
+              <div className="mt-4">
+                <MessungForm onGespeichert={() => setEintragenOffen(false)} />
+              </div>
+            ) : (
+              <nav className="mt-4 space-y-2">
+                <button
+                  onClick={() => setMessungOffen(true)}
+                  className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left text-sm font-semibold"
+                >
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-secondary text-muted-foreground">
+                    <Scale className="h-4.5 w-4.5" />
+                  </span>
+                  Gewicht &amp; Umfänge
+                </button>
+                <button
+                  onClick={() => setMessungOffen(true)}
+                  className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left text-sm font-semibold"
+                >
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-secondary text-muted-foreground">
+                    <Moon className="h-4.5 w-4.5" />
+                  </span>
+                  Schlaf &amp; Erholung
+                </button>
+                <Link
+                  to="/ernaehrung"
+                  className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 text-sm font-semibold"
+                >
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-secondary text-muted-foreground">
+                    <Apple className="h-4.5 w-4.5" />
+                  </span>
+                  Mahlzeit
+                </Link>
+                <Link
+                  to="/training"
+                  className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 text-sm font-semibold"
+                >
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-secondary text-muted-foreground">
+                    <Dumbbell className="h-4.5 w-4.5" />
+                  </span>
+                  Training
+                </Link>
+              </nav>
+            )}
+          </div>
+        </div>
+      )}
+
+
+
 
       {/* Mobile „Mehr“-Sheet */}
       {mehrOffen && (
