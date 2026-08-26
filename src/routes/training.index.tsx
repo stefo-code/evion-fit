@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Card, Chip, Disclaimer, Section, Why } from "@/components/ui-kit";
+import { MuscleMap } from "@/components/muscle-map";
 import { zeitModi, muskelStatus, goalLabels, type MuscleKey } from "@/lib/demo-data";
 import { useOnboardingProfil } from "@/lib/onboarding-store";
 import {
@@ -117,6 +118,14 @@ function TrainingPage() {
       </header>
 
       <AutoregulationsHinweis />
+
+      <Section titel="Muskelstatus">
+        <Card>
+          <MuscleMap />
+        </Card>
+      </Section>
+
+
 
 
 
