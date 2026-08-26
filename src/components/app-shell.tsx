@@ -52,7 +52,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (!ladeProfil().abgeschlossen) navigate({ to: "/onboarding" });
   }, [pathname, navigate]);
 
-  useEffect(() => setMehrOffen(false), [pathname]);
+  useEffect(() => {
+    setMehrOffen(false);
+    setEintragenOffen(false);
+    setMessungOffen(false);
+  }, [pathname]);
 
   if (pathname.startsWith("/onboarding")) return <>{children}</>;
 
