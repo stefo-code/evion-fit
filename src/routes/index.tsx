@@ -207,6 +207,34 @@ function Cockpit() {
         }}
       />
 
+      {/* Heute — schmale, zurückgenommene Zeile direkt unter dem Header */}
+      <div className="border-y border-border py-3 text-sm">
+        {naechsterTag ? (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="text-muted-foreground">
+              Heute geplant: {naechsterTag.titel}, {profil.dauer || 45} Min
+            </span>
+            <Link
+              to="/training/workout"
+              search={{ tag: naechsterTagIndex }}
+              className="font-semibold text-primary"
+            >
+              Starten
+            </Link>
+            <Link to="/training" className="font-semibold text-muted-foreground underline">
+              Weniger Zeit?
+            </Link>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="text-muted-foreground">Heute kein Training geplant</span>
+            <Link to="/training" className="font-semibold text-primary">
+              Trotzdem trainieren
+            </Link>
+          </div>
+        )}
+      </div>
+
       {/* 2 — WAS SICH VERÄNDERT HAT */}
       <Section titel="Was sich verändert hat">
         <Link to="/fortschritt" className="block">
@@ -350,34 +378,6 @@ function Cockpit() {
           </Link>
         </Card>
       )}
-
-      {/* 7 — HEUTE (zurückgenommen) */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border pt-4 text-sm">
-        {naechsterTag ? (
-          <>
-            <span className="text-muted-foreground">
-              Heute geplant: {naechsterTag.titel}, {profil.dauer || 45} Min
-            </span>
-            <Link
-              to="/training/workout"
-              search={{ tag: naechsterTagIndex }}
-              className="font-semibold text-primary"
-            >
-              Starten
-            </Link>
-            <Link to="/training" className="font-semibold text-muted-foreground underline">
-              Weniger Zeit?
-            </Link>
-          </>
-        ) : (
-          <>
-            <span className="text-muted-foreground">Heute kein Training geplant</span>
-            <Link to="/training" className="font-semibold text-primary">
-              Trotzdem trainieren
-            </Link>
-          </>
-        )}
-      </div>
 
       <Disclaimer>
         EVION ersetzt keine medizinische Beratung. Auswertungen basieren auf deinen erfassten Daten und
