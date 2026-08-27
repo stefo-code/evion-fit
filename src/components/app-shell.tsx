@@ -99,7 +99,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       <div className="lg:pl-60">
-        <main className="mx-auto w-full max-w-3xl px-4 pb-28 pt-6 sm:px-6 lg:pb-14">{children}</main>
+        <main className="mx-auto w-full max-w-3xl px-4 pb-32 pt-6 sm:px-6 lg:pb-20">{children}</main>
       </div>
 
       {/* Mobile Tab-Bar */}
@@ -137,10 +137,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Globaler „+ Eintragen“-Einstieg */}
       <button
         onClick={() => setEintragenOffen(true)}
-        aria-label="Eintragen"
-        className="fixed bottom-20 right-4 z-40 grid h-14 w-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg lg:bottom-6 lg:right-6"
+        aria-label="Werte eintragen"
+        className="fixed bottom-20 right-4 z-40 inline-flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-extrabold uppercase tracking-wide text-primary-foreground shadow-lg lg:bottom-6 lg:right-6"
       >
-        <Plus className="h-6 w-6" />
+        <Plus className="h-5 w-5" />
+        <span>Eintragen</span>
       </button>
 
       {eintragenOffen && (
@@ -152,7 +153,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           />
           <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-3xl border-t border-border bg-card p-5 pb-8 animate-in slide-in-from-bottom">
             <div className="flex items-center">
-              <p className="font-display text-base font-extrabold">Eintragen</p>
+              <p className="font-display text-base font-extrabold">Was möchtest du eintragen?</p>
               <button
                 onClick={() => setEintragenOffen(false)}
                 aria-label="Schließen"
