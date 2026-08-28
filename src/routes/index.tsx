@@ -19,6 +19,7 @@ import {
 } from "@/lib/activity-store";
 import { readiness } from "@/lib/demo-data";
 import {
+  aktiveTrainingstage,
   erzeugePlan,
   mappeEquipment,
   usePlanEinstellungen,
@@ -58,6 +59,10 @@ function Cockpit() {
   const { score, parts } = computeGoalScore(eff.ziel);
   const { aktivitaet } = useAktivitaet();
   const { einstellungen } = usePlanEinstellungen();
+  const gewaehlteTage = useMemo(
+    () => aktiveTrainingstage(einstellungen, profil.tage || 4),
+    [einstellungen, profil.tage],
+  );
 
   const kontext: PlanKontext = useMemo(
     () => ({
@@ -66,11 +71,11 @@ function Cockpit() {
       alter: profil.alter,
       erfahrung: profil.erfahrung,
       equipment: mappeEquipment([...(profil.equipment ?? []), ...(profil.orte ?? [])]),
-      tage: profil.tage || 4,
+      tage: gewaehlteTage.length,
       dauer: profil.dauer || 45,
       fokus: einstellungen.fokus,
     }),
-    [profil, einstellungen.fokus],
+    [profil, einstellungen.fokus, gewaehlteTage],
   );
   const plan = useMemo(
     () => wendeAnpassungenAn(wendeTauschAn(erzeugePlan(kontext), einstellungen.tausch), einstellungen),
@@ -109,17 +114,12 @@ function Cockpit() {
       const diff = Math.floor((d.getTime() - start.getTime()) / 86400000);
       if (diff >= 0 && diff < 7) erledigt.add(diff);
     }
-    const geplant = Math.max(0, (profil.tage || 4) - erledigt.size);
-    let offen = geplant;
     return wochentage.map((tag, i) => {
       if (erledigt.has(i)) return { tag, state: "erledigt" as const };
-      if (i > heuteIdx && offen > 0) {
-        offen -= 1;
-        return { tag, state: "geplant" as const };
-      }
+      if (i >= heuteIdx && gewaehlteTage.includes(i)) return { tag, state: "geplant" as const };
       return { tag, state: "leer" as const };
     });
-  }, [aktivitaet.einheiten, heuteIdx, profil.tage]);
+  }, [aktivitaet.einheiten, heuteIdx, gewaehlteTage]);
   const einheitenWoche = trainingsTage.filter((t) => t.state === "erledigt").length;
 
   // --- Sektion 4: Körperstatus --------------------------------------------
@@ -209,7 +209,7 @@ function Cockpit() {
 
       {/* Heute — schmale, zurückgenommene Zeile direkt unter dem Header */}
       <div className="border-y border-border py-3 text-sm">
-        {naechsterTag ? (
+        {naechsterTag && gewaehlteTage.includes(heuteIdx) ? (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="text-muted-foreground">
               Heute geplant: {naechsterTag.titel}, {profil.dauer || 45} Min

@@ -460,10 +460,44 @@ export type PlanEinstellungen = {
   zusatz: Record<string, string[]>;
   /** Selbst angelegte Übungen. */
   eigene: LibUebung[];
+  /** Selbst gewählte Wochentage (0 = Montag … 6 = Sonntag). null = Vorschlag. */
+  trainingstage: number[] | null;
 };
 
 const KEY = "evion.trainingsplan.v1";
-const leer: PlanEinstellungen = { fokus: "ausgewogen", tausch: {}, entfernt: {}, zusatz: {}, eigene: [] };
+const leer: PlanEinstellungen = {
+  fokus: "ausgewogen",
+  tausch: {},
+  entfernt: {},
+  zusatz: {},
+  eigene: [],
+  trainingstage: null,
+};
+
+/** Sinnvoll über die Woche verteilte Standardtage für n Einheiten. */
+const verteilung: Record<number, number[]> = {
+  1: [2],
+  2: [1, 4],
+  3: [0, 2, 4],
+  4: [0, 1, 3, 4],
+  5: [0, 1, 2, 4, 5],
+  6: [0, 1, 2, 3, 4, 5],
+  7: [0, 1, 2, 3, 4, 5, 6],
+};
+
+export function standardTrainingstage(anzahl: number): number[] {
+  return verteilung[Math.max(1, Math.min(7, anzahl || 4))]!;
+}
+
+/** Gewählte Tage oder – falls nichts gewählt – der Vorschlag aus der Tage-Anzahl. */
+export function aktiveTrainingstage(
+  e: Pick<PlanEinstellungen, "trainingstage">,
+  anzahl: number,
+): number[] {
+  const gewaehlt = (e.trainingstage ?? []).filter((d) => d >= 0 && d <= 6);
+  return gewaehlt.length > 0 ? [...new Set(gewaehlt)].sort((a, b) => a - b) : standardTrainingstage(anzahl);
+}
+
 
 export function ladePlanEinstellungen(): PlanEinstellungen {
   if (typeof window === "undefined") return leer;
@@ -554,6 +588,25 @@ export function usePlanEinstellungen() {
     [aktualisiere],
   );
 
+  /** Wochentag an-/abwählen (0 = Montag). Mindestens ein Tag bleibt aktiv. */
+  const schalteTrainingstag = useCallback(
+    (tag: number, aktuelleTage: number[]) =>
+      aktualisiere((alt) => {
+        const basis = new Set(alt.trainingstage ?? aktuelleTage);
+        if (basis.has(tag)) {
+          if (basis.size <= 1) return alt;
+          basis.delete(tag);
+        } else basis.add(tag);
+        return { ...alt, trainingstage: [...basis].sort((a, b) => a - b) };
+      }),
+    [aktualisiere],
+  );
+
+  const setzeTrainingstage = useCallback(
+    (tage: number[] | null) => aktualisiere((alt) => ({ ...alt, trainingstage: tage })),
+    [aktualisiere],
+  );
+
   return {
     einstellungen: state,
     speichere,
@@ -562,8 +615,12 @@ export function usePlanEinstellungen() {
     fuegeUebungHinzu,
     erstelleEigene,
     loescheEigene,
+    schalteTrainingstag,
+    setzeTrainingstage,
   };
 }
 
+
 export const wochentage = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
 
+export const wochentageKurz = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];

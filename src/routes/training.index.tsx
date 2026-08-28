@@ -5,17 +5,21 @@ import { MuscleMap } from "@/components/muscle-map";
 import { zeitModi, muskelStatus, goalLabels, type MuscleKey } from "@/lib/demo-data";
 import { useOnboardingProfil } from "@/lib/onboarding-store";
 import {
+  aktiveTrainingstage,
   erzeugePlan,
   fokusFuerGeschlecht,
   fokusOptionen,
   mappeEquipment,
+  standardTrainingstage,
   usePlanEinstellungen,
   wendeAnpassungenAn,
   wendeTauschAn,
   wochentage,
+  wochentageKurz,
   type Fokus,
   type PlanKontext,
 } from "@/lib/training-plan";
+
 
 import {
   alternativenFuer,
@@ -65,6 +69,8 @@ function TrainingPage() {
     fuegeUebungHinzu,
     erstelleEigene,
     loescheEigene,
+    schalteTrainingstag,
+    setzeTrainingstage,
   } = usePlanEinstellungen();
   const { aktivitaet } = useAktivitaet();
   const rekorde = ermittleRekorde(aktivitaet);
@@ -75,6 +81,12 @@ function TrainingPage() {
 
   const modus = zeitModi.find((m) => m.minuten === zeit) ?? zeitModi[2]!;
 
+  const gewaehlteTage = useMemo(
+    () => aktiveTrainingstage(einstellungen, profil.tage || 4),
+    [einstellungen, profil.tage],
+  );
+  const eigeneAuswahl = (einstellungen.trainingstage ?? []).length > 0;
+
   const kontext: PlanKontext = useMemo(
     () => ({
       ziel: profil.abgeschlossen ? profil.ziel : "recomposition",
@@ -82,12 +94,13 @@ function TrainingPage() {
       alter: profil.alter,
       erfahrung: profil.erfahrung,
       equipment: mappeEquipment([...(profil.equipment ?? []), ...(profil.orte ?? [])]),
-      tage: profil.tage || 4,
+      tage: gewaehlteTage.length,
       dauer: zeit,
       fokus: einstellungen.fokus,
     }),
-    [profil, zeit, einstellungen.fokus],
+    [profil, zeit, einstellungen.fokus, gewaehlteTage],
   );
+
 
   const plan = useMemo(
     () => wendeAnpassungenAn(wendeTauschAn(erzeugePlan(kontext), einstellungen.tausch), einstellungen),
@@ -181,7 +194,55 @@ function TrainingPage() {
       </Section>
 
       <Section titel="Trainingswoche">
-        <Card className="p-2">
+        <Card className="p-4">
+          <p className="label-xs">Trainingstage wählen</p>
+          <div className="mt-3 grid grid-cols-7 gap-1.5">
+            {wochentageKurz.map((kurz, d) => {
+              const aktiv = gewaehlteTage.includes(d);
+              return (
+                <button
+                  key={kurz}
+                  type="button"
+                  aria-pressed={aktiv}
+                  aria-label={`${wochentage[d]} als Trainingstag ${aktiv ? "abwählen" : "auswählen"}`}
+                  onClick={() => {
+                    schalteTrainingstag(d, gewaehlteTage);
+                    setTagIndex(0);
+                  }}
+                  className={cn(
+                    "rounded-xl border py-2 text-xs font-bold transition-colors",
+                    aktiv
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground",
+                  )}
+                >
+                  {kurz}
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">
+              {gewaehlteTage.length} Einheiten pro Woche ·{" "}
+              {gewaehlteTage.map((d) => wochentageKurz[d]).join(", ")}
+            </p>
+            {eigeneAuswahl && (
+              <button
+                type="button"
+                onClick={() => {
+                  setzeTrainingstage(null);
+                  setTagIndex(0);
+                  toast("Vorschlag wiederhergestellt");
+                }}
+                className="text-xs font-semibold text-muted-foreground underline"
+              >
+                Vorschlag ({standardTrainingstage(profil.tage || 4).length} Tage)
+              </button>
+            )}
+          </div>
+        </Card>
+
+        <Card className="mt-3 p-2">
           <ul className="divide-y divide-border">
             {plan.map((t, i) => (
               <li key={t.index}>
@@ -190,7 +251,9 @@ function TrainingPage() {
                   className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-3 text-left"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{wochentage[i]}</p>
+                    <p className="truncate text-sm font-semibold">
+                      {wochentage[gewaehlteTage[i] ?? i]}
+                    </p>
                     <p className="truncate text-xs text-muted-foreground">
                       {t.titel} · {t.uebungen.map((u) => u.name).join(", ")}
                     </p>
@@ -209,6 +272,7 @@ function TrainingPage() {
           </ul>
         </Card>
       </Section>
+
 
       <Section titel={`Übungen – ${tag.titel}`}>
         <div className="space-y-3">

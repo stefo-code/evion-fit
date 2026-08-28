@@ -6,6 +6,7 @@ import { useOnboardingProfil } from "@/lib/onboarding-store";
 import {
   erzeugePlan,
   mappeEquipment,
+  aktiveTrainingstage,
   usePlanEinstellungen,
   wendeAnpassungenAn,
   wendeTauschAn,
@@ -67,11 +68,11 @@ function WorkoutPage() {
       alter: profil.alter,
       erfahrung: profil.erfahrung,
       equipment: mappeEquipment([...(profil.equipment ?? []), ...(profil.orte ?? [])]),
-      tage: profil.tage || 4,
+      tage: aktiveTrainingstage(einstellungen, profil.tage || 4).length,
       dauer: profil.dauer || 45,
       fokus: einstellungen.fokus,
     }),
-    [profil, einstellungen.fokus],
+    [profil, einstellungen],
   );
 
   const plan = useMemo(
