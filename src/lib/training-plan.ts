@@ -460,10 +460,44 @@ export type PlanEinstellungen = {
   zusatz: Record<string, string[]>;
   /** Selbst angelegte Übungen. */
   eigene: LibUebung[];
+  /** Selbst gewählte Wochentage (0 = Montag … 6 = Sonntag). null = Vorschlag. */
+  trainingstage: number[] | null;
 };
 
 const KEY = "evion.trainingsplan.v1";
-const leer: PlanEinstellungen = { fokus: "ausgewogen", tausch: {}, entfernt: {}, zusatz: {}, eigene: [] };
+const leer: PlanEinstellungen = {
+  fokus: "ausgewogen",
+  tausch: {},
+  entfernt: {},
+  zusatz: {},
+  eigene: [],
+  trainingstage: null,
+};
+
+/** Sinnvoll über die Woche verteilte Standardtage für n Einheiten. */
+const verteilung: Record<number, number[]> = {
+  1: [2],
+  2: [1, 4],
+  3: [0, 2, 4],
+  4: [0, 1, 3, 4],
+  5: [0, 1, 2, 4, 5],
+  6: [0, 1, 2, 3, 4, 5],
+  7: [0, 1, 2, 3, 4, 5, 6],
+};
+
+export function standardTrainingstage(anzahl: number): number[] {
+  return verteilung[Math.max(1, Math.min(7, anzahl || 4))]!;
+}
+
+/** Gewählte Tage oder – falls nichts gewählt – der Vorschlag aus der Tage-Anzahl. */
+export function aktiveTrainingstage(
+  e: Pick<PlanEinstellungen, "trainingstage">,
+  anzahl: number,
+): number[] {
+  const gewaehlt = (e.trainingstage ?? []).filter((d) => d >= 0 && d <= 6);
+  return gewaehlt.length > 0 ? [...new Set(gewaehlt)].sort((a, b) => a - b) : standardTrainingstage(anzahl);
+}
+
 
 export function ladePlanEinstellungen(): PlanEinstellungen {
   if (typeof window === "undefined") return leer;
