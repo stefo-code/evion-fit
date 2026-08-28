@@ -266,9 +266,9 @@ function Cockpit() {
       <Section titel="Dein Momentum">
         <Link to="/wochenrueckblick" className="block">
           <Card className="transition-colors hover:border-primary/40">
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
+            <div className="flex flex-col gap-4 sm:grid sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
               <div className="min-w-0">
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {trainingsTage.map((t) => (
                     <div key={t.tag} className="flex flex-col items-center gap-1.5">
                       <span className="label-xs">{t.tag}</span>
@@ -289,7 +289,7 @@ function Cockpit() {
                     : `${einheitenWoche} ${einheitenWoche === 1 ? "Einheit" : "Einheiten"} in den letzten 7 Tagen`}
                 </p>
               </div>
-              <div className="text-right">
+              <div className="flex items-baseline justify-between gap-3 sm:text-right">
                 <p className="label-xs">Wochen-Score</p>
                 <p className="num text-2xl font-extrabold">{profile.weeklyScore}</p>
                 <p className="text-xs font-semibold text-success">+{profile.weeklyScoreDelta}</p>
