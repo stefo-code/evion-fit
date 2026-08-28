@@ -69,6 +69,8 @@ function TrainingPage() {
     fuegeUebungHinzu,
     erstelleEigene,
     loescheEigene,
+    schalteTrainingstag,
+    setzeTrainingstage,
   } = usePlanEinstellungen();
   const { aktivitaet } = useAktivitaet();
   const rekorde = ermittleRekorde(aktivitaet);
@@ -79,6 +81,12 @@ function TrainingPage() {
 
   const modus = zeitModi.find((m) => m.minuten === zeit) ?? zeitModi[2]!;
 
+  const gewaehlteTage = useMemo(
+    () => aktiveTrainingstage(einstellungen, profil.tage || 4),
+    [einstellungen, profil.tage],
+  );
+  const eigeneAuswahl = (einstellungen.trainingstage ?? []).length > 0;
+
   const kontext: PlanKontext = useMemo(
     () => ({
       ziel: profil.abgeschlossen ? profil.ziel : "recomposition",
@@ -86,12 +94,13 @@ function TrainingPage() {
       alter: profil.alter,
       erfahrung: profil.erfahrung,
       equipment: mappeEquipment([...(profil.equipment ?? []), ...(profil.orte ?? [])]),
-      tage: profil.tage || 4,
+      tage: gewaehlteTage.length,
       dauer: zeit,
       fokus: einstellungen.fokus,
     }),
-    [profil, zeit, einstellungen.fokus],
+    [profil, zeit, einstellungen.fokus, gewaehlteTage],
   );
+
 
   const plan = useMemo(
     () => wendeAnpassungenAn(wendeTauschAn(erzeugePlan(kontext), einstellungen.tausch), einstellungen),
