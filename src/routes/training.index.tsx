@@ -5,17 +5,21 @@ import { MuscleMap } from "@/components/muscle-map";
 import { zeitModi, muskelStatus, goalLabels, type MuscleKey } from "@/lib/demo-data";
 import { useOnboardingProfil } from "@/lib/onboarding-store";
 import {
+  aktiveTrainingstage,
   erzeugePlan,
   fokusFuerGeschlecht,
   fokusOptionen,
   mappeEquipment,
+  standardTrainingstage,
   usePlanEinstellungen,
   wendeAnpassungenAn,
   wendeTauschAn,
   wochentage,
+  wochentageKurz,
   type Fokus,
   type PlanKontext,
 } from "@/lib/training-plan";
+
 
 import {
   alternativenFuer,
