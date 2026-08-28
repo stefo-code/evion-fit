@@ -623,3 +623,4 @@ export function usePlanEinstellungen() {
 
 export const wochentage = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
 
+export const wochentageKurz = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
