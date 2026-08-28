@@ -588,6 +588,25 @@ export function usePlanEinstellungen() {
     [aktualisiere],
   );
 
+  /** Wochentag an-/abwählen (0 = Montag). Mindestens ein Tag bleibt aktiv. */
+  const schalteTrainingstag = useCallback(
+    (tag: number, aktuelleTage: number[]) =>
+      aktualisiere((alt) => {
+        const basis = new Set(alt.trainingstage ?? aktuelleTage);
+        if (basis.has(tag)) {
+          if (basis.size <= 1) return alt;
+          basis.delete(tag);
+        } else basis.add(tag);
+        return { ...alt, trainingstage: [...basis].sort((a, b) => a - b) };
+      }),
+    [aktualisiere],
+  );
+
+  const setzeTrainingstage = useCallback(
+    (tage: number[] | null) => aktualisiere((alt) => ({ ...alt, trainingstage: tage })),
+    [aktualisiere],
+  );
+
   return {
     einstellungen: state,
     speichere,
@@ -596,8 +615,11 @@ export function usePlanEinstellungen() {
     fuegeUebungHinzu,
     erstelleEigene,
     loescheEigene,
+    schalteTrainingstag,
+    setzeTrainingstage,
   };
 }
+
 
 export const wochentage = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
 
