@@ -209,7 +209,7 @@ function Cockpit() {
 
       {/* Heute — schmale, zurückgenommene Zeile direkt unter dem Header */}
       <div className="border-y border-border py-3 text-sm">
-        {naechsterTag ? (
+        {naechsterTag && gewaehlteTage.includes(heuteIdx) ? (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="text-muted-foreground">
               Heute geplant: {naechsterTag.titel}, {profil.dauer || 45} Min
