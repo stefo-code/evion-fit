@@ -416,11 +416,12 @@ function HinweisZeile({
       onClick={onClick}
       onTouchStart={(e) => {
         if (!onDismiss) return;
-        startX.current = e.touches[0].clientX;
+        startX.current = e.touches[0]?.clientX ?? null;
       }}
       onTouchMove={(e) => {
-        if (startX.current === null) return;
-        setOffset(Math.min(0, e.touches[0].clientX - startX.current));
+        const x = e.touches[0]?.clientX;
+        if (startX.current === null || x === undefined) return;
+        setOffset(Math.min(0, x - startX.current));
       }}
       onTouchEnd={() => {
         if (offset < -80) onDismiss?.();
