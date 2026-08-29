@@ -455,7 +455,8 @@ function TabSheet({
 }) {
   const [aktiv, setAktiv] = useState(0);
   if (!open) return null;
-  const tab = tabs[aktiv];
+  const tab = tabs[aktiv] ?? tabs[0];
+  if (!tab) return null;
   return (
     <div className="fixed inset-0 z-50">
       <button aria-label="Schließen" onClick={onClose} className="absolute inset-0 bg-foreground/30 backdrop-blur-sm" />
