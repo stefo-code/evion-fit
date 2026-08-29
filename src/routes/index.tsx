@@ -347,7 +347,7 @@ function Cockpit() {
       )}
 
       {/* ZONE 3 — HINWEISE */}
-      {(meilenstein || coachText || nudgeAktiv) && (
+      {(meilenstein || (!leer && nudgeAktiv)) && (
         <Section titel="Hinweise">
           <Card className="p-0">
             <div className="divide-y divide-border">
@@ -362,14 +362,6 @@ function Cockpit() {
                   }
                   fortschritt={(meilenstein.aktuell / meilenstein.ziel) * 100}
                   onClick={() => navigate({ to: "/erfolge" })}
-                />
-              )}
-              {!leer && coachText && (
-                <HinweisZeile
-                  icon={<MessageSquare className="h-4 w-4" />}
-                  titel="Coach-Hinweis"
-                  unterzeile={coachText}
-                  onClick={() => navigate({ to: "/coach" })}
                 />
               )}
               {!leer && nudgeAktiv && (
