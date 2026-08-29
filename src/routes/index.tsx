@@ -256,6 +256,21 @@ function Cockpit() {
           </div>
         </Link>
 
+        {/* Insight-Zeile */}
+        {!leer && coachText && (
+          <div className="mt-4 border-t border-border pt-4">
+            <div className="flex items-start gap-2.5">
+              <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                {coachText}{" "}
+                <Link to="/coach" className="font-semibold text-primary">
+                  Mehr im Coach
+                </Link>
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* e) ein einziges ⓘ */}
         <button
           onClick={() => setInfoOpen(true)}
@@ -332,7 +347,7 @@ function Cockpit() {
       )}
 
       {/* ZONE 3 — HINWEISE */}
-      {(meilenstein || coachText || nudgeAktiv) && (
+      {(meilenstein || (!leer && nudgeAktiv)) && (
         <Section titel="Hinweise">
           <Card className="p-0">
             <div className="divide-y divide-border">
@@ -347,14 +362,6 @@ function Cockpit() {
                   }
                   fortschritt={(meilenstein.aktuell / meilenstein.ziel) * 100}
                   onClick={() => navigate({ to: "/erfolge" })}
-                />
-              )}
-              {!leer && coachText && (
-                <HinweisZeile
-                  icon={<MessageSquare className="h-4 w-4" />}
-                  titel="Coach-Hinweis"
-                  unterzeile={coachText}
-                  onClick={() => navigate({ to: "/coach" })}
                 />
               )}
               {!leer && nudgeAktiv && (
