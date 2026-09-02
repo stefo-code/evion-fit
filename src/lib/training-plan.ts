@@ -443,7 +443,16 @@ export function wendeAnpassungenAn(
       .filter((u): u is LibUebung => Boolean(u))
       .filter((u) => !behalten.some((b) => b.id === u.id))
       .map((u) => ({ ...u, begruendung: "Von dir hinzugefügt" }));
-    return { ...t, uebungen: [...behalten, ...zusatz] };
+    const liste = [...behalten, ...zusatz];
+    // Gespeicherte Reihenfolge anwenden (IDs, die nicht mehr existieren, werden ignoriert).
+    const reihenfolge = e.reihenfolge?.[key] ?? [];
+    if (reihenfolge.length > 0) {
+      const pos = new Map(reihenfolge.map((id, i) => [id, i]));
+      liste.sort(
+        (a, b) => (pos.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (pos.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+      );
+    }
+    return { ...t, uebungen: liste };
   });
 }
 
@@ -458,6 +467,8 @@ export type PlanEinstellungen = {
   entfernt: Record<string, string[]>;
   /** Zusätzlich gewählte Übungs-IDs je Trainingstag-Index. */
   zusatz: Record<string, string[]>;
+  /** Gespeicherte Reihenfolge der Übungs-IDs je Trainingstag-Index. */
+  reihenfolge: Record<string, string[]>;
   /** Selbst angelegte Übungen. */
   eigene: LibUebung[];
   /** Selbst gewählte Wochentage (0 = Montag … 6 = Sonntag). null = Vorschlag. */
@@ -470,6 +481,7 @@ const leer: PlanEinstellungen = {
   tausch: {},
   entfernt: {},
   zusatz: {},
+  reihenfolge: {},
   eigene: [],
   trainingstage: null,
 };
@@ -571,6 +583,24 @@ export function usePlanEinstellungen() {
     [aktualisiere],
   );
 
+  /**
+   * Verschiebt eine Übung um einen Schritt nach oben (-1) oder unten (+1).
+   * `aktuelleIds` ist die aktuell sichtbare Reihenfolge des Tages.
+   */
+  const verschiebeUebung = useCallback(
+    (tagIndex: number, id: string, richtung: -1 | 1, aktuelleIds: string[]) =>
+      aktualisiere((alt) => {
+        const key = String(tagIndex);
+        const reihenfolge = [...aktuelleIds];
+        const von = reihenfolge.indexOf(id);
+        const zu = von + richtung;
+        if (von < 0 || zu < 0 || zu >= reihenfolge.length) return alt;
+        [reihenfolge[von], reihenfolge[zu]] = [reihenfolge[zu]!, reihenfolge[von]!];
+        return { ...alt, reihenfolge: { ...alt.reihenfolge, [key]: reihenfolge } };
+      }),
+    [aktualisiere],
+  );
+
   const erstelleEigene = useCallback(
     (u: LibUebung) => aktualisiere((alt) => ({ ...alt, eigene: [...(alt.eigene ?? []), u] })),
     [aktualisiere],
@@ -613,6 +643,7 @@ export function usePlanEinstellungen() {
     tausche,
     entferneUebung,
     fuegeUebungHinzu,
+    verschiebeUebung,
     erstelleEigene,
     loescheEigene,
     schalteTrainingstag,

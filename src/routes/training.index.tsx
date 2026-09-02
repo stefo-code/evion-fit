@@ -29,7 +29,7 @@ import {
   type LibUebung,
   type Muster,
 } from "@/lib/exercise-library";
-import { ChevronRight, History, Plus, Repeat, Trash2, Trophy, X } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp, History, Plus, Repeat, Trash2, Trophy, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -67,6 +67,7 @@ function TrainingPage() {
     tausche,
     entferneUebung,
     fuegeUebungHinzu,
+    verschiebeUebung,
     erstelleEigene,
     loescheEigene,
     schalteTrainingstag,
@@ -276,8 +277,26 @@ function TrainingPage() {
 
       <Section titel={`Übungen – ${tag.titel}`}>
         <div className="space-y-3">
-          {tag.uebungen.map((u) => (
-            <Card key={u.id} className="overflow-hidden p-0">
+          {tag.uebungen.map((u, uIdx) => (
+            <Card key={u.id} className="relative overflow-hidden p-0">
+              <div className="absolute right-2 top-2 z-10 flex flex-col gap-1">
+                <button
+                  onClick={() => verschiebeUebung(tag.index, u.id, -1, tag.uebungen.map((x) => x.id))}
+                  disabled={uIdx === 0}
+                  aria-label={`${u.name} nach oben verschieben`}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card/90 shadow-sm backdrop-blur disabled:opacity-30"
+                >
+                  <ChevronUp className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => verschiebeUebung(tag.index, u.id, 1, tag.uebungen.map((x) => x.id))}
+                  disabled={uIdx === tag.uebungen.length - 1}
+                  aria-label={`${u.name} nach unten verschieben`}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card/90 shadow-sm backdrop-blur disabled:opacity-30"
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+              </div>
               <img
                 src={bildFuer(u, profil.geschlecht)}
                 alt={`Ausführung der Übung ${u.name}`}
@@ -392,10 +411,11 @@ function TrainingPage() {
 
         {(Object.keys(einstellungen.tausch).length > 0 ||
           Object.values(einstellungen.entfernt ?? {}).some((v) => v.length > 0) ||
-          Object.values(einstellungen.zusatz ?? {}).some((v) => v.length > 0)) && (
+          Object.values(einstellungen.zusatz ?? {}).some((v) => v.length > 0) ||
+          Object.values(einstellungen.reihenfolge ?? {}).some((v) => v.length > 0)) && (
           <button
             onClick={() => {
-              speichere({ tausch: {}, entfernt: {}, zusatz: {} });
+              speichere({ tausch: {}, entfernt: {}, zusatz: {}, reihenfolge: {} });
               toast("Plan auf den Vorschlag zurückgesetzt");
             }}
             className="text-xs font-bold uppercase tracking-wider text-primary"
