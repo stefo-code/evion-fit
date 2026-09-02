@@ -411,10 +411,11 @@ function TrainingPage() {
 
         {(Object.keys(einstellungen.tausch).length > 0 ||
           Object.values(einstellungen.entfernt ?? {}).some((v) => v.length > 0) ||
-          Object.values(einstellungen.zusatz ?? {}).some((v) => v.length > 0)) && (
+          Object.values(einstellungen.zusatz ?? {}).some((v) => v.length > 0) ||
+          Object.values(einstellungen.reihenfolge ?? {}).some((v) => v.length > 0)) && (
           <button
             onClick={() => {
-              speichere({ tausch: {}, entfernt: {}, zusatz: {} });
+              speichere({ tausch: {}, entfernt: {}, zusatz: {}, reihenfolge: {} });
               toast("Plan auf den Vorschlag zurückgesetzt");
             }}
             className="text-xs font-bold uppercase tracking-wider text-primary"
