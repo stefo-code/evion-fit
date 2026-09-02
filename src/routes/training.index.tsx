@@ -29,7 +29,7 @@ import {
   type LibUebung,
   type Muster,
 } from "@/lib/exercise-library";
-import { ChevronRight, History, Plus, Repeat, Trash2, Trophy, X } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp, History, Plus, Repeat, Trash2, Trophy, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -67,6 +67,7 @@ function TrainingPage() {
     tausche,
     entferneUebung,
     fuegeUebungHinzu,
+    verschiebeUebung,
     erstelleEigene,
     loescheEigene,
     schalteTrainingstag,
