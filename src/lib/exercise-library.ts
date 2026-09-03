@@ -481,7 +481,7 @@ export const uebungsBibliothek: LibUebung[] = [
   },
   {
     id: "schaegbank-curls",
-    name: "Einarmige Schrägbank-Curls",
+    name: "Einarmige Preacher-Curls",
     muskel: "Bizeps",
     muster: "arme",
     equipment: ["kurzhantel"],
@@ -489,7 +489,7 @@ export const uebungsBibliothek: LibUebung[] = [
     zielSaetze: 3,
     wdhBereich: "10–12",
     startGewicht: 8,
-    hinweis: "Arme hängen hinter dem Körper – starke Dehnung des langen Bizepskopfs.",
+    hinweis: "Oberarm liegt auf der Preacher-Ablage – streng isoliert, ohne Schwung.",
     rueckenschonend: true,
     rueckbildung: true,
     einsteiger: true,
