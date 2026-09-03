@@ -481,7 +481,7 @@ export const uebungsBibliothek: LibUebung[] = [
   },
   {
     id: "schaegbank-curls",
-    name: "Einarmige Schrägbank-Curls",
+    name: "Einarmige Preacher-Curls",
     muskel: "Bizeps",
     muster: "arme",
     equipment: ["kurzhantel"],
