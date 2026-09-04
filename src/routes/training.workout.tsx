@@ -27,12 +27,16 @@ import { toast } from "sonner";
 import { Check, ChevronLeft, Minus, Plus, Timer, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Suche = { tag: number };
+type Suche = { tag: number; dauer?: number };
 
 export const Route = createFileRoute("/training/workout")({
-  validateSearch: (s: Record<string, unknown>): Suche => ({
-    tag: Number(s["tag"] ?? 0) || 0,
-  }),
+  validateSearch: (s: Record<string, unknown>): Suche => {
+    const d = Number(s["dauer"]);
+    return {
+      tag: Number(s["tag"] ?? 0) || 0,
+      ...(Number.isFinite(d) && d > 0 ? { dauer: d } : {}),
+    };
+  },
   head: () => ({
     meta: [
       { title: "Workout – Sätze loggen | EVION" },
@@ -55,7 +59,7 @@ function bereich(wdhBereich: string): [number, number] {
 }
 
 function WorkoutPage() {
-  const { tag: tagParam } = Route.useSearch();
+  const { tag: tagParam, dauer: dauerParam } = Route.useSearch();
   const navigate = useNavigate();
   const { profil } = useOnboardingProfil();
   const { einstellungen } = usePlanEinstellungen();
@@ -69,10 +73,10 @@ function WorkoutPage() {
       erfahrung: profil.erfahrung,
       equipment: mappeEquipment([...(profil.equipment ?? []), ...(profil.orte ?? [])]),
       tage: aktiveTrainingstage(einstellungen, profil.tage || 4).length,
-      dauer: profil.dauer || 45,
+      dauer: dauerParam || profil.dauer || 45,
       fokus: einstellungen.fokus,
     }),
-    [profil, einstellungen],
+    [profil, einstellungen, dauerParam],
   );
 
   const plan = useMemo(
