@@ -59,7 +59,7 @@ function bereich(wdhBereich: string): [number, number] {
 }
 
 function WorkoutPage() {
-  const { tag: tagParam } = Route.useSearch();
+  const { tag: tagParam, dauer: dauerParam } = Route.useSearch();
   const navigate = useNavigate();
   const { profil } = useOnboardingProfil();
   const { einstellungen } = usePlanEinstellungen();
