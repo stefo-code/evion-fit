@@ -73,10 +73,10 @@ function WorkoutPage() {
       erfahrung: profil.erfahrung,
       equipment: mappeEquipment([...(profil.equipment ?? []), ...(profil.orte ?? [])]),
       tage: aktiveTrainingstage(einstellungen, profil.tage || 4).length,
-      dauer: profil.dauer || 45,
+      dauer: dauerParam || profil.dauer || 45,
       fokus: einstellungen.fokus,
     }),
-    [profil, einstellungen],
+    [profil, einstellungen, dauerParam],
   );
 
   const plan = useMemo(
