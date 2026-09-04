@@ -186,7 +186,7 @@ function TrainingPage() {
           <p className="mt-3 text-sm text-muted-foreground">{modus.beschreibung}</p>
           <Link
             to="/training/workout"
-            search={{ tag: tagIndex }}
+            search={{ tag: tagIndex, dauer: zeit }}
             className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 font-display text-base font-extrabold uppercase tracking-wide text-primary-foreground transition-transform hover:scale-[1.01]"
           >
             Training starten <ChevronRight className="h-5 w-5" />
