@@ -125,19 +125,48 @@ function KoerperEmpfehlungen() {
 }
 
 function CoachPage() {
+  const { aktivitaet } = useAktivitaet();
+  const { daten: ernaehrung } = useErnaehrung();
+  const { profil } = useOnboardingProfil();
+  const { einstellungen: plan } = usePlanEinstellungen();
+  const eff = effektivesProfil(profil);
+
   const [msgs, setMsgs] = useState<Msg[]>([
     {
       rolle: "coach",
-      text: `Hi ${profile.name}. Ich habe deine Woche angesehen: Training läuft, Protein hängt hinterher. Frag mich alles – oder nutze einen der Vorschläge unten.`,
+      text: `Hi ${eff.name}. Ich kenne deine Trainings, Körperwerte, Ernährung und Erholung aus der App. Frag mich konkret – zum Beispiel nach deinem Kaloriendefizit, deinem Trainingsvolumen oder was heute sinnvoll ist.`,
     },
   ]);
   const [input, setInput] = useState("");
+  const [laedt, setLaedt] = useState(false);
+  const [fehler, setFehler] = useState<string | null>(null);
+  const liste = useRef<HTMLUListElement>(null);
 
-  function senden(text: string) {
-    if (!text.trim()) return;
-    setMsgs((m) => [...m, { rolle: "user", text }, { rolle: "coach", text: antwort(text) }]);
+  const kontext = useMemo(
+    () => baueCoachKontext({ aktivitaet, ernaehrung, profil, plan }),
+    [aktivitaet, ernaehrung, profil, plan],
+  );
+
+  async function senden(text: string) {
+    const frage = text.trim();
+    if (!frage || laedt) return;
+    const verlauf: Msg[] = [...msgs, { rolle: "user", text: frage }];
+    setMsgs(verlauf);
     setInput("");
+    setFehler(null);
+    setLaedt(true);
+    requestAnimationFrame(() => liste.current?.scrollTo({ top: liste.current.scrollHeight }));
+    try {
+      const res = await coachAntwort({ data: { kontext, verlauf: verlauf.slice(1) } });
+      setMsgs((m) => [...m, { rolle: "coach", text: res.text }]);
+    } catch (e) {
+      setFehler(e instanceof Error ? e.message : "Der Coach ist gerade nicht erreichbar.");
+    } finally {
+      setLaedt(false);
+      requestAnimationFrame(() => liste.current?.scrollTo({ top: liste.current.scrollHeight }));
+    }
   }
+
 
   return (
     <div className="space-y-8">
