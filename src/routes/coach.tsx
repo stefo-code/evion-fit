@@ -1,9 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link as RLink } from "@tanstack/react-router";
+import { useMemo, useRef, useState } from "react";
 import { Card, Chip, Disclaimer, Section, Why } from "@/components/ui-kit";
-import { coachVorschlaege, heute, muskelStatus, profile, readiness } from "@/lib/demo-data";
-import { Send, Sparkles, User } from "lucide-react";
-import { Link as RLink } from "@tanstack/react-router";
+import { coachVorschlaege } from "@/lib/demo-data";
+import { Loader2, Send, Sparkles, User } from "lucide-react";
+
 import {
   koerperKennzahlen,
   readinessAusMessungen,
@@ -13,6 +13,10 @@ import {
   veraenderung,
 } from "@/lib/activity-store";
 import { effektivesProfil, useOnboardingProfil } from "@/lib/onboarding-store";
+import { useErnaehrung } from "@/lib/nutrition-store";
+import { usePlanEinstellungen } from "@/lib/training-plan";
+import { baueCoachKontext } from "@/lib/coach-context";
+import { coachAntwort } from "@/lib/coach.functions";
 
 export const Route = createFileRoute("/coach")({
   head: () => ({
@@ -31,20 +35,16 @@ export const Route = createFileRoute("/coach")({
 
 type Msg = { rolle: "coach" | "user"; text: string };
 
-const antwort = (frage: string) => {
-  const f = frage.toLowerCase();
-  if (f.includes("protein"))
-    return `Dir fehlen heute noch ${heute.protein.ziel - heute.protein.ist} g Protein. Drei Optionen: 250 g Skyr mit Beeren (≈ 30 g), 180 g Hähnchen mit Reis (≈ 55 g) oder ein Whey-Shake (≈ 25 g). Am wenigsten Aufwand: Skyr plus Shake.`;
-  if (f.includes("trainieren") || f.includes("pausieren"))
-    return `Dein Körperstatus liegt bei ${readiness.score} von 100 – Schlaf und Erholungswerte sind in deinem normalen Bereich. Volles Oberkörper-Training ist sinnvoll. Deine Beine sind vom Freitag noch belastet, also heute keine schwere Beinarbeit.`;
-  if (f.includes("morgen"))
-    return `Morgen steht Pull an: Klimmzüge, Rudern, Latzug, Facepulls, Bizeps. Rücken liegt diese Woche bei ${muskelStatus.ruecken.saetze} von ${muskelStatus.ruecken.ziel} Sätzen – 5 weitere Sätze sind gut investiert.`;
-  if (f.includes("creatin") || f.includes("supplement"))
-    return "Creatin Monohydrat ist gut untersucht und passt zu deinem Ziel: 3–5 g täglich, Timing ist nachrangig. Nahrungsergänzung ist ein Zusatz, keine Voraussetzung. Bei Vorerkrankungen bitte ärztlich abklären.";
-  if (f.includes("fortschritt") || f.includes("fettabbau"))
-    return "In 10 Wochen: −4,7 kg Gewicht, −6,2 cm Taille, Kraft +8 %. Das spricht für Fettabbau bei erhaltener Leistungsfähigkeit. Die aktuelle Kalorienvorgabe würde ich beibehalten.";
-  return "Kurz zusammengefasst: Dein Trend passt zu deinem Ziel. Heute stehen noch offene Kalorien und Protein an – eine proteinreiche Hauptmahlzeit schließt beides gut ab. Ich bin kein Arzt und stelle keine Diagnosen.";
-};
+/** Entfernt Markdown-Auszeichnungen, damit der Chat als Fließtext lesbar bleibt. */
+function ohneMarkdown(text: string) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/(^|\n)\s*#{1,6}\s*/g, "$1")
+    .replace(/(^|\n)\s*[*•]\s+/g, "$1– ")
+    .replace(/(^|\n)\s*-\s+/g, "$1– ");
+}
+
+
 
 /** Empfehlungen, die ausschließlich aus selbst erfassten Werten entstehen. */
 function KoerperEmpfehlungen() {
@@ -135,19 +135,48 @@ function KoerperEmpfehlungen() {
 }
 
 function CoachPage() {
+  const { aktivitaet } = useAktivitaet();
+  const { daten: ernaehrung } = useErnaehrung();
+  const { profil } = useOnboardingProfil();
+  const { einstellungen: plan } = usePlanEinstellungen();
+  const eff = effektivesProfil(profil);
+
   const [msgs, setMsgs] = useState<Msg[]>([
     {
       rolle: "coach",
-      text: `Hi ${profile.name}. Ich habe deine Woche angesehen: Training läuft, Protein hängt hinterher. Frag mich alles – oder nutze einen der Vorschläge unten.`,
+      text: `Hi ${eff.name}. Ich kenne deine Trainings, Körperwerte, Ernährung und Erholung aus der App. Frag mich konkret – zum Beispiel nach deinem Kaloriendefizit, deinem Trainingsvolumen oder was heute sinnvoll ist.`,
     },
   ]);
   const [input, setInput] = useState("");
+  const [laedt, setLaedt] = useState(false);
+  const [fehler, setFehler] = useState<string | null>(null);
+  const liste = useRef<HTMLUListElement>(null);
 
-  function senden(text: string) {
-    if (!text.trim()) return;
-    setMsgs((m) => [...m, { rolle: "user", text }, { rolle: "coach", text: antwort(text) }]);
+  const kontext = useMemo(
+    () => baueCoachKontext({ aktivitaet, ernaehrung, profil, plan }),
+    [aktivitaet, ernaehrung, profil, plan],
+  );
+
+  async function senden(text: string) {
+    const frage = text.trim();
+    if (!frage || laedt) return;
+    const verlauf: Msg[] = [...msgs, { rolle: "user", text: frage }];
+    setMsgs(verlauf);
     setInput("");
+    setFehler(null);
+    setLaedt(true);
+    requestAnimationFrame(() => liste.current?.scrollTo({ top: liste.current.scrollHeight }));
+    try {
+      const res = await coachAntwort({ data: { kontext, verlauf: verlauf.slice(1) } });
+      setMsgs((m) => [...m, { rolle: "coach", text: res.text }]);
+    } catch (e) {
+      setFehler(e instanceof Error ? e.message : "Der Coach ist gerade nicht erreichbar.");
+    } finally {
+      setLaedt(false);
+      requestAnimationFrame(() => liste.current?.scrollTo({ top: liste.current.scrollHeight }));
+    }
   }
+
 
   return (
     <div className="space-y-8">
@@ -158,46 +187,10 @@ function CoachPage() {
 
       <KoerperEmpfehlungen />
 
-      <Section titel="Proaktive Empfehlungen">
-        <div className="space-y-3">
-          <Card className="border-primary/30">
-            <p className="text-sm leading-relaxed">
-              Du hast diese Woche bereits {muskelStatus.quadrizeps.saetze} von{" "}
-              {muskelStatus.quadrizeps.ziel} Beinsätzen erreicht. Heute würde ich keine zusätzliche
-              schwere Beinarbeit einplanen.
-            </p>
-            <Why
-              punkte={[
-                "Quadrizeps: hohe Belastung am Freitag",
-                "Geschätzte Bereitschaft: 46 %",
-                "Zusätzliche Sätze bringen bei erreichtem Wochenvolumen wenig Zusatznutzen",
-              ]}
-            />
-          </Card>
-          <Card className="border-info/30">
-            <p className="text-sm leading-relaxed">
-              Dein Protein liegt heute noch {heute.protein.ziel - heute.protein.ist} g unter deinem Ziel.
-              Ich habe drei passende Abendessen vorbereitet.
-            </p>
-            <Link
-              to="/ernaehrung"
-              className="mt-3 inline-flex rounded-xl border border-border px-4 py-2 text-sm font-bold"
-            >
-              Vorschläge ansehen
-            </Link>
-          </Card>
-          <Card>
-            <p className="text-sm leading-relaxed">
-              Du trainierst heute erst um 19:30 Uhr. Koffein kurz vor dem Training könnte deinen Schlaf
-              beeinflussen – 100 mg statt 200 mg wären eine ruhigere Variante.
-            </p>
-          </Card>
-        </div>
-      </Section>
+      <Section titel="Chat mit deinem Coach">
 
-      <Section titel="Chat">
-        <Card className="flex h-[26rem] flex-col p-0">
-          <ul className="flex-1 space-y-4 overflow-y-auto p-5">
+        <Card className="flex h-[30rem] flex-col p-0">
+          <ul ref={liste} className="flex-1 space-y-4 overflow-y-auto p-5">
             {msgs.map((m, i) => (
               <li key={i} className="flex gap-3">
                 <span
@@ -209,15 +202,25 @@ function CoachPage() {
                   {m.rolle === "coach" ? <Sparkles className="h-4 w-4" /> : <User className="h-4 w-4" />}
                 </span>
                 <p className="min-w-0 whitespace-pre-line rounded-2xl bg-secondary/50 px-4 py-3 text-sm leading-relaxed">
-                  {m.text}
+                  {ohneMarkdown(m.text)}
                 </p>
+
               </li>
             ))}
+            {laedt && (
+              <li className="flex items-center gap-3 text-sm text-muted-foreground">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-primary/20 text-primary">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                </span>
+                Der Coach sieht sich deine Daten an …
+              </li>
+            )}
+            {fehler && <li className="text-sm text-destructive">{fehler}</li>}
           </ul>
           <div className="border-t border-border p-3">
             <div className="mb-2 flex gap-2 overflow-x-auto pb-1">
               {coachVorschlaege.map((v) => (
-                <Chip key={v} onClick={() => senden(v)} className="shrink-0 whitespace-nowrap">
+                <Chip key={v} onClick={() => void senden(v)} className="shrink-0 whitespace-nowrap">
                   {v}
                 </Chip>
               ))}
@@ -225,7 +228,7 @@ function CoachPage() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                senden(input);
+                void senden(input);
               }}
               className="flex gap-2"
             >
@@ -237,20 +240,21 @@ function CoachPage() {
               />
               <button
                 type="submit"
-                className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground"
+                disabled={laedt || !input.trim()}
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground disabled:opacity-40"
                 aria-label="Senden"
               >
-                <Send className="h-4 w-4" />
+                {laedt ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               </button>
             </form>
           </div>
         </Card>
         <Disclaimer>
-          Der Coach nutzt ausschließlich die von dir freigegebenen Daten und stellt keine medizinischen
+          Der Coach wertet die von dir in EVION erfassten Daten aus und stellt keine medizinischen
           Diagnosen. Bei Schmerzen, Verletzungen oder Erkrankungen wende dich an medizinisches Fachpersonal.
-          Die Antworten in dieser Demo stammen aus vorbereiteten Beispiel-Regeln.
         </Disclaimer>
       </Section>
+
     </div>
   );
 }
