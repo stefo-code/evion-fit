@@ -192,8 +192,9 @@ function CoachPage() {
                   {m.rolle === "coach" ? <Sparkles className="h-4 w-4" /> : <User className="h-4 w-4" />}
                 </span>
                 <p className="min-w-0 whitespace-pre-line rounded-2xl bg-secondary/50 px-4 py-3 text-sm leading-relaxed">
-                  {m.text}
+                  {ohneMarkdown(m.text)}
                 </p>
+
               </li>
             ))}
             {laedt && (
