@@ -1,9 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link as RLink } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { Card, Chip, Disclaimer, Section, Why } from "@/components/ui-kit";
-import { coachVorschlaege, heute, muskelStatus, profile } from "@/lib/demo-data";
+import { coachVorschlaege } from "@/lib/demo-data";
 import { Loader2, Send, Sparkles, User } from "lucide-react";
-import { Link as RLink } from "@tanstack/react-router";
+
 import {
   koerperKennzahlen,
   readinessAusMessungen,
