@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Card, Chip, Disclaimer, Section, Why } from "@/components/ui-kit";
-import { coachVorschlaege, heute, muskelStatus, profile, readiness } from "@/lib/demo-data";
-import { Send, Sparkles, User } from "lucide-react";
+import { coachVorschlaege, heute, muskelStatus, profile } from "@/lib/demo-data";
+import { Loader2, Send, Sparkles, User } from "lucide-react";
 import { Link as RLink } from "@tanstack/react-router";
 import {
   koerperKennzahlen,
@@ -13,6 +13,10 @@ import {
   veraenderung,
 } from "@/lib/activity-store";
 import { effektivesProfil, useOnboardingProfil } from "@/lib/onboarding-store";
+import { useErnaehrung } from "@/lib/nutrition-store";
+import { usePlanEinstellungen } from "@/lib/training-plan";
+import { baueCoachKontext } from "@/lib/coach-context";
+import { coachAntwort } from "@/lib/coach.functions";
 
 export const Route = createFileRoute("/coach")({
   head: () => ({
@@ -31,20 +35,6 @@ export const Route = createFileRoute("/coach")({
 
 type Msg = { rolle: "coach" | "user"; text: string };
 
-const antwort = (frage: string) => {
-  const f = frage.toLowerCase();
-  if (f.includes("protein"))
-    return `Dir fehlen heute noch ${heute.protein.ziel - heute.protein.ist} g Protein. Drei Optionen: 250 g Skyr mit Beeren (≈ 30 g), 180 g Hähnchen mit Reis (≈ 55 g) oder ein Whey-Shake (≈ 25 g). Am wenigsten Aufwand: Skyr plus Shake.`;
-  if (f.includes("trainieren") || f.includes("pausieren"))
-    return `Dein Körperstatus liegt bei ${readiness.score} von 100 – Schlaf und Erholungswerte sind in deinem normalen Bereich. Volles Oberkörper-Training ist sinnvoll. Deine Beine sind vom Freitag noch belastet, also heute keine schwere Beinarbeit.`;
-  if (f.includes("morgen"))
-    return `Morgen steht Pull an: Klimmzüge, Rudern, Latzug, Facepulls, Bizeps. Rücken liegt diese Woche bei ${muskelStatus.ruecken.saetze} von ${muskelStatus.ruecken.ziel} Sätzen – 5 weitere Sätze sind gut investiert.`;
-  if (f.includes("creatin") || f.includes("supplement"))
-    return "Creatin Monohydrat ist gut untersucht und passt zu deinem Ziel: 3–5 g täglich, Timing ist nachrangig. Nahrungsergänzung ist ein Zusatz, keine Voraussetzung. Bei Vorerkrankungen bitte ärztlich abklären.";
-  if (f.includes("fortschritt") || f.includes("fettabbau"))
-    return "In 10 Wochen: −4,7 kg Gewicht, −6,2 cm Taille, Kraft +8 %. Das spricht für Fettabbau bei erhaltener Leistungsfähigkeit. Die aktuelle Kalorienvorgabe würde ich beibehalten.";
-  return "Kurz zusammengefasst: Dein Trend passt zu deinem Ziel. Heute stehen noch offene Kalorien und Protein an – eine proteinreiche Hauptmahlzeit schließt beides gut ab. Ich bin kein Arzt und stelle keine Diagnosen.";
-};
 
 /** Empfehlungen, die ausschließlich aus selbst erfassten Werten entstehen. */
 function KoerperEmpfehlungen() {
