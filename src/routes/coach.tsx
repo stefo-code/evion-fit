@@ -35,6 +35,16 @@ export const Route = createFileRoute("/coach")({
 
 type Msg = { rolle: "coach" | "user"; text: string };
 
+/** Entfernt Markdown-Auszeichnungen, damit der Chat als Fließtext lesbar bleibt. */
+function ohneMarkdown(text: string) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/(^|\n)\s*#{1,6}\s*/g, "$1")
+    .replace(/(^|\n)\s*[*•]\s+/g, "$1– ")
+    .replace(/(^|\n)\s*-\s+/g, "$1– ");
+}
+
+
 
 /** Empfehlungen, die ausschließlich aus selbst erfassten Werten entstehen. */
 function KoerperEmpfehlungen() {
