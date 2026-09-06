@@ -179,8 +179,8 @@ function CoachPage() {
 
       <Section titel="Chat mit deinem Coach">
 
-        <Card className="flex h-[26rem] flex-col p-0">
-          <ul className="flex-1 space-y-4 overflow-y-auto p-5">
+        <Card className="flex h-[30rem] flex-col p-0">
+          <ul ref={liste} className="flex-1 space-y-4 overflow-y-auto p-5">
             {msgs.map((m, i) => (
               <li key={i} className="flex gap-3">
                 <span
@@ -196,11 +196,20 @@ function CoachPage() {
                 </p>
               </li>
             ))}
+            {laedt && (
+              <li className="flex items-center gap-3 text-sm text-muted-foreground">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-primary/20 text-primary">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                </span>
+                Der Coach sieht sich deine Daten an …
+              </li>
+            )}
+            {fehler && <li className="text-sm text-destructive">{fehler}</li>}
           </ul>
           <div className="border-t border-border p-3">
             <div className="mb-2 flex gap-2 overflow-x-auto pb-1">
               {coachVorschlaege.map((v) => (
-                <Chip key={v} onClick={() => senden(v)} className="shrink-0 whitespace-nowrap">
+                <Chip key={v} onClick={() => void senden(v)} className="shrink-0 whitespace-nowrap">
                   {v}
                 </Chip>
               ))}
@@ -208,7 +217,7 @@ function CoachPage() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                senden(input);
+                void senden(input);
               }}
               className="flex gap-2"
             >
@@ -220,20 +229,21 @@ function CoachPage() {
               />
               <button
                 type="submit"
-                className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground"
+                disabled={laedt || !input.trim()}
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground disabled:opacity-40"
                 aria-label="Senden"
               >
-                <Send className="h-4 w-4" />
+                {laedt ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               </button>
             </form>
           </div>
         </Card>
         <Disclaimer>
-          Der Coach nutzt ausschließlich die von dir freigegebenen Daten und stellt keine medizinischen
+          Der Coach wertet die von dir in EVION erfassten Daten aus und stellt keine medizinischen
           Diagnosen. Bei Schmerzen, Verletzungen oder Erkrankungen wende dich an medizinisches Fachpersonal.
-          Die Antworten in dieser Demo stammen aus vorbereiteten Beispiel-Regeln.
         </Disclaimer>
       </Section>
+
     </div>
   );
 }
