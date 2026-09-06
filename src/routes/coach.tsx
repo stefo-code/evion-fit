@@ -177,44 +177,8 @@ function CoachPage() {
 
       <KoerperEmpfehlungen />
 
-      <Section titel="Proaktive Empfehlungen">
-        <div className="space-y-3">
-          <Card className="border-primary/30">
-            <p className="text-sm leading-relaxed">
-              Du hast diese Woche bereits {muskelStatus.quadrizeps.saetze} von{" "}
-              {muskelStatus.quadrizeps.ziel} Beinsätzen erreicht. Heute würde ich keine zusätzliche
-              schwere Beinarbeit einplanen.
-            </p>
-            <Why
-              punkte={[
-                "Quadrizeps: hohe Belastung am Freitag",
-                "Geschätzte Bereitschaft: 46 %",
-                "Zusätzliche Sätze bringen bei erreichtem Wochenvolumen wenig Zusatznutzen",
-              ]}
-            />
-          </Card>
-          <Card className="border-info/30">
-            <p className="text-sm leading-relaxed">
-              Dein Protein liegt heute noch {heute.protein.ziel - heute.protein.ist} g unter deinem Ziel.
-              Ich habe drei passende Abendessen vorbereitet.
-            </p>
-            <Link
-              to="/ernaehrung"
-              className="mt-3 inline-flex rounded-xl border border-border px-4 py-2 text-sm font-bold"
-            >
-              Vorschläge ansehen
-            </Link>
-          </Card>
-          <Card>
-            <p className="text-sm leading-relaxed">
-              Du trainierst heute erst um 19:30 Uhr. Koffein kurz vor dem Training könnte deinen Schlaf
-              beeinflussen – 100 mg statt 200 mg wären eine ruhigere Variante.
-            </p>
-          </Card>
-        </div>
-      </Section>
+      <Section titel="Chat mit deinem Coach">
 
-      <Section titel="Chat">
         <Card className="flex h-[26rem] flex-col p-0">
           <ul className="flex-1 space-y-4 overflow-y-auto p-5">
             {msgs.map((m, i) => (
