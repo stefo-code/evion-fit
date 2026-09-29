@@ -109,10 +109,24 @@ function WorkoutPage() {
   const tag = plan[tagIndex] ?? plan[0]!;
   const uebungen = tag.uebungen;
 
-  const [start] = useState(() => Date.now());
-  const [idx, setIdx] = useState(0);
-  const [log, setLog] = useState<Log>({});
+  const [entwurf] = useState(() => ladeEntwurf(tagIndex));
+  const [start] = useState(() => entwurf?.start ?? Date.now());
+  const [idx, setIdx] = useState(entwurf?.idx ?? 0);
+  const [log, setLog] = useState<Log>(entwurf?.log ?? {});
   const [ergebnis, setErgebnis] = useState<SessionErgebnis | null>(null);
+
+  // Entwurf persistent sichern, damit Display-Standby / Tab-Wechsel keine Daten verliert.
+  useEffect(() => {
+    if (ergebnis) return;
+    try {
+      localStorage.setItem(
+        ENTWURF_KEY,
+        JSON.stringify({ tagIndex, start, idx, log } satisfies WorkoutEntwurf),
+      );
+    } catch {
+      /* Speicher voll o.ä. – Training läuft trotzdem weiter */
+    }
+  }, [tagIndex, start, idx, log, ergebnis]);
 
   const sicherIdx = Math.min(idx, Math.max(uebungen.length - 1, 0));
   const u = uebungen[sicherIdx];
