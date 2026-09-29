@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, Disclaimer, Why } from "@/components/ui-kit";
 import { bildFuer } from "@/lib/exercise-library";
 import { useOnboardingProfil } from "@/lib/onboarding-store";
@@ -53,6 +53,27 @@ export const Route = createFileRoute("/training/workout")({
 
 type Log = Record<string, SatzLog[]>;
 
+const ENTWURF_KEY = "evion.workout.entwurf.v1";
+
+type WorkoutEntwurf = {
+  tagIndex: number;
+  start: number;
+  idx: number;
+  log: Log;
+};
+
+function ladeEntwurf(tagIndex: number): WorkoutEntwurf | null {
+  try {
+    const raw = localStorage.getItem(ENTWURF_KEY);
+    if (!raw) return null;
+    const e = JSON.parse(raw) as WorkoutEntwurf;
+    if (e.tagIndex !== tagIndex || typeof e.start !== "number" || !e.log) return null;
+    return e;
+  } catch {
+    return null;
+  }
+}
+
 function bereich(wdhBereich: string): [number, number] {
   const [min, max] = wdhBereich.split(/[–-]/).map((x) => Number(x.trim()));
   return [Number.isFinite(min) ? min! : 8, Number.isFinite(max) ? max! : (min ?? 10)];
@@ -88,10 +109,24 @@ function WorkoutPage() {
   const tag = plan[tagIndex] ?? plan[0]!;
   const uebungen = tag.uebungen;
 
-  const [start] = useState(() => Date.now());
-  const [idx, setIdx] = useState(0);
-  const [log, setLog] = useState<Log>({});
+  const [entwurf] = useState(() => ladeEntwurf(tagIndex));
+  const [start] = useState(() => entwurf?.start ?? Date.now());
+  const [idx, setIdx] = useState(entwurf?.idx ?? 0);
+  const [log, setLog] = useState<Log>(entwurf?.log ?? {});
   const [ergebnis, setErgebnis] = useState<SessionErgebnis | null>(null);
+
+  // Entwurf persistent sichern, damit Display-Standby / Tab-Wechsel keine Daten verliert.
+  useEffect(() => {
+    if (ergebnis) return;
+    try {
+      localStorage.setItem(
+        ENTWURF_KEY,
+        JSON.stringify({ tagIndex, start, idx, log } satisfies WorkoutEntwurf),
+      );
+    } catch {
+      /* Speicher voll o.ä. – Training läuft trotzdem weiter */
+    }
+  }, [tagIndex, start, idx, log, ergebnis]);
 
   const sicherIdx = Math.min(idx, Math.max(uebungen.length - 1, 0));
   const u = uebungen[sicherIdx];
@@ -182,6 +217,11 @@ function WorkoutPage() {
       saetze: uebungen.flatMap((e) => log[e.id] ?? []),
     });
     setErgebnis(res);
+    try {
+      localStorage.removeItem(ENTWURF_KEY);
+    } catch {
+      /* ignorieren */
+    }
     for (const erf of res.neueErfolge) toast.success(`Erfolg freigeschaltet: ${erf.titel}`);
     toast.success("Training gespeichert", {
       description: `${res.einheit.saetze.length} Sätze · ${res.volumen.toLocaleString("de-DE")} kg Volumen`,
