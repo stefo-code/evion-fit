@@ -217,6 +217,11 @@ function WorkoutPage() {
       saetze: uebungen.flatMap((e) => log[e.id] ?? []),
     });
     setErgebnis(res);
+    try {
+      localStorage.removeItem(ENTWURF_KEY);
+    } catch {
+      /* ignorieren */
+    }
     for (const erf of res.neueErfolge) toast.success(`Erfolg freigeschaltet: ${erf.titel}`);
     toast.success("Training gespeichert", {
       description: `${res.einheit.saetze.length} Sätze · ${res.volumen.toLocaleString("de-DE")} kg Volumen`,
