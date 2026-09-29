@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, Disclaimer, Why } from "@/components/ui-kit";
 import { bildFuer } from "@/lib/exercise-library";
 import { useOnboardingProfil } from "@/lib/onboarding-store";
@@ -52,6 +52,27 @@ export const Route = createFileRoute("/training/workout")({
 });
 
 type Log = Record<string, SatzLog[]>;
+
+const ENTWURF_KEY = "evion.workout.entwurf.v1";
+
+type WorkoutEntwurf = {
+  tagIndex: number;
+  start: number;
+  idx: number;
+  log: Log;
+};
+
+function ladeEntwurf(tagIndex: number): WorkoutEntwurf | null {
+  try {
+    const raw = localStorage.getItem(ENTWURF_KEY);
+    if (!raw) return null;
+    const e = JSON.parse(raw) as WorkoutEntwurf;
+    if (e.tagIndex !== tagIndex || typeof e.start !== "number" || !e.log) return null;
+    return e;
+  } catch {
+    return null;
+  }
+}
 
 function bereich(wdhBereich: string): [number, number] {
   const [min, max] = wdhBereich.split(/[–-]/).map((x) => Number(x.trim()));
