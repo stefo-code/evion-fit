@@ -173,28 +173,6 @@ export function QualityTag({ quality }: { quality: DataQuality }) {
   );
 }
 
-/**
- * Einheitliche Erklärung: ⓘ-Icon öffnet ein Bottom-Sheet.
- * Wird appweit für „Warum?“, „Wie wird berechnet?“ usw. verwendet.
- */
-export function Why({ punkte, titel = "Warum?" }: { punkte: string[]; titel?: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="mt-3">
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label={titel}
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <Info className="h-4 w-4" />
-        <span className="sr-only sm:not-sr-only">{titel}</span>
-      </button>
-      <InfoSheet titel={titel} punkte={punkte} open={open} onClose={() => setOpen(false)} />
-    </div>
-  );
-}
-
 export function InfoSheet({
   titel,
   punkte,
