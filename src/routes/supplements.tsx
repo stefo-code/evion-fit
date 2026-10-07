@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Card, Chip, Disclaimer, Section, Why } from "@/components/ui-kit";
+import { Card, Chip, Disclaimer, Section } from "@/components/ui-kit";
 import { goalLabels } from "@/lib/demo-data";
 import {
   empfehlungen,
@@ -108,13 +108,6 @@ function SupplementsPage() {
               </li>
             ))}
           </ul>
-          <Why
-            punkte={[
-              "Priorisiert wird nach Studienlage (ISSN/IOC/DGE) mal Relevanz für dein Ziel.",
-              "Alter, Geschlecht, Trainingsfrequenz und Ernährungsform verschieben die Reihenfolge.",
-              "Präparate ohne belegten Nutzen erscheinen bewusst als „Verzichtbar“ statt zu verschwinden.",
-            ]}
-          />
         </Card>
       </Section>
 

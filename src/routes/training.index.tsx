@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Card, Chip, Disclaimer, Section, Why } from "@/components/ui-kit";
+import { Card, Chip, Disclaimer, Section } from "@/components/ui-kit";
 import { MuscleMap } from "@/components/muscle-map";
 import { zeitModi, muskelStatus, goalLabels, type MuscleKey } from "@/lib/demo-data";
 import { useOnboardingProfil } from "@/lib/onboarding-store";
@@ -161,16 +161,6 @@ function TrainingPage() {
             ))}
           </div>
           <p className="mt-3 text-sm text-muted-foreground">{fokusInfo.beschreibung}</p>
-          <Why
-            punkte={[
-              `Ziel „${goalLabels[kontext.ziel]}“ steuert Wiederholungsbereiche und Übungsauswahl.`,
-              `Alter ${kontext.alter ?? "—"} und Erfahrung „${kontext.erfahrung}“ bestimmen, wie technisch anspruchsvoll die Übungen sein dürfen.`,
-              kontext.geschlecht
-                ? `Angaben zu Geschlecht (${kontext.geschlecht}) fließen als Schwerpunkt ein – jede Übung bleibt frei austauschbar.`
-                : "Ohne Geschlechtsangabe wird ein neutraler Schwerpunkt gewählt.",
-              "Rückenschonend und Rückbildung schließen Übungen mit hoher Wirbelsäulen- bzw. Beckenbodenbelastung komplett aus.",
-            ]}
-          />
         </Card>
       </Section>
 
@@ -386,7 +376,6 @@ function TrainingPage() {
                 </div>
 
                 <p className="mt-2 text-xs text-muted-foreground">{u.hinweis}</p>
-                <p className="mt-1 text-xs text-primary">Warum: {u.begruendung}</p>
 
                 {tauschFuer === u.id && (
                   <div className="mt-4 rounded-2xl border border-border p-3">

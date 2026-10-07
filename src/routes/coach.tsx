@@ -1,6 +1,6 @@
 import { createFileRoute, Link as RLink } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
-import { Card, Chip, Disclaimer, Section, Why } from "@/components/ui-kit";
+import { Card, Chip, Disclaimer, Section } from "@/components/ui-kit";
 import { coachVorschlaege } from "@/lib/demo-data";
 import { Loader2, Send, Sparkles, User } from "lucide-react";
 
@@ -123,7 +123,6 @@ function KoerperEmpfehlungen() {
         {karten.map((k, i) => (
           <Card key={i} className={k.ton}>
             <p className="text-sm leading-relaxed">{k.text}</p>
-            {k.warum && <Why punkte={k.warum} />}
           </Card>
         ))}
         <RLink to="/fortschritt" className="inline-flex text-xs font-bold uppercase tracking-wider text-primary">

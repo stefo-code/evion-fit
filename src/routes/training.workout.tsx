@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Card, Disclaimer, Why } from "@/components/ui-kit";
+import { Card, Disclaimer } from "@/components/ui-kit";
 import { bildFuer } from "@/lib/exercise-library";
 import { useOnboardingProfil } from "@/lib/onboarding-store";
 import {
@@ -429,15 +429,6 @@ function WorkoutPage() {
             <p className="num mt-1 text-lg font-bold">
               {vorschlag.gewicht} kg · {vorschlag.wdh} Wiederholungen · RPE {vorschlag.rpe}
             </p>
-            <Why
-              punkte={[
-                letzterSatz(aktivitaet, u.id)
-                  ? "Basis ist dein letzter protokollierter Satz dieser Übung."
-                  : "Erste Einheit dieser Übung – Startwert aus der Übungsbibliothek.",
-                "Oberes Ende des Wiederholungsbereichs bei RPE ≤ 8 → Gewicht +2,5 kg.",
-                "RPE ≥ 9,5 → Wiederholungen reduzieren statt Gewicht steigern.",
-              ]}
-            />
           </div>
 
           {done.length > 0 && (

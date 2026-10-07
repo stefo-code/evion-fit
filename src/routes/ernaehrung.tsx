@@ -3,7 +3,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { analysiereFoto } from "@/lib/food-vision.functions";
 import type { FotoAnalyse } from "@/lib/food-vision.server";
-import { Bar, Card, Chip, Disclaimer, Ring, Section, Why } from "@/components/ui-kit";
+import { Bar, Card, Chip, Disclaimer, Ring, Section } from "@/components/ui-kit";
 import { berechnePlan, useOnboardingProfil } from "@/lib/onboarding-store";
 import { useErnaehrung } from "@/lib/nutrition-store";
 import { lebensmittel, rezeptVorschlaege, vorratVorschlaege, type RezeptTreffer } from "@/lib/recipes";
@@ -583,13 +583,6 @@ function ErnaehrungPage() {
               Nur mit meinem Vorrat
             </Chip>
           </div>
-          <Why
-            punkte={[
-              "Sortiert nach: Anteil vorhandener Zutaten, Protein-Beitrag und Nähe zu deinen offenen Kalorien.",
-              "Rezepte mit Zutaten aus deinen Unverträglichkeiten werden ausgeschlossen.",
-              "„Gegessen“ überträgt die Nährwerte direkt in deine Tagesbilanz.",
-            ]}
-          />
         </Card>
 
         <div className="mt-3 space-y-3">
