@@ -368,6 +368,27 @@ function begruendung(u: LibUebung, k: PlanKontext): string {
   return teile.join(" · ");
 }
 
+const musterLabels: Record<Muster, string> = {
+  druecken: "Drücken",
+  ziehen: "Ziehen",
+  kniebeuge: "Kniebeuge",
+  huefte: "Hüfte / Gesäß",
+  schulter: "Schulter",
+  arme: "Arme",
+  core: "Rumpf",
+  mobility: "Mobility",
+  kondition: "Ausdauer",
+};
+
+/** Sinnvolle Begründung auch für manuell ergänzte und selbst angelegte Übungen. */
+function begruendungFuerManuell(u: LibUebung, k?: PlanKontext): string {
+  const basis = k ? begruendung(u, k) : `trainiert ${u.muskel} · ${musterLabels[u.muster]}`;
+  if (u.id.startsWith("eigen-")) {
+    return [basis, `${u.zielSaetze} Sätze à ${u.wdhBereich}`].join(" · ");
+  }
+  return basis;
+}
+
 function waehle(muster: Muster, k: PlanKontext, benutzt: Set<string>): LibUebung | null {
   const kandidaten = uebungsBibliothek
     .filter((u) => u.muster === muster && !benutzt.has(u.id))
@@ -416,12 +437,16 @@ export function erzeugePlan(kontext: PlanKontext): Trainingstag[] {
 }
 
 /** Wendet gespeicherte Übungstausche an. */
-export function wendeTauschAn(tage: Trainingstag[], tausch: Record<string, string>): Trainingstag[] {
+export function wendeTauschAn(
+  tage: Trainingstag[],
+  tausch: Record<string, string>,
+  kontext?: PlanKontext,
+): Trainingstag[] {
   return tage.map((t) => ({
     ...t,
     uebungen: t.uebungen.map((u) => {
       const neu = tausch[u.id] ? uebungById.get(tausch[u.id]!) : undefined;
-      return neu ? { ...neu, begruendung: "Von dir manuell ausgewählt" } : u;
+      return neu ? { ...neu, begruendung: begruendungFuerManuell(neu, kontext) } : u;
     }),
   }));
 }
@@ -430,6 +455,7 @@ export function wendeTauschAn(tage: Trainingstag[], tausch: Record<string, strin
 export function wendeAnpassungenAn(
   tage: Trainingstag[],
   e: PlanEinstellungen,
+  kontext?: PlanKontext,
 ): Trainingstag[] {
   const alle = new Map<string, LibUebung>(uebungById);
   for (const u of e.eigene ?? []) alle.set(u.id, u);
@@ -442,7 +468,7 @@ export function wendeAnpassungenAn(
       .map((id) => alle.get(id))
       .filter((u): u is LibUebung => Boolean(u))
       .filter((u) => !behalten.some((b) => b.id === u.id))
-      .map((u) => ({ ...u, begruendung: "Von dir hinzugefügt" }));
+      .map((u) => ({ ...u, begruendung: begruendungFuerManuell(u, kontext) }));
     const liste = [...behalten, ...zusatz];
     // Gespeicherte Reihenfolge anwenden (IDs, die nicht mehr existieren, werden ignoriert).
     const reihenfolge = e.reihenfolge?.[key] ?? [];
@@ -501,7 +527,11 @@ const leer: PlanEinstellungen = {
 /** Alle Trainings-Templates: Vorschläge plus eigene, inkl. aller Anpassungen. */
 export function baueVorlagen(kontext: PlanKontext, e: PlanEinstellungen): Trainingstag[] {
   const eigene: Trainingstag[] = (e.vorlagen ?? []).map((v) => ({ index: v.index, titel: v.titel, uebungen: [] }));
-  return wendeAnpassungenAn(wendeTauschAn([...erzeugePlan(kontext), ...eigene], e.tausch), e).map((t) => ({
+  return wendeAnpassungenAn(
+    wendeTauschAn([...erzeugePlan(kontext), ...eigene], e.tausch, kontext),
+    e,
+    kontext,
+  ).map((t) => ({
     ...t,
     titel: e.titel?.[String(t.index)] || t.titel,
   }));
