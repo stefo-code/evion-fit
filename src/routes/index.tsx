@@ -19,11 +19,10 @@ import {
 import { readiness } from "@/lib/demo-data";
 import {
   aktiveTrainingstage,
-  erzeugePlan,
+  baueVorlagen,
   mappeEquipment,
   usePlanEinstellungen,
-  wendeAnpassungenAn,
-  wendeTauschAn,
+  vorlageFuerTag,
   type PlanKontext,
 } from "@/lib/training-plan";
 
@@ -87,12 +86,10 @@ function Cockpit() {
     }),
     [profil, einstellungen.fokus, gewaehlteTage],
   );
-  const plan = useMemo(
-    () => wendeAnpassungenAn(wendeTauschAn(erzeugePlan(kontext), einstellungen.tausch), einstellungen),
-    [kontext, einstellungen],
-  );
-  const naechsterTagIndex = plan.length > 0 ? aktivitaet.einheiten.length % plan.length : 0;
-  const naechsterTag = plan[naechsterTagIndex];
+  const plan = useMemo(() => baueVorlagen(kontext, einstellungen), [kontext, einstellungen]);
+  const naechsterTag =
+    vorlageFuerTag(plan, einstellungen, gewaehlteTage, (new Date().getDay() + 6) % 7) ?? plan[0];
+  const naechsterTagIndex = naechsterTag?.index ?? 0;
 
   const einheitenGesamt = aktivitaet.einheiten.length;
   const leer = einheitenGesamt < 1;

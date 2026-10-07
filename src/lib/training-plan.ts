@@ -473,6 +473,14 @@ export type PlanEinstellungen = {
   eigene: LibUebung[];
   /** Selbst gewählte Wochentage (0 = Montag … 6 = Sonntag). null = Vorschlag. */
   trainingstage: number[] | null;
+  /** Selbst erstellte Trainings-Templates (Index ≥ 100). */
+  vorlagen: { index: number; titel: string }[];
+  /** Umbenannte Template-Titel je Template-Index. */
+  titel: Record<string, string>;
+  /** Zuordnung Wochentag (0 = Mo) → Template-Index. */
+  zuordnung: Record<string, number>;
+  /** Satzpause in Sekunden. */
+  pauseSek: number;
 };
 
 const KEY = "evion.trainingsplan.v1";
@@ -484,7 +492,36 @@ const leer: PlanEinstellungen = {
   reihenfolge: {},
   eigene: [],
   trainingstage: null,
+  vorlagen: [],
+  titel: {},
+  zuordnung: {},
+  pauseSek: 60,
 };
+
+/** Alle Trainings-Templates: Vorschläge plus eigene, inkl. aller Anpassungen. */
+export function baueVorlagen(kontext: PlanKontext, e: PlanEinstellungen): Trainingstag[] {
+  const eigene: Trainingstag[] = (e.vorlagen ?? []).map((v) => ({ index: v.index, titel: v.titel, uebungen: [] }));
+  return wendeAnpassungenAn(wendeTauschAn([...erzeugePlan(kontext), ...eigene], e.tausch), e).map((t) => ({
+    ...t,
+    titel: e.titel?.[String(t.index)] || t.titel,
+  }));
+}
+
+/** Template, das einem Wochentag zugeordnet ist (Standard: Vorschläge der Reihe nach). */
+export function vorlageFuerTag(
+  vorlagen: Trainingstag[],
+  e: Pick<PlanEinstellungen, "zuordnung">,
+  tage: number[],
+  wochentag: number,
+): Trainingstag | undefined {
+  if (!tage.includes(wochentag)) return undefined;
+  const z = e.zuordnung?.[String(wochentag)];
+  const gewaehlt = vorlagen.find((v) => v.index === z);
+  if (gewaehlt) return gewaehlt;
+  const vorschlaege = vorlagen.filter((v) => v.index < 100);
+  const liste = vorschlaege.length > 0 ? vorschlaege : vorlagen;
+  return liste[tage.indexOf(wochentag) % Math.max(liste.length, 1)];
+}
 
 /** Sinnvoll über die Woche verteilte Standardtage für n Einheiten. */
 const verteilung: Record<number, number[]> = {
@@ -637,6 +674,37 @@ export function usePlanEinstellungen() {
     [aktualisiere],
   );
 
+  const erstelleVorlage = useCallback((titel: string) => {
+    let neuIndex = 100;
+    aktualisiere((alt) => {
+      neuIndex = Math.max(99, ...(alt.vorlagen ?? []).map((v) => v.index)) + 1;
+      return { ...alt, vorlagen: [...(alt.vorlagen ?? []), { index: neuIndex, titel }] };
+    });
+    return neuIndex;
+  }, [aktualisiere]);
+
+  const benenneVorlage = useCallback(
+    (index: number, titel: string) =>
+      aktualisiere((alt) => ({ ...alt, titel: { ...alt.titel, [String(index)]: titel } })),
+    [aktualisiere],
+  );
+
+  const loescheVorlage = useCallback(
+    (index: number) =>
+      aktualisiere((alt) => ({
+        ...alt,
+        vorlagen: (alt.vorlagen ?? []).filter((v) => v.index !== index),
+        zuordnung: Object.fromEntries(Object.entries(alt.zuordnung ?? {}).filter(([, v]) => v !== index)),
+      })),
+    [aktualisiere],
+  );
+
+  const ordneZu = useCallback(
+    (wochentag: number, index: number) =>
+      aktualisiere((alt) => ({ ...alt, zuordnung: { ...alt.zuordnung, [String(wochentag)]: index } })),
+    [aktualisiere],
+  );
+
   return {
     einstellungen: state,
     speichere,
@@ -648,6 +716,10 @@ export function usePlanEinstellungen() {
     loescheEigene,
     schalteTrainingstag,
     setzeTrainingstage,
+    erstelleVorlage,
+    benenneVorlage,
+    loescheVorlage,
+    ordneZu,
   };
 }
 
