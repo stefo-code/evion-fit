@@ -4,12 +4,10 @@ import { Card, Disclaimer, Why } from "@/components/ui-kit";
 import { bildFuer } from "@/lib/exercise-library";
 import { useOnboardingProfil } from "@/lib/onboarding-store";
 import {
-  erzeugePlan,
+  baueVorlagen,
   mappeEquipment,
   aktiveTrainingstage,
   usePlanEinstellungen,
-  wendeAnpassungenAn,
-  wendeTauschAn,
   type PlanKontext,
 } from "@/lib/training-plan";
 import {
@@ -60,6 +58,7 @@ type WorkoutEntwurf = {
   start: number;
   idx: number;
   log: Log;
+  pauseEnde?: number | null;
 };
 
 function ladeEntwurf(tagIndex: number): WorkoutEntwurf | null {
@@ -100,20 +99,40 @@ function WorkoutPage() {
     [profil, einstellungen, dauerParam],
   );
 
-  const plan = useMemo(
-    () => wendeAnpassungenAn(wendeTauschAn(erzeugePlan(kontext), einstellungen.tausch), einstellungen),
-    [kontext, einstellungen],
-  );
+  const plan = useMemo(() => baueVorlagen(kontext, einstellungen), [kontext, einstellungen]);
 
-  const tagIndex = Math.min(Math.max(tagParam, 0), plan.length - 1);
-  const tag = plan[tagIndex] ?? plan[0]!;
+  const tag = plan.find((t) => t.index === tagParam) ?? plan[0]!;
+  const tagIndex = tag.index;
   const uebungen = tag.uebungen;
 
-  const [entwurf] = useState(() => ladeEntwurf(tagIndex));
+  const [entwurf] = useState(() => ladeEntwurf(tagParam));
   const [start] = useState(() => entwurf?.start ?? Date.now());
   const [idx, setIdx] = useState(entwurf?.idx ?? 0);
   const [log, setLog] = useState<Log>(entwurf?.log ?? {});
   const [ergebnis, setErgebnis] = useState<SessionErgebnis | null>(null);
+  const [pauseEnde, setPauseEnde] = useState<number | null>(entwurf?.pauseEnde ?? null);
+  const [jetzt, setJetzt] = useState(() => Date.now());
+
+  // Countdown über Endzeitpunkt – läuft auch nach Display-Standby korrekt weiter.
+  useEffect(() => {
+    if (pauseEnde === null) return;
+    const t = window.setInterval(() => setJetzt(Date.now()), 250);
+    return () => window.clearInterval(t);
+  }, [pauseEnde]);
+
+  useEffect(() => {
+    if (pauseEnde !== null && jetzt >= pauseEnde) {
+      setPauseEnde(null);
+      try {
+        navigator.vibrate?.([500, 200, 500, 200, 500]);
+      } catch {
+        /* Vibration nicht verfügbar */
+      }
+      toast.success("Pause vorbei – nächster Satz");
+    }
+  }, [jetzt, pauseEnde]);
+
+  const pause = pauseEnde !== null ? Math.max(0, Math.ceil((pauseEnde - jetzt) / 1000)) : null;
 
   // Entwurf persistent sichern, damit Display-Standby / Tab-Wechsel keine Daten verliert.
   useEffect(() => {
@@ -121,12 +140,12 @@ function WorkoutPage() {
     try {
       localStorage.setItem(
         ENTWURF_KEY,
-        JSON.stringify({ tagIndex, start, idx, log } satisfies WorkoutEntwurf),
+        JSON.stringify({ tagIndex, start, idx, log, pauseEnde } satisfies WorkoutEntwurf),
       );
     } catch {
       /* Speicher voll o.ä. – Training läuft trotzdem weiter */
     }
-  }, [tagIndex, start, idx, log, ergebnis]);
+  }, [tagIndex, start, idx, log, ergebnis, pauseEnde]);
 
   const sicherIdx = Math.min(idx, Math.max(uebungen.length - 1, 0));
   const u = uebungen[sicherIdx];
