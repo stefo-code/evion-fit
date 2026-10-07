@@ -6,14 +6,13 @@ import { zeitModi, muskelStatus, goalLabels, type MuscleKey } from "@/lib/demo-d
 import { useOnboardingProfil } from "@/lib/onboarding-store";
 import {
   aktiveTrainingstage,
-  erzeugePlan,
+  baueVorlagen,
   fokusFuerGeschlecht,
   fokusOptionen,
   mappeEquipment,
   standardTrainingstage,
   usePlanEinstellungen,
-  wendeAnpassungenAn,
-  wendeTauschAn,
+  vorlageFuerTag,
   wochentage,
   wochentageKurz,
   type Fokus,
@@ -72,6 +71,10 @@ function TrainingPage() {
     loescheEigene,
     schalteTrainingstag,
     setzeTrainingstage,
+    erstelleVorlage,
+    benenneVorlage,
+    loescheVorlage,
+    ordneZu,
   } = usePlanEinstellungen();
   const { aktivitaet } = useAktivitaet();
   const rekorde = ermittleRekorde(aktivitaet);
@@ -103,13 +106,10 @@ function TrainingPage() {
   );
 
 
-  const plan = useMemo(
-    () => wendeAnpassungenAn(wendeTauschAn(erzeugePlan(kontext), einstellungen.tausch), einstellungen),
-    [kontext, einstellungen],
-  );
+  const plan = useMemo(() => baueVorlagen(kontext, einstellungen), [kontext, einstellungen]);
+  const [neuerName, setNeuerName] = useState("");
 
-
-  const tag = plan[Math.min(tagIndex, plan.length - 1)] ?? plan[0]!;
+  const tag = plan.find((t) => t.index === tagIndex) ?? plan[0]!;
   const verfuegbareFokus = useMemo(
     () => fokusFuerGeschlecht(profil.geschlecht),
     [profil.geschlecht],
@@ -244,33 +244,85 @@ function TrainingPage() {
         </Card>
 
         <Card className="mt-3 p-2">
+          <p className="label-xs px-3 pt-2">Template je Trainingstag</p>
           <ul className="divide-y divide-border">
-            {plan.map((t, i) => (
-              <li key={t.index}>
-                <button
-                  onClick={() => setTagIndex(i)}
-                  className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-3 text-left"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">
-                      {wochentage[gewaehlteTage[i] ?? i]}
-                    </p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {t.titel} · {t.uebungen.map((u) => u.name).join(", ")}
-                    </p>
-                  </div>
-                  <span
-                    className={cn(
-                      "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider",
-                      i === tagIndex ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground",
-                    )}
+            {gewaehlteTage.map((d) => {
+              const zugeordnet = vorlageFuerTag(plan, einstellungen, gewaehlteTage, d);
+              return (
+                <li key={d} className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-3 px-3 py-3">
+                  <span className="text-sm font-semibold">{wochentage[d]}</span>
+                  <select
+                    value={zugeordnet?.index ?? ""}
+                    onChange={(e) => ordneZu(d, Number(e.target.value))}
+                    aria-label={`Template für ${wochentage[d]}`}
+                    className="w-full min-w-0 rounded-xl border border-border bg-card px-3 py-2 text-sm"
                   >
-                    {i === tagIndex ? "Ausgewählt" : "Anzeigen"}
-                  </span>
-                </button>
-              </li>
-            ))}
+                    {plan.map((t) => (
+                      <option key={t.index} value={t.index}>
+                        {t.titel} ({t.uebungen.length} Übungen)
+                      </option>
+                    ))}
+                  </select>
+                </li>
+              );
+            })}
           </ul>
+        </Card>
+      </Section>
+
+      <Section titel="Trainings-Templates">
+        <Card>
+          <div className="flex flex-wrap gap-2">
+            {plan.map((t) => (
+              <Chip key={t.index} active={t.index === tag.index} onClick={() => setTagIndex(t.index)}>
+                {t.titel}
+              </Chip>
+            ))}
+          </div>
+          <div className="mt-4 flex gap-2">
+            <input
+              value={neuerName}
+              onChange={(e) => setNeuerName(e.target.value)}
+              placeholder="Name für neues Template"
+              aria-label="Name für neues Template"
+              className="min-w-0 flex-1 rounded-xl border border-border bg-card px-3 py-2 text-sm"
+            />
+            <button
+              onClick={() => {
+                const titel = neuerName.trim() || `Eigenes Training ${(einstellungen.vorlagen?.length ?? 0) + 1}`;
+                const idx = erstelleVorlage(titel);
+                setTagIndex(idx);
+                setNeuerName("");
+                toast.success(`Template „${titel}“ erstellt – füge jetzt Übungen hinzu`);
+              }}
+              className="flex shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground"
+            >
+              <Plus className="h-3.5 w-3.5" /> Neu
+            </button>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-3 text-xs font-semibold">
+            <button
+              className="text-muted-foreground underline"
+              onClick={() => {
+                const n = window.prompt("Neuer Name für das Template", tag.titel)?.trim();
+                if (n) benenneVorlage(tag.index, n);
+              }}
+            >
+              „{tag.titel}“ umbenennen
+            </button>
+            {tag.index >= 100 && (
+              <button
+                className="text-destructive underline"
+                onClick={() => {
+                  loescheVorlage(tag.index);
+                  setTagIndex(plan[0]?.index ?? 0);
+                  toast(`Template „${tag.titel}“ gelöscht`);
+                }}
+              >
+                Template löschen
+              </button>
+            )}
+          </div>
         </Card>
       </Section>
 
