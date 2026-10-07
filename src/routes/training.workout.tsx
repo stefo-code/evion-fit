@@ -188,7 +188,6 @@ function WorkoutPage() {
   const gesamtSaetze = uebungen.reduce((s, e) => s + e.zielSaetze, 0);
   const alleSaetze = Object.values(log).flat();
   const geloggt = alleSaetze.length;
-  const [pause, setPause] = useState<number | null>(null);
 
   function satzAbschliessen() {
     if (!u) return;
@@ -202,7 +201,8 @@ function WorkoutPage() {
       zeit: new Date().toISOString(),
     };
     setLog((l) => ({ ...l, [u.id]: [...(l[u.id] ?? []), neu] }));
-    setPause(120);
+    setJetzt(Date.now());
+    setPauseEnde(Date.now() + (einstellungen.pauseSek || 60) * 1000);
 
     const bisher = bestesE1rm(ladeAktivitaet(), u.id);
     const jetzt = e1rm(gewicht, wdh);
@@ -352,9 +352,17 @@ function WorkoutPage() {
             {geloggt} / {gesamtSaetze} Sätze
           </span>
           {pause !== null && (
-            <span className="inline-flex items-center gap-1.5 text-primary">
-              <Timer className="h-4 w-4" /> Satzpause {Math.floor(pause / 60)}:
-              {String(pause % 60).padStart(2, "0")}
+            <span className="inline-flex items-center gap-2 text-primary">
+              <Timer className="h-4 w-4" />
+              <span className="num text-lg font-extrabold">
+                {Math.floor(pause / 60)}:{String(pause % 60).padStart(2, "0")}
+              </span>
+              <button
+                onClick={() => setPauseEnde(null)}
+                className="rounded-lg border border-border px-2 py-0.5 text-xs font-bold text-muted-foreground"
+              >
+                Überspringen
+              </button>
             </span>
           )}
         </div>
