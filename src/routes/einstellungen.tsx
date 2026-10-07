@@ -2,8 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Card, Chip, Disclaimer, Section } from "@/components/ui-kit";
 import { profile, goalLabels, type Goal } from "@/lib/demo-data";
-import { Bell, Download, Trash2, User } from "lucide-react";
+import { Bell, Download, Timer, Trash2, User } from "lucide-react";
 import { toast } from "sonner";
+import { usePlanEinstellungen } from "@/lib/training-plan";
 
 export const Route = createFileRoute("/einstellungen")({
   head: () => ({
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/einstellungen")({
 function EinstellungenPage() {
   const [ziel, setZiel] = useState<Goal>(profile.goal);
   const [erinnerung, setErinnerung] = useState("Mittel");
+  const { einstellungen, speichere } = usePlanEinstellungen();
 
   return (
     <div className="space-y-8">
@@ -76,6 +78,31 @@ function EinstellungenPage() {
           <p className="mt-3 text-sm text-muted-foreground">
             Bei einer Zieländerung passen sich Score-Gewichtung, Trainingsvorgaben, Kalorien und Journey
             automatisch an.
+          </p>
+        </Card>
+      </Section>
+
+      <Section titel="Satzpause">
+        <Card>
+          <p className="flex items-center gap-2 text-sm font-semibold">
+            <Timer className="h-4 w-4 text-primary" /> Countdown nach jedem Satz
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {[30, 45, 60, 90, 120, 180].map((s) => (
+              <Chip
+                key={s}
+                active={(einstellungen.pauseSek || 60) === s}
+                onClick={() => {
+                  speichere({ pauseSek: s });
+                  toast.success(`Satzpause: ${s} Sekunden`);
+                }}
+              >
+                {s} s
+              </Chip>
+            ))}
+          </div>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Nach Ablauf vibriert das Handy (wo vom Browser unterstützt).
           </p>
         </Card>
       </Section>
