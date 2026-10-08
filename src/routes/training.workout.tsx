@@ -347,25 +347,9 @@ function WorkoutPage() {
       </header>
 
       <div className="surface p-4">
-        <div className="flex items-center justify-between text-sm">
-          <span className="font-semibold">
-            {geloggt} / {gesamtSaetze} Sätze
-          </span>
-          {pause !== null && (
-            <span className="inline-flex items-center gap-2 text-primary">
-              <Timer className="h-4 w-4" />
-              <span className="num text-lg font-extrabold">
-                {Math.floor(pause / 60)}:{String(pause % 60).padStart(2, "0")}
-              </span>
-              <button
-                onClick={() => setPauseEnde(null)}
-                className="rounded-lg border border-border px-2 py-0.5 text-xs font-bold text-muted-foreground"
-              >
-                Überspringen
-              </button>
-            </span>
-          )}
-        </div>
+        <span className="font-semibold">
+          {geloggt} / {gesamtSaetze} Sätze
+        </span>
         <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
           <div className="h-full bg-primary" style={{ width: `${fertigQuote}%` }} />
         </div>
@@ -416,6 +400,34 @@ function WorkoutPage() {
             <Stepper label="Wdh." value={wdh} step={1} onChange={setWdh} />
             <Stepper label="RPE" value={rpe} step={0.5} onChange={setRpe} />
           </div>
+
+          {pause !== null && (
+            <div className="mt-4 rounded-2xl border border-primary/40 bg-primary/10 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <span className="inline-flex items-center gap-2 text-primary">
+                  <Timer className="h-4 w-4" />
+                  <span className="label-xs text-primary">Nächster Satz in</span>
+                </span>
+                <span className="num text-2xl font-extrabold leading-none text-primary">
+                  {Math.floor(pause / 60)}:{String(pause % 60).padStart(2, "0")}
+                </span>
+                <button
+                  onClick={() => setPauseEnde(null)}
+                  className="rounded-lg border border-border px-2 py-0.5 text-xs font-bold text-muted-foreground"
+                >
+                  Überspringen
+                </button>
+              </div>
+              <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full bg-primary transition-[width] duration-200"
+                  style={{
+                    width: `${Math.min(100, (pause / Math.max(1, einstellungen.pauseSek || 60)) * 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
 
           <button
             onClick={satzAbschliessen}
