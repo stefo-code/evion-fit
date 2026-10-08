@@ -347,25 +347,9 @@ function WorkoutPage() {
       </header>
 
       <div className="surface p-4">
-        <div className="flex items-center justify-between text-sm">
-          <span className="font-semibold">
-            {geloggt} / {gesamtSaetze} Sätze
-          </span>
-          {pause !== null && (
-            <span className="inline-flex items-center gap-2 text-primary">
-              <Timer className="h-4 w-4" />
-              <span className="num text-lg font-extrabold">
-                {Math.floor(pause / 60)}:{String(pause % 60).padStart(2, "0")}
-              </span>
-              <button
-                onClick={() => setPauseEnde(null)}
-                className="rounded-lg border border-border px-2 py-0.5 text-xs font-bold text-muted-foreground"
-              >
-                Überspringen
-              </button>
-            </span>
-          )}
-        </div>
+        <span className="font-semibold">
+          {geloggt} / {gesamtSaetze} Sätze
+        </span>
         <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
           <div className="h-full bg-primary" style={{ width: `${fertigQuote}%` }} />
         </div>
