@@ -401,6 +401,34 @@ function WorkoutPage() {
             <Stepper label="RPE" value={rpe} step={0.5} onChange={setRpe} />
           </div>
 
+          {pause !== null && (
+            <div className="mt-4 rounded-2xl border border-primary/40 bg-primary/10 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <span className="inline-flex items-center gap-2 text-primary">
+                  <Timer className="h-4 w-4" />
+                  <span className="label-xs text-primary">Nächster Satz in</span>
+                </span>
+                <span className="num text-2xl font-extrabold leading-none text-primary">
+                  {Math.floor(pause / 60)}:{String(pause % 60).padStart(2, "0")}
+                </span>
+                <button
+                  onClick={() => setPauseEnde(null)}
+                  className="rounded-lg border border-border px-2 py-0.5 text-xs font-bold text-muted-foreground"
+                >
+                  Überspringen
+                </button>
+              </div>
+              <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full bg-primary transition-[width] duration-200"
+                  style={{
+                    width: `${Math.min(100, (pause / Math.max(1, einstellungen.pauseSek || 60)) * 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
           <button
             onClick={satzAbschliessen}
             className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 font-display text-base font-extrabold uppercase tracking-wide text-primary-foreground transition-transform active:scale-[0.99]"
