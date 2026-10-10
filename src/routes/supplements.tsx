@@ -107,7 +107,7 @@ function SupplementsPage() {
                   <li key={x.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold">{x.name}</p>
-                      <p className="text-xs text-muted-foreground">Serie: {log.serie(x.id)} Tage</p>
+                      <p className="text-xs text-muted-foreground">Serie: {log.serie(x.id)} {log.serie(x.id) === 1 ? "Tag" : "Tage"}</p>
                     </div>
                     <div className="flex gap-1.5" aria-label="Letzte 7 Tage">
                       {log.letzte7(x.id).map((t, i) => (
