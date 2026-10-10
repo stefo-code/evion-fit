@@ -1,3 +1,4 @@
+import { SuppCheckliste } from "@/components/supp-checkliste";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronRight, Info, MessageSquare, Trophy, HelpCircle, X } from "lucide-react";
@@ -344,6 +345,8 @@ function Cockpit() {
           </Link>
         </p>
       )}
+
+      <SuppCheckliste />
 
       {/* ZONE 3 — HINWEISE */}
       {(meilenstein || (!leer && nudgeAktiv)) && (

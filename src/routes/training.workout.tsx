@@ -13,6 +13,7 @@ import {
   type SessionErgebnis,
 } from "@/lib/activity-store";
 import { toast } from "sonner";
+import { SHAKE_IDS, useSuppLog } from "@/lib/supplement-log";
 import { Check, ChevronDown, ChevronLeft, List, Minus, Plus, TrendingUp, Trophy, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -317,6 +318,7 @@ function WorkoutPage() {
             <Wert label="Rekorde" wert={String(ergebnis.rekorde.length)} />
           </div>
         </Card>
+        <ShakeKarte />
         {ergebnis.rekorde.length > 0 && (
           <Card>
             <p className="flex items-center gap-2 font-display text-lg font-extrabold">
@@ -762,5 +764,33 @@ function Stepper({ label, unit, value, step, onChange }: { label: string; unit?:
         </button>
       </div>
     </div>
+  );
+}
+
+function ShakeKarte() {
+  const { besitz, genommen, setzeGenommen } = useSuppLog();
+  const id = besitz.find((x) => SHAKE_IDS.includes(x)) ?? "whey";
+  const [erledigt, setErledigt] = useState(false);
+  if (genommen(id) && !erledigt) return null;
+  return (
+    <Card>
+      <p className="font-display text-lg font-extrabold">Jetzt den Eiweiss-Shake</p>
+      <p className="mt-1 text-sm text-muted-foreground">0–2 Stunden nach dem Training, 20–40 g Protein.</p>
+      {erledigt ? (
+        <p className="mt-3 flex items-center gap-2 font-semibold text-primary">
+          <Check className="h-4 w-4" /> Abgehakt
+        </p>
+      ) : (
+        <button
+          onClick={() => {
+            setzeGenommen(id, true);
+            setErledigt(true);
+          }}
+          className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary font-bold text-primary-foreground"
+        >
+          <Check className="h-4 w-4" /> Shake genommen
+        </button>
+      )}
+    </Card>
   );
 }

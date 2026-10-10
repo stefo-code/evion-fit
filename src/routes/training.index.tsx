@@ -1,4 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { SuppCheckliste, nachDrei } from "@/components/supp-checkliste";
+import { KOFFEIN_IDS, useSuppLog } from "@/lib/supplement-log";
+import { supplementDatenbank } from "@/lib/supplements-data";
 import { useMemo, useState } from "react";
 import { Card, Chip, Disclaimer, Section } from "@/components/ui-kit";
 import { MuscleMap } from "@/components/muscle-map";
@@ -86,6 +89,9 @@ function TrainingPage() {
   const [pickerOffen, setPickerOffen] = useState(false);
   const [segment, setSegment] = useState<"heute" | "plaene" | "analyse">("heute");
   const [auswahl, setAuswahl] = useState<number | null>(null);
+  const [booster, setBooster] = useState<string | null>(null);
+  const supp = useSuppLog();
+  const navigate = useNavigate();
 
   const modus = zeitModi.find((m) => m.minuten === zeit) ?? zeitModi[2]!;
 
@@ -135,6 +141,10 @@ function TrainingPage() {
     const i = letzte ? plan.findIndex((t) => t.index === letzte.tagIndex) : -1;
     return plan[(i + 1) % Math.max(plan.length, 1)] ?? plan[0]!;
   }, [plan, auswahl, einstellungen, gewaehlteTage, aktivitaet]);
+  const starteWorkout = () => {
+    setBooster(null);
+    navigate({ to: "/training/workout", search: { tag: naechstes.index, dauer: zeit } });
+  };
   const geschaetzteMin = Math.round(
     12 + naechstes.uebungen.reduce((s, u) => s + (u.zielSaetze * ((u.grund ? 150 : 75) + 45)) / 60, 0),
   );
@@ -184,14 +194,41 @@ function TrainingPage() {
                 </li>
               ))}
             </ul>
-            <Link
-              to="/training/workout"
-              search={{ tag: naechstes.index, dauer: zeit }}
+            <button
+              onClick={() => {
+                const booster = supp.besitz.find((id) => KOFFEIN_IDS.includes(id) && !supp.genommen(id));
+                if (booster) setBooster(booster);
+                else starteWorkout();
+              }}
               className="mt-5 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 font-display text-base font-extrabold text-primary-foreground"
             >
               Training starten <ChevronRight className="h-5 w-5" />
-            </Link>
+            </button>
           </Card>
+          <SuppCheckliste />
+          {booster && (
+            <div className="fixed inset-0 z-50">
+              <button className="absolute inset-0 bg-foreground/40" aria-label="Schließen" onClick={() => setBooster(null)} />
+              <div className="absolute inset-x-0 bottom-0 rounded-t-3xl border-t border-border bg-card p-5 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+                <p className="label-xs">Booster-Erinnerung</p>
+                <p className="mt-1 font-display text-xl font-extrabold">
+                  {supplementDatenbank.find((x) => x.id === booster)?.name} vor dem Training?
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {nachDrei() ? "Besser weglassen – stört den Schlaf." : "Wirkt nach etwa 30–60 Minuten."}
+                </p>
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <button onClick={() => { supp.setzeGenommen(booster, true); starteWorkout(); }} className="min-h-12 rounded-xl bg-primary font-bold text-primary-foreground">
+                    Genommen
+                  </button>
+                  <button onClick={starteWorkout} className="min-h-12 rounded-xl border border-border font-bold">
+                    Ohne starten
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <Section titel="Anderes Training wählen">
             <div className="flex flex-wrap gap-2">
               {plan.map((t) => (
