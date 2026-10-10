@@ -11,7 +11,9 @@ import {
   type Stufe,
 } from "@/lib/supplements-data";
 import { useOnboardingProfil } from "@/lib/onboarding-store";
-import { ChevronDown, Clock, FlaskConical } from "lucide-react";
+import { SuppCheckliste } from "@/components/supp-checkliste";
+import { useSuppLog } from "@/lib/supplement-log";
+import { Check, ChevronDown, Clock, FlaskConical } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/supplements")({
@@ -47,6 +49,7 @@ function SupplementsPage() {
   const [kategorie, setKategorie] = useState<Kategorie | "Alle">("Alle");
   const [nurRelevant, setNurRelevant] = useState(true);
   const [trainingstag, setTrainingstag] = useState(true);
+  const log = useSuppLog();
 
   const ctx = {
     ziel: profil.abgeschlossen ? profil.ziel : "recomposition",
@@ -91,6 +94,36 @@ function SupplementsPage() {
           zugeschnitten – Supplements sind ein Zusatz, keine Voraussetzung.
         </p>
       </header>
+
+      <SuppCheckliste zeigeLeer />
+
+      {log.besitz.length > 0 && (
+        <Section titel="Einnahme der letzten 7 Tage">
+          <Card className="p-2">
+            <ul className="divide-y divide-border">
+              {supplementDatenbank
+                .filter((x) => log.besitz.includes(x.id))
+                .map((x) => (
+                  <li key={x.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">{x.name}</p>
+                      <p className="text-xs text-muted-foreground">Serie: {log.serie(x.id)} Tage</p>
+                    </div>
+                    <div className="flex gap-1.5" aria-label="Letzte 7 Tage">
+                      {log.letzte7(x.id).map((t, i) => (
+                        <span
+                          key={i}
+                          title={t.tag.toLocaleDateString("de-DE")}
+                          className={cn("h-3 w-3 rounded-full", t.genommen ? "bg-primary" : "bg-muted")}
+                        />
+                      ))}
+                    </div>
+                  </li>
+                ))}
+            </ul>
+          </Card>
+        </Section>
+      )}
 
       <Section titel="Dein Profil-Abgleich">
         <Card>
@@ -207,6 +240,18 @@ function SupplementsPage() {
                   <ChevronDown className={cn("h-4 w-4 transition-transform", open && "rotate-180")} />
                 </span>
               </button>
+              <div className="px-5 pb-4">
+                <button
+                  onClick={() => log.schalteBesitz(s.id)}
+                  aria-pressed={log.besitz.includes(s.id)}
+                  className={cn(
+                    "flex min-h-12 items-center gap-2 rounded-xl border px-4 text-sm font-bold",
+                    log.besitz.includes(s.id) ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground",
+                  )}
+                >
+                  <Check className="h-4 w-4" /> Habe ich
+                </button>
+              </div>
               {open && (
                 <div className="border-t border-border p-5 text-sm">
                   <p className="text-muted-foreground">{s.wirkung}</p>
