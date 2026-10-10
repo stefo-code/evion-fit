@@ -2,6 +2,30 @@ import { cn } from "@/lib/utils";
 import type { DataQuality } from "@/lib/demo-data";
 import { Info, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
+
+export function BereichNavigation({
+  bereich,
+  aktiv,
+}: {
+  bereich: "ernaehrung" | "fortschritt";
+  aktiv: "essen" | "supplements" | "verlauf" | "erfolge";
+}) {
+  const links = bereich === "ernaehrung"
+    ? [{ to: "/ernaehrung", label: "Essen", id: "essen" }, { to: "/supplements", label: "Supplements", id: "supplements" }] as const
+    : [{ to: "/fortschritt", label: "Verlauf", id: "verlauf" }, { to: "/erfolge", label: "Erfolge", id: "erfolge" }] as const;
+
+  return (
+    <nav aria-label={bereich === "ernaehrung" ? "Ernährungsbereiche" : "Fortschrittsbereiche"} className="grid grid-cols-2 gap-1 rounded-lg bg-secondary p-1">
+      {links.map((link) => (
+        <Button key={link.id} asChild variant="ghost" className={cn("min-h-12 min-w-0 text-sm font-semibold", aktiv === link.id ? "bg-card text-primary shadow-sm hover:bg-card" : "text-muted-foreground hover:bg-muted")}>
+          <Link to={link.to} aria-current={aktiv === link.id ? "page" : undefined}>{link.label}</Link>
+        </Button>
+      ))}
+    </nav>
+  );
+}
 
 export function Section({
   titel,

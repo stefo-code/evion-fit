@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Card, Disclaimer, Section, Stat } from "@/components/ui-kit";
+import { BereichNavigation, Card, Disclaimer, Section, Stat } from "@/components/ui-kit";
 import {
   erfolgsStatus,
   gesamtVolumen,
@@ -14,6 +14,8 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/erfolge")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Erfolge & Rekorde – EVION" },
       {
         name: "description",
@@ -34,6 +36,7 @@ function ErfolgePage() {
 
   return (
     <div className="space-y-8">
+      <BereichNavigation bereich="fortschritt" aktiv="erfolge" />
       <header>
         <p className="label-xs">Erfolge</p>
         <h1 className="mt-1 font-display text-3xl font-extrabold">Deine Meilensteine</h1>

@@ -21,6 +21,8 @@ import { coachAntwort } from "@/lib/coach.functions";
 export const Route = createFileRoute("/coach")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "KI-Coach – EVION" },
       {
         name: "description",

@@ -37,6 +37,8 @@ export const Route = createFileRoute("/training/workout")({
   },
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Workout – Sätze loggen | EVION" },
       {
         name: "description",

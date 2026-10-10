@@ -3,7 +3,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { analysiereFoto } from "@/lib/food-vision.functions";
 import type { FotoAnalyse } from "@/lib/food-vision.server";
-import { Bar, Card, Chip, Disclaimer, Ring, Section } from "@/components/ui-kit";
+import { Bar, BereichNavigation, Card, Chip, Disclaimer, Ring, Section } from "@/components/ui-kit";
 import { berechnePlan, useOnboardingProfil } from "@/lib/onboarding-store";
 import { useErnaehrung } from "@/lib/nutrition-store";
 import { lebensmittel, rezeptVorschlaege, vorratVorschlaege, type RezeptTreffer } from "@/lib/recipes";
@@ -29,6 +29,8 @@ import type { BarcodeProdukt } from "@/lib/barcode.server";
 export const Route = createFileRoute("/ernaehrung")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Ernährung – EVION" },
       {
         name: "description",
@@ -142,6 +144,7 @@ function ErnaehrungPage() {
 
   return (
     <div className="space-y-8">
+      <BereichNavigation bereich="ernaehrung" aktiv="essen" />
       <header>
         <p className="label-xs">Ernährung</p>
         <h1 className="mt-1 font-display text-3xl font-extrabold">Dein Tag</h1>

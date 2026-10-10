@@ -9,6 +9,8 @@ import { usePlanEinstellungen } from "@/lib/training-plan";
 export const Route = createFileRoute("/einstellungen")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Einstellungen – EVION" },
       { name: "description", content: "Profil, Ziel, Trainingsvorgaben und Erinnerungen anpassen." },
       { property: "og:title", content: "Einstellungen – EVION" },

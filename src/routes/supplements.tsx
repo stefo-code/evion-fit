@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Card, Chip, Disclaimer, Section } from "@/components/ui-kit";
+import { BereichNavigation, Card, Chip, Disclaimer, Section } from "@/components/ui-kit";
 import { goalLabels } from "@/lib/demo-data";
 import {
   empfehlungen,
@@ -17,6 +17,8 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/supplements")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Supplement-Kompass – EVION" },
       {
         name: "description",
@@ -80,6 +82,7 @@ function SupplementsPage() {
 
   return (
     <div className="space-y-8">
+      <BereichNavigation bereich="ernaehrung" aktiv="supplements" />
       <header>
         <p className="label-xs">Supplements</p>
         <h1 className="mt-1 font-display text-3xl font-extrabold">Supplement-Kompass</h1>

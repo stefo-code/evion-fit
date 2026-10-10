@@ -22,6 +22,8 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/profil")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Dein Profil – EVION" },
       {
         name: "description",
@@ -234,6 +236,17 @@ function ProfilPage() {
       </Section>
 
       {!geladen && <span className="sr-only">Profil wird geladen</span>}
+
+      <nav aria-label="Profilverwaltung" className="divide-y divide-border border-y border-border">
+        <Link to="/einstellungen" className="flex min-h-12 items-center gap-3 py-3 text-sm font-semibold">
+          <Settings className="h-5 w-5 shrink-0 text-muted-foreground" />
+          Einstellungen
+        </Link>
+        <Link to="/datenschutz" className="flex min-h-12 items-center gap-3 py-3 text-sm font-semibold">
+          <Shield className="h-5 w-5 shrink-0 text-muted-foreground" />
+          Datenschutz
+        </Link>
+      </nav>
 
       <Disclaimer>
         EVION ersetzt keine medizinische Beratung. Prognosen sind Schätzungen auf Basis deiner Angaben.

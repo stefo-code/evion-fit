@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Card, Chip, Disclaimer, QualityTag, Section, Stat } from "@/components/ui-kit";
+import { BereichNavigation, Card, Chip, Disclaimer, QualityTag, Section, Stat } from "@/components/ui-kit";
 import { MessungForm } from "@/components/messung-form";
 import { effektivesProfil, useOnboardingProfil } from "@/lib/onboarding-store";
 import {
@@ -42,6 +42,8 @@ import {
 export const Route = createFileRoute("/fortschritt")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Fortschritt – EVION" },
       {
         name: "description",
@@ -148,6 +150,7 @@ function FortschrittPage() {
 
   return (
     <div className="space-y-8">
+      <BereichNavigation bereich="fortschritt" aktiv="verlauf" />
       <header>
         <p className="label-xs">Fortschritt</p>
         <h1 className="mt-1 font-display text-3xl font-extrabold">Deine Entwicklung</h1>
