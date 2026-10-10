@@ -507,6 +507,8 @@ export type PlanEinstellungen = {
   zuordnung: Record<string, number>;
   /** Satzpause in Sekunden. */
   pauseSek: number;
+  /** Feste Wochentage statt Rotation für das nächste Training. */
+  festeTage?: boolean;
 };
 
 const KEY = "evion.trainingsplan.v1";
