@@ -35,6 +35,8 @@ import heroBild from "@/assets/onboarding-hero.png";
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Onboarding – EVION" },
       {
         name: "description",

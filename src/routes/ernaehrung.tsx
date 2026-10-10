@@ -29,6 +29,8 @@ import type { BarcodeProdukt } from "@/lib/barcode.server";
 export const Route = createFileRoute("/ernaehrung")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Ernährung – EVION" },
       {
         name: "description",

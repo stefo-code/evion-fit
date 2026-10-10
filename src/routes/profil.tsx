@@ -22,6 +22,8 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/profil")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Dein Profil – EVION" },
       {
         name: "description",

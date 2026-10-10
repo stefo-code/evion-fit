@@ -8,6 +8,8 @@ import { Shield } from "lucide-react";
 export const Route = createFileRoute("/datenschutz")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Datenschutz – EVION" },
       {
         name: "description",
