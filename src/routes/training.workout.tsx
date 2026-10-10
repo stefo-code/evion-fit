@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, Disclaimer } from "@/components/ui-kit";
 import { bildFuer, type LibUebung } from "@/lib/exercise-library";
 import { useOnboardingProfil } from "@/lib/onboarding-store";
-import { baueVorlagen, mappeEquipment, aktiveTrainingstage, usePlanEinstellungen, type PlanKontext } from "@/lib/training-plan";
+import { baueVorlagen, mappeEquipment, aktiveTrainingstage, usePlanEinstellungen, type PlanKontext, type PlanUebung } from "@/lib/training-plan";
 import {
   speichereEinheit,
   useAktivitaet,
@@ -60,13 +60,13 @@ type WorkoutEntwurf = {
 type CheckItem = { id: string; name: string; saetze: number; ziel: string };
 const AUFWAERMEN: CheckItem[] = [
   { id: "wu-row", name: "Rudergerät", saetze: 1, ziel: "5 min locker" },
-  { id: "wu-facepull", name: "Face Pulls", saetze: 2, ziel: "12–15 Wdh." },
-  { id: "wu-yraise", name: "Y-Raises", saetze: 2, ziel: "12–15 Wdh." },
+  { id: "wu-facepull", name: "Face Pulls", saetze: 2, ziel: "12–15 Wdh. leicht" },
+  { id: "wu-yraise", name: "Y-Raises (Schrägbank)", saetze: 2, ziel: "12–15 Wdh. · 1–3 kg" },
 ];
 const CORE: CheckItem[] = [
   { id: "core-plank", name: "Plank", saetze: 3, ziel: "45 s" },
-  { id: "core-side", name: "Side-Plank", saetze: 3, ziel: "30 s je Seite" },
-  { id: "core-birddog", name: "Bird-Dog", saetze: 3, ziel: "10 Wdh. je Seite" },
+  { id: "core-side", name: "Side-Plank", saetze: 3, ziel: "30 s pro Seite" },
+  { id: "core-birddog", name: "Bird-Dog", saetze: 3, ziel: "10 Wdh." },
 ];
 const CHECK_PAUSE = 40;
 
@@ -87,7 +87,8 @@ function bereich(wdhBereich: string): [number, number] {
   return [Number.isFinite(min) ? min! : 8, Number.isFinite(max) ? max! : (min ?? 10)];
 }
 
-function steigerung(u: LibUebung): number {
+function steigerung(u: LibUebung & { steigerungKg?: number }): number {
+  if (u.steigerungKg) return u.steigerungKg;
   if (u.muster === "kniebeuge" || u.muster === "huefte") return 5;
   if (u.equipment.includes("kurzhantel") && !u.equipment.some((e) => e === "langhantel" || e === "maschine" || e === "kabel"))
     return 2;
@@ -139,7 +140,7 @@ function piep() {
 
 type Schritt =
   | { typ: "check"; id: "aufwaermen" | "core"; titel: string; items: CheckItem[] }
-  | { typ: "uebung"; u: LibUebung };
+  | { typ: "uebung"; u: PlanUebung };
 
 function WorkoutPage() {
   const { tag: tagParam, dauer: dauerParam } = Route.useSearch();
@@ -427,7 +428,7 @@ function WorkoutPage() {
           rpeOffen={rpeOffen}
           setRpeOffen={setRpeOffen}
           onChange={(z) => setZeilen((alt) => ({ ...alt, [schritt.u.id]: z }))}
-          onSatzFertig={() => starte(schritt.u.grund ? 150 : 75)}
+          onSatzFertig={() => starte(schritt.u.pauseSek ?? (schritt.u.grund ? 150 : 75))}
         />
       )}
 
@@ -615,7 +616,7 @@ function UebungSchritt({
   onChange,
   onSatzFertig,
 }: {
-  u: LibUebung;
+  u: PlanUebung;
   geschlecht: string | null;
   zeilen: Zeile[];
   erhoehen: boolean;
@@ -628,7 +629,7 @@ function UebungSchritt({
 }) {
   const aktuell = zeilen.findIndex((z) => !z.fertig);
   const setze = (i: number, teil: Partial<Zeile>) => onChange(zeilen.map((z, j) => (j === i ? { ...z, ...teil } : z)));
-  const schrittG = u.equipment.includes("kurzhantel") ? 2 : 2.5;
+  const schrittG = u.steigerungKg ?? (u.equipment.includes("kurzhantel") ? 2 : 2.5);
 
   return (
     <section className="space-y-4">

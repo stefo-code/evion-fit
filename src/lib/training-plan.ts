@@ -351,7 +351,23 @@ function bewerte(u: LibUebung, k: PlanKontext): number {
   return s;
 }
 
-export type PlanUebung = LibUebung & { begruendung: string };
+export type PlanUebung = LibUebung & {
+  begruendung: string;
+  /** Aus den Template-Vorgaben: Gewichtssteigerung in kg. */
+  steigerungKg?: number;
+  /** Aus den Template-Vorgaben: Satzpause in Sekunden. */
+  pauseSek?: number;
+};
+
+/** Feste Vorgabe je Template und Übung (überschreibt die Bibliothekswerte). */
+export type Vorgabe = {
+  saetze: number;
+  wdhVon: number;
+  wdhBis: number;
+  grunduebung: boolean;
+  steigerungKg: number;
+  hinweis?: string;
+};
 
 function begruendung(u: LibUebung, k: PlanKontext): string {
   const teile: string[] = [];
@@ -509,6 +525,16 @@ export type PlanEinstellungen = {
   pauseSek: number;
   /** Feste Wochentage statt Rotation für das nächste Training. */
   festeTage?: boolean;
+  /** Vorgaben je Template-Index und Übungs-ID. */
+  vorgaben?: Record<string, Record<string, Vorgabe>>;
+  /** Rotation als Liste von Template-Indizes. */
+  rotation?: number[];
+  /** Manuell als nächstes festgelegtes Template (gilt bis zur nächsten Einheit dieses Templates). */
+  naechster?: { index: number; seit: number } | null;
+  /** Templates ohne Booster-Erinnerung. */
+  ohneBooster?: number[];
+  /** Persönlicher 4er-Plan wurde einmalig angelegt. */
+  persoenlichV1?: boolean;
 };
 
 const KEY = "evion.trainingsplan.v1";
@@ -533,10 +559,177 @@ export function baueVorlagen(kontext: PlanKontext, e: PlanEinstellungen): Traini
     wendeTauschAn([...erzeugePlan(kontext), ...eigene], e.tausch, kontext),
     e,
     kontext,
-  ).map((t) => ({
-    ...t,
-    titel: e.titel?.[String(t.index)] || t.titel,
-  }));
+  ).map((t) => {
+    const v = e.vorgaben?.[String(t.index)];
+    return {
+      ...t,
+      titel: e.titel?.[String(t.index)] || t.titel,
+      uebungen: !v
+        ? t.uebungen
+        : t.uebungen.map((u) => {
+            const g = v[u.id];
+            if (!g) return u;
+            return {
+              ...u,
+              zielSaetze: g.saetze,
+              wdhBereich: g.wdhVon === g.wdhBis ? String(g.wdhVon) : `${g.wdhVon}–${g.wdhBis}`,
+              grund: g.grunduebung,
+              hinweis: g.hinweis || u.hinweis,
+              steigerungKg: g.steigerungKg,
+              pauseSek: g.grunduebung ? 150 : 75,
+            };
+          }),
+    };
+  });
+}
+
+type EinheitRef = { id: string; tagIndex: number };
+const erstelltUm = (x: EinheitRef) => Number(x.id.slice(2)) || 0;
+
+/** Manuell festgelegtes nächstes Template, solange es seitdem nicht absolviert wurde. */
+export function festgelegtesTraining(plan: Trainingstag[], e: PlanEinstellungen, einheiten: EinheitRef[]) {
+  const n = e.naechster;
+  if (!n) return undefined;
+  if (einheiten.some((x) => x.tagIndex === n.index && erstelltUm(x) > n.seit)) return undefined;
+  return plan.find((t) => t.index === n.index);
+}
+
+/** Template nach dem zuletzt abgeschlossenen gemäß Rotation. */
+export function naechstesAusRotation(plan: Trainingstag[], e: PlanEinstellungen, einheiten: EinheitRef[]) {
+  const rot = (e.rotation ?? []).filter((i) => plan.some((t) => t.index === i));
+  if (rot.length === 0) return undefined;
+  let pos = -1;
+  for (let i = einheiten.length - 1; i >= 0; i--) {
+    const p = rot.indexOf(einheiten[i]!.tagIndex);
+    if (p >= 0) { pos = p; break; }
+  }
+  const idx = rot[(pos + 1) % rot.length]!;
+  return plan.find((t) => t.index === idx);
+}
+
+// ---------------------------------------------------------------------------
+// Persönlicher 4er-Plan (einmalig angelegt)
+// ---------------------------------------------------------------------------
+
+function eigeneP(
+  id: string, name: string, muskel: string, muster: Muster, equipment: Equipment[], startGewicht: number, hinweis: string,
+): LibUebung {
+  return {
+    id, name, muskel, muster, equipment, grund: false, zielSaetze: 3, wdhBereich: "8–12", startGewicht, hinweis,
+    rueckenschonend: true, rueckbildung: false, einsteiger: true, bildMuster: true,
+  };
+}
+
+const PERSOENLICH_EIGENE: LibUebung[] = [
+  eigeneP("eigen-p-schraegbank-kh", "Schrägbankdrücken Kurzhantel 30°", "Brust", "druecken", ["kurzhantel"], 20, "Bank auf 30°, Schulterblätter zusammen, kontrolliert absenken."),
+  eigeneP("eigen-p-rudern-brust", "Brustgestütztes Rudern (KH)", "Rücken", "ziehen", ["kurzhantel"], 20, "Brust auf der Schrägbank, Ellbogen eng nach hinten ziehen."),
+  eigeneP("eigen-p-latzug-eng", "Latzug eng, neutraler Griff", "Rücken", "ziehen", ["kabel", "maschine"], 45, "Griff zur oberen Brust ziehen, Ellbogen nah am Körper."),
+  eigeneP("eigen-p-seitheben-ma", "Seitheben-Maschine", "Schultern", "schulter", ["maschine"], 20, "Ellbogen führen, oben kurz halten, langsam ablassen."),
+  eigeneP("eigen-p-bayesian", "Bayesian Curls (Kabel)", "Bizeps", "arme", ["kabel"], 10, "Kabel hinter dem Körper, Oberarm leicht nach hinten – Dehnung nutzen."),
+  eigeneP("eigen-p-overhead-trizeps", "Overhead-Trizepsstrecken (Kabel, Seil)", "Trizeps", "arme", ["kabel"], 15, "Ellbogen zeigen nach vorn, volle Dehnung über Kopf."),
+  eigeneP("eigen-p-schraeg-presse", "Schrägbank-Brustpresse (Maschine)", "Brust", "druecken", ["maschine"], 35, "Griffe auf Höhe der oberen Brust, Schultern unten halten."),
+  eigeneP("eigen-p-pullover", "Lat-Pullover (Kabel)", "Rücken", "ziehen", ["kabel"], 20, "Arme fast gestreckt, Stange im Bogen zu den Oberschenkeln führen."),
+  eigeneP("eigen-p-reverse-flys", "Reverse Flys", "Schultern", "schulter", ["maschine", "kabel"], 15, "Hintere Schulter arbeitet, Schulterblätter nicht hochziehen."),
+];
+
+type Zeile = [id: string, saetze: number, von: number, bis: number, grund: boolean, hinweis?: string];
+
+const PERSOENLICH_TEMPLATES: { titel: string; booster: boolean; uebungen: Zeile[] }[] = [
+  {
+    titel: "Oberkörper A",
+    booster: true,
+    uebungen: [
+      ["eigen-p-schraegbank-kh", 3, 6, 8, true],
+      ["eigen-p-rudern-brust", 3, 6, 8, true],
+      ["eigen-p-latzug-eng", 3, 8, 10, true],
+      ["brustpresse", 2, 8, 10, true],
+      ["eigen-p-seitheben-ma", 3, 12, 15, false],
+      ["eigen-p-bayesian", 2, 10, 12, false],
+      ["eigen-p-overhead-trizeps", 2, 10, 12, false],
+      ["beinpresse", 3, 10, 12, true],
+    ],
+  },
+  {
+    titel: "Push",
+    booster: true,
+    uebungen: [
+      ["bank-kh", 3, 8, 10, true, "Neutraler Griff – Handflächen zeigen zueinander."],
+      ["eigen-p-schraeg-presse", 3, 8, 12, true],
+      ["fliegende", 2, 12, 15, false],
+      ["seitheben", 4, 12, 20, false],
+      ["eigen-p-overhead-trizeps", 3, 10, 12, false],
+      ["trizeps-kabel", 2, 12, 15, false, "Mit Seil – unten die Enden auseinanderziehen."],
+    ],
+  },
+  {
+    titel: "Pull",
+    booster: true,
+    uebungen: [
+      ["latzug", 3, 8, 10, true, "Breiter Griff, Brust heben, Ellbogen nach unten-hinten."],
+      ["rudern-kabel", 3, 8, 10, true],
+      ["eigen-p-pullover", 2, 12, 15, false],
+      ["eigen-p-reverse-flys", 3, 12, 15, false],
+      ["eigen-p-bayesian", 3, 10, 12, false],
+      ["hammer", 2, 10, 12, false],
+      ["rdl-kh", 3, 8, 10, true],
+    ],
+  },
+  {
+    titel: "Oberkörper B",
+    booster: false,
+    uebungen: [
+      ["brustpresse", 3, 8, 10, true],
+      ["eigen-p-latzug-eng", 3, 8, 10, true],
+      ["eigen-p-seitheben-ma", 4, 12, 15, false],
+      ["facepull", 3, 15, 15, false],
+      ["eigen-p-bayesian", 3, 10, 12, false],
+      ["trizeps-kabel", 3, 12, 15, false, "Mit Seil – unten die Enden auseinanderziehen."],
+    ],
+  },
+];
+
+function steigerungFuer(id: string): number {
+  if (id === "beinpresse" || id === "rdl-kh" || id === "kreuzheben") return 5;
+  const u = uebungById.get(id) ?? PERSOENLICH_EIGENE.find((x) => x.id === id);
+  if (!u) return 2.5;
+  const nurKh = u.equipment.includes("kurzhantel") && !u.equipment.some((x) => x === "kabel" || x === "maschine");
+  return nurKh ? 2 : 2.5;
+}
+
+/** Legt den persönlichen Plan als 4 Templates mit Rotation an (einmalig). */
+export function legePersoenlichenPlanAn(alt: PlanEinstellungen): PlanEinstellungen {
+  if (alt.persoenlichV1) return alt;
+  const start = Math.max(99, ...(alt.vorlagen ?? []).map((v) => v.index)) + 1;
+  const vorlagen = [...(alt.vorlagen ?? [])];
+  const zusatz = { ...alt.zusatz };
+  const vorgaben = { ...(alt.vorgaben ?? {}) };
+  const rotation: number[] = [];
+  const ohneBooster = [...(alt.ohneBooster ?? [])];
+  PERSOENLICH_TEMPLATES.forEach((t, i) => {
+    const index = start + i;
+    vorlagen.push({ index, titel: t.titel });
+    zusatz[String(index)] = t.uebungen.map((z) => z[0]);
+    vorgaben[String(index)] = Object.fromEntries(
+      t.uebungen.map(([id, saetze, wdhVon, wdhBis, grunduebung, hinweis]) => [
+        id,
+        { saetze, wdhVon, wdhBis, grunduebung, steigerungKg: steigerungFuer(id), ...(hinweis ? { hinweis } : {}) },
+      ]),
+    );
+    rotation.push(index);
+    if (!t.booster) ohneBooster.push(index);
+  });
+  const vorhanden = new Set((alt.eigene ?? []).map((u) => u.id));
+  return {
+    ...alt,
+    vorlagen,
+    zusatz,
+    vorgaben,
+    rotation,
+    ohneBooster,
+    naechster: null,
+    eigene: [...(alt.eigene ?? []), ...PERSOENLICH_EIGENE.filter((u) => !vorhanden.has(u.id))],
+    persoenlichV1: true,
+  };
 }
 
 /** Template, das einem Wochentag zugeordnet ist (Standard: Vorschläge der Reihe nach). */
@@ -594,7 +787,18 @@ export function usePlanEinstellungen() {
   const [state, setState] = useState<PlanEinstellungen>(leer);
 
   useEffect(() => {
-    setState(ladePlanEinstellungen());
+    const geladen = ladePlanEinstellungen();
+    if (geladen.persoenlichV1) {
+      setState(geladen);
+      return;
+    }
+    const neu = legePersoenlichenPlanAn(geladen);
+    try {
+      window.localStorage.setItem(KEY, JSON.stringify(neu));
+    } catch {
+      /* Speicher nicht verfügbar */
+    }
+    setState(neu);
   }, []);
 
   const aktualisiere = useCallback((fn: (alt: PlanEinstellungen) => PlanEinstellungen) => {
