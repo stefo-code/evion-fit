@@ -408,7 +408,7 @@ function TrainingPage() {
                   <li key={i} className="flex items-center gap-2 px-3 py-2">
                     <span className="num w-5 text-xs text-muted-foreground">{pos + 1}.</span>
                     <span className="min-w-0 flex-1 text-sm font-semibold">
-                      <span className="block truncate">{t.titel}</span>
+                      <span className="block break-words">{t.titel}</span>
                       {t.index === naechstes.index && <span className="text-xs text-primary">nächstes Training</span>}
                     </span>
                     {t.index !== naechstes.index && (
