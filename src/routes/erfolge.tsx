@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Card, Disclaimer, Section, Stat } from "@/components/ui-kit";
+import { BereichNavigation, Card, Disclaimer, Section, Stat } from "@/components/ui-kit";
 import {
   erfolgsStatus,
   gesamtVolumen,
@@ -34,6 +34,7 @@ function ErfolgePage() {
 
   return (
     <div className="space-y-8">
+      <BereichNavigation bereich="fortschritt" aktiv="erfolge" />
       <header>
         <p className="label-xs">Erfolge</p>
         <h1 className="mt-1 font-display text-3xl font-extrabold">Deine Meilensteine</h1>

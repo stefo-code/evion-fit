@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Card, Chip, Disclaimer, Section } from "@/components/ui-kit";
+import { BereichNavigation, Card, Chip, Disclaimer, Section } from "@/components/ui-kit";
 import { goalLabels } from "@/lib/demo-data";
 import {
   empfehlungen,
@@ -80,6 +80,7 @@ function SupplementsPage() {
 
   return (
     <div className="space-y-8">
+      <BereichNavigation bereich="ernaehrung" aktiv="supplements" />
       <header>
         <p className="label-xs">Supplements</p>
         <h1 className="mt-1 font-display text-3xl font-extrabold">Supplement-Kompass</h1>

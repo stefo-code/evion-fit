@@ -8,3 +8,6 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Use the shared ui-kit BereichNavigation for the nutrition and progress sections, preserving /supplements and /erfolge as their selected-section URLs so existing links keep working.
+- Keep the five primary navigation entries shared between mobile and desktop; map supplementary section URLs to their parent active entry so navigation stays consistent.
