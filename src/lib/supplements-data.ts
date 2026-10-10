@@ -511,7 +511,7 @@ export const tagesSlots: Slot[] = [
 ];
 
 /** Ordnet jedem Präparat den sinnvollsten Einnahmezeitpunkt zu. */
-const slotVon: Record<string, string> = {
+export const slotVon: Record<string, string> = {
   creatin: "nach",
   whey: "nach",
   mehrkomponenten: "abends",
