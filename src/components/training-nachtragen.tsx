@@ -55,7 +55,10 @@ export function TrainingNachtragen({
         .filter((s) => s.wdh > 0)
         .map((s) => ({ uebungId: u.id, name: u.name, muskel: u.muskel, gewicht: s.gewicht, wdh: s.wdh, rpe: 0, zeit })),
     );
-    if (liste.length === 0) return toast.error("Mindestens einen Satz mit Wiederholungen eintragen");
+    if (liste.length === 0) {
+      toast.error("Mindestens einen Satz mit Wiederholungen eintragen");
+      return;
+    }
     speichereEinheit({ datum: zeit, titel: tag.titel, tagIndex: tag.index, dauerMin: Math.max(1, dauer), saetze: liste });
     toast.success(`${tag.titel} nachgetragen`);
     onSchliessen();
