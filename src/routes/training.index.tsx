@@ -84,6 +84,8 @@ function TrainingPage() {
   const [tagIndex, setTagIndex] = useState(0);
   const [tauschFuer, setTauschFuer] = useState<string | null>(null);
   const [pickerOffen, setPickerOffen] = useState(false);
+  const [segment, setSegment] = useState<"heute" | "plaene" | "analyse">("heute");
+  const [auswahl, setAuswahl] = useState<number | null>(null);
 
   const modus = zeitModi.find((m) => m.minuten === zeit) ?? zeitModi[2]!;
 
@@ -121,30 +123,100 @@ function TrainingPage() {
     : "ausgewogen";
   const fokusInfo = fokusOptionen.find((f) => f.id === aktiverFokus)!;
 
+  const naechstes = useMemo(() => {
+    const gewaehlt = plan.find((t) => t.index === auswahl);
+    if (gewaehlt) return gewaehlt;
+    if (einstellungen.festeTage) {
+      const wt = (new Date().getDay() + 6) % 7;
+      const fest = vorlageFuerTag(plan, einstellungen, gewaehlteTage, wt);
+      if (fest) return fest;
+    }
+    const letzte = aktivitaet.einheiten[aktivitaet.einheiten.length - 1];
+    const i = letzte ? plan.findIndex((t) => t.index === letzte.tagIndex) : -1;
+    return plan[(i + 1) % Math.max(plan.length, 1)] ?? plan[0]!;
+  }, [plan, auswahl, einstellungen, gewaehlteTage, aktivitaet]);
+  const geschaetzteMin = Math.round(
+    12 + naechstes.uebungen.reduce((s, u) => s + (u.zielSaetze * ((u.grund ? 150 : 75) + 45)) / 60, 0),
+  );
+
 
   return (
     <div className="space-y-8">
       <header>
         <p className="label-xs">Training</p>
-        <h1 className="mt-1 font-display text-3xl font-extrabold">{tag.titel}</h1>
+        <h1 className="mt-1 font-display text-3xl font-extrabold">Training</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Ziel: {goalLabels[kontext.ziel]} · Fokus: {fokusInfo.titel} · {tag.uebungen.length} Übungen ·{" "}
-          {modus.saetze} produktive Sätze
+          Ziel: {goalLabels[kontext.ziel]} · Fokus: {fokusInfo.titel}
         </p>
       </header>
-
-      <AutoregulationsHinweis />
-
-      <Section titel="Muskelstatus">
-        <Card>
-          <MuscleMap />
-        </Card>
-      </Section>
-
-
-
-
-
+      <div role="tablist" aria-label="Trainingsbereiche" className="grid grid-cols-3 gap-1 rounded-lg bg-secondary p-1">
+        {([["heute", "Heute"], ["plaene", "Pläne"], ["analyse", "Analyse"]] as const).map(([id, label]) => (
+          <button
+            key={id}
+            role="tab"
+            aria-selected={segment === id}
+            onClick={() => setSegment(id)}
+            className={cn(
+              "min-h-12 rounded-md text-sm font-semibold",
+              segment === id ? "bg-card text-primary shadow-sm" : "text-muted-foreground",
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {segment === "heute" && (
+        <>
+          <AutoregulationsHinweis />
+          <Card className="border-primary/40">
+            <p className="label-xs">Nächstes Training</p>
+            <h2 className="mt-1 font-display text-2xl font-extrabold">{naechstes.titel}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {naechstes.uebungen.length} Übungen · ca. {geschaetzteMin} min · inkl. Aufwärmen und Core
+            </p>
+            <ul className="mt-4 divide-y divide-border">
+              {naechstes.uebungen.map((u) => (
+                <li key={u.id} className="flex justify-between gap-3 py-2 text-sm">
+                  <span className="min-w-0 truncate font-semibold">{u.name}</span>
+                  <span className="num shrink-0 text-muted-foreground">
+                    {u.zielSaetze} × {u.wdhBereich}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <Link
+              to="/training/workout"
+              search={{ tag: naechstes.index, dauer: zeit }}
+              className="mt-5 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 font-display text-base font-extrabold text-primary-foreground"
+            >
+              Training starten <ChevronRight className="h-5 w-5" />
+            </Link>
+          </Card>
+          <Section titel="Anderes Training wählen">
+            <div className="flex flex-wrap gap-2">
+              {plan.map((t) => (
+                <Chip key={t.index} active={t.index === naechstes.index} onClick={() => setAuswahl(t.index)}>
+                  {t.titel}
+                </Chip>
+              ))}
+            </div>
+          </Section>
+          <Section titel="Wie viel Zeit hast du?">
+            <Card>
+              <div className="flex flex-wrap gap-2">
+                {zeitModi.map((m) => (
+                  <Chip key={m.minuten} active={zeit === m.minuten} onClick={() => setZeit(m.minuten)}>
+                    {m.titel}
+                  </Chip>
+                ))}
+              </div>
+              <p className="mt-3 text-sm text-muted-foreground">{modus.beschreibung}</p>
+            </Card>
+          </Section>
+        </>
+      )}
+      {segment === "plaene" && (
+        <>
       <Section titel="Trainingsfokus wählen">
         <Card>
           <div className="flex flex-wrap gap-2">
@@ -165,27 +237,6 @@ function TrainingPage() {
           <p className="mt-3 text-sm text-muted-foreground">{fokusInfo.beschreibung}</p>
         </Card>
       </Section>
-
-      <Section titel="Wie viel Zeit hast du heute?">
-        <Card>
-          <div className="flex flex-wrap gap-2">
-            {zeitModi.map((m) => (
-              <Chip key={m.minuten} active={zeit === m.minuten} onClick={() => setZeit(m.minuten)}>
-                {m.titel}
-              </Chip>
-            ))}
-          </div>
-          <p className="mt-3 text-sm text-muted-foreground">{modus.beschreibung}</p>
-          <Link
-            to="/training/workout"
-            search={{ tag: tagIndex, dauer: zeit }}
-            className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 font-display text-base font-extrabold uppercase tracking-wide text-primary-foreground transition-transform hover:scale-[1.01]"
-          >
-            Training starten <ChevronRight className="h-5 w-5" />
-          </Link>
-        </Card>
-      </Section>
-
       <Section titel="Trainingswoche">
         <Card className="p-4">
           <p className="label-xs">Trainingstage wählen</p>
@@ -233,6 +284,20 @@ function TrainingPage() {
               </button>
             )}
           </div>
+          <label className="mt-4 flex min-h-12 items-center justify-between gap-3 border-t border-border pt-3 text-sm">
+            <span>
+              <span className="block font-semibold">Feste Wochentage nutzen</span>
+              <span className="block text-xs text-muted-foreground">
+                Aus: „Heute“ schlägt das Template nach dem zuletzt absolvierten vor.
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={!!einstellungen.festeTage}
+              onChange={(e) => speichere({ festeTage: e.target.checked })}
+              className="h-5 w-5 accent-primary"
+            />
+          </label>
         </Card>
 
         <Card className="mt-3 p-2">
@@ -261,7 +326,6 @@ function TrainingPage() {
           </ul>
         </Card>
       </Section>
-
       <Section titel="Trainings-Templates">
         <Card>
           <div className="flex flex-wrap gap-2">
@@ -317,8 +381,6 @@ function TrainingPage() {
           </div>
         </Card>
       </Section>
-
-
       <Section titel={`Übungen – ${tag.titel}`}>
         <div className="space-y-3">
           {tag.uebungen.map((u, uIdx) => (
@@ -467,8 +529,15 @@ function TrainingPage() {
           </button>
         )}
       </Section>
-
-
+        </>
+      )}
+      {segment === "analyse" && (
+        <>
+      <Section titel="Muskelstatus">
+        <Card>
+          <MuscleMap />
+        </Card>
+      </Section>
       <Section titel="Wochenvolumen je Muskelgruppe">
         <Card>
           <ul className="grid gap-2 sm:grid-cols-2">
@@ -539,7 +608,8 @@ function TrainingPage() {
             : "noch keine Historie"}
         </Card>
       </Section>
-
+        </>
+      )}
       <Disclaimer>
         Die Planvorschläge sind allgemeine Trainingsempfehlungen und ersetzen keine physiotherapeutische
         oder ärztliche Beratung. Nach Schwangerschaft, Operationen oder bei Beschwerden bitte vorab
