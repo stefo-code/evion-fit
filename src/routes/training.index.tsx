@@ -4,12 +4,15 @@ import { KOFFEIN_IDS, useSuppLog } from "@/lib/supplement-log";
 import { supplementDatenbank } from "@/lib/supplements-data";
 import { useMemo, useState } from "react";
 import { Card, Chip, Disclaimer, Section } from "@/components/ui-kit";
+import { TrainingNachtragen } from "@/components/training-nachtragen";
 import { MuscleMap } from "@/components/muscle-map";
 import { zeitModi, muskelStatus, goalLabels, type MuscleKey } from "@/lib/demo-data";
 import { useOnboardingProfil } from "@/lib/onboarding-store";
 import {
   aktiveTrainingstage,
   baueVorlagen,
+  festgelegtesTraining,
+  naechstesAusRotation,
   fokusFuerGeschlecht,
   fokusOptionen,
   mappeEquipment,
@@ -118,6 +121,21 @@ function TrainingPage() {
 
   const plan = useMemo(() => baueVorlagen(kontext, einstellungen), [kontext, einstellungen]);
   const [neuerName, setNeuerName] = useState("");
+  const [nachtragen, setNachtragen] = useState(false);
+  const rotation = (einstellungen.rotation ?? []).filter((i) => plan.some((t) => t.index === i));
+  const setzeNaechster = (i: number) => {
+    speichere({ naechster: { index: i, seit: Date.now() } });
+    setAuswahl(null);
+    toast.success(`${plan.find((t) => t.index === i)?.titel} ist als nächstes festgelegt`);
+  };
+  const verschiebeRotation = (pos: number, r: -1 | 1) => {
+    const neu = [...rotation];
+    const ziel = pos + r;
+    if (ziel < 0 || ziel >= neu.length) return;
+    [neu[pos], neu[ziel]] = [neu[ziel]!, neu[pos]!];
+    speichere({ rotation: neu });
+  };
+
 
   const tag = plan.find((t) => t.index === tagIndex) ?? plan[0]!;
   const verfuegbareFokus = useMemo(
@@ -132,11 +150,15 @@ function TrainingPage() {
   const naechstes = useMemo(() => {
     const gewaehlt = plan.find((t) => t.index === auswahl);
     if (gewaehlt) return gewaehlt;
+    const fest = festgelegtesTraining(plan, einstellungen, aktivitaet.einheiten);
+    if (fest) return fest;
     if (einstellungen.festeTage) {
       const wt = (new Date().getDay() + 6) % 7;
       const fest = vorlageFuerTag(plan, einstellungen, gewaehlteTage, wt);
       if (fest) return fest;
     }
+    const rot = naechstesAusRotation(plan, einstellungen, aktivitaet.einheiten);
+    if (rot) return rot;
     const letzte = aktivitaet.einheiten[aktivitaet.einheiten.length - 1];
     const i = letzte ? plan.findIndex((t) => t.index === letzte.tagIndex) : -1;
     return plan[(i + 1) % Math.max(plan.length, 1)] ?? plan[0]!;
@@ -197,14 +219,23 @@ function TrainingPage() {
             <button
               onClick={() => {
                 const booster = supp.besitz.find((id) => KOFFEIN_IDS.includes(id) && !supp.genommen(id));
-                if (booster) setBooster(booster);
+                if (booster && !(einstellungen.ohneBooster ?? []).includes(naechstes.index)) setBooster(booster);
                 else starteWorkout();
               }}
               className="mt-5 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 font-display text-base font-extrabold text-primary-foreground"
             >
               Training starten <ChevronRight className="h-5 w-5" />
             </button>
+            <button
+              onClick={() => setNachtragen(true)}
+              className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-border text-sm font-bold"
+            >
+              <History className="h-4 w-4" /> Training nachtragen
+            </button>
           </Card>
+          {nachtragen && (
+            <TrainingNachtragen plan={plan} standardIndex={naechstes.index} onSchliessen={() => setNachtragen(false)} />
+          )}
           <SuppCheckliste />
           {booster && (
             <div className="fixed inset-0 z-50">
@@ -363,6 +394,57 @@ function TrainingPage() {
           </ul>
         </Card>
       </Section>
+      <Section titel="Trainings-Rotation">
+        <Card className="p-2">
+          {rotation.length === 0 ? (
+            <p className="px-3 py-3 text-sm text-muted-foreground">
+              Keine Rotation – „Heute“ folgt der Reihenfolge der Templates.
+            </p>
+          ) : (
+            <ol className="divide-y divide-border">
+              {rotation.map((i, pos) => {
+                const t = plan.find((p) => p.index === i)!;
+                return (
+                  <li key={i} className="flex items-center gap-2 px-3 py-2">
+                    <span className="num w-5 text-xs text-muted-foreground">{pos + 1}.</span>
+                    <span className="min-w-0 flex-1 text-sm font-semibold">
+                      <span className="block truncate">{t.titel}</span>
+                      {t.index === naechstes.index && <span className="text-xs text-primary">nächstes Training</span>}
+                    </span>
+                    {t.index !== naechstes.index && (
+                      <button onClick={() => setzeNaechster(i)} className="min-h-10 px-1 text-xs font-semibold text-primary underline">
+                        Als nächstes festlegen
+                      </button>
+                    )}
+                    <button onClick={() => verschiebeRotation(pos, -1)} disabled={pos === 0} aria-label={`${t.titel} in der Rotation nach oben`} className="grid h-9 w-9 place-items-center rounded-full border border-border disabled:opacity-30">
+                      <ChevronUp className="h-4 w-4" />
+                    </button>
+                    <button onClick={() => verschiebeRotation(pos, 1)} disabled={pos === rotation.length - 1} aria-label={`${t.titel} in der Rotation nach unten`} className="grid h-9 w-9 place-items-center rounded-full border border-border disabled:opacity-30">
+                      <ChevronDown className="h-4 w-4" />
+                    </button>
+                    <button onClick={() => speichere({ rotation: rotation.filter((x) => x !== i) })} aria-label={`${t.titel} aus der Rotation entfernen`} className="grid h-9 w-9 place-items-center text-muted-foreground">
+                      <X className="h-4 w-4" />
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+          {plan.some((t) => !rotation.includes(t.index)) && (
+            <select
+              value=""
+              onChange={(e) => e.target.value && speichere({ rotation: [...rotation, Number(e.target.value)] })}
+              aria-label="Template zur Rotation hinzufügen"
+              className="m-2 w-[calc(100%-1rem)] rounded-xl border border-border bg-card px-3 py-2 text-sm"
+            >
+              <option value="">+ Template zur Rotation hinzufügen</option>
+              {plan.filter((t) => !rotation.includes(t.index)).map((t) => (
+                <option key={t.index} value={t.index}>{t.titel}</option>
+              ))}
+            </select>
+          )}
+        </Card>
+      </Section>
       <Section titel="Trainings-Templates">
         <Card>
           <div className="flex flex-wrap gap-2">
@@ -403,6 +485,11 @@ function TrainingPage() {
             >
               „{tag.titel}“ umbenennen
             </button>
+            {tag.index !== naechstes.index && (
+              <button className="text-primary underline" onClick={() => setzeNaechster(tag.index)}>
+                Als nächstes festlegen
+              </button>
+            )}
             {tag.index >= 100 && (
               <button
                 className="text-destructive underline"
