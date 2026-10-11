@@ -6,7 +6,7 @@ import { Chip } from "@/components/ui-kit";
 import { uebungsBibliothek, type LibUebung } from "@/lib/exercise-library";
 import { effektivesProfil, type OnboardingProfil } from "@/lib/onboarding-store";
 import { kiPlanErstellen } from "@/lib/ki-plan.functions";
-import type { KiPlanTemplate } from "@/lib/ki-plan.server";
+type KiPlanTemplate = { titel: string; uebungen: { id: string; saetze: number; wdhVon: number; wdhBis: number; begruendung: string }[] };
 
 const EQUIPMENT = ["Körpergewicht", "Kurzhantel", "Langhantel", "Maschine", "Kabel", "Band"];
 
