@@ -919,6 +919,34 @@ export function usePlanEinstellungen() {
     return neuIndex;
   }, [aktualisiere]);
 
+  /** Übernimmt KI-Templates als eigene Vorlagen mit Vorgaben. Gibt den ersten Index zurück. */
+  const uebernehmeKiPlan = useCallback(
+    (templates: { titel: string; uebungen: { id: string; saetze: number; wdhVon: number; wdhBis: number }[] }[]) => {
+      let erster = 100;
+      aktualisiere((alt) => {
+        const start = Math.max(99, ...(alt.vorlagen ?? []).map((v) => v.index)) + 1;
+        erster = start;
+        const vorlagen = [...(alt.vorlagen ?? [])];
+        const zusatz = { ...alt.zusatz };
+        const vorgaben = { ...(alt.vorgaben ?? {}) };
+        templates.forEach((t, i) => {
+          const index = start + i;
+          vorlagen.push({ index, titel: t.titel });
+          zusatz[String(index)] = t.uebungen.map((u) => u.id);
+          vorgaben[String(index)] = Object.fromEntries(
+            t.uebungen.map((u) => {
+              const lib = uebungById.get(u.id) ?? (alt.eigene ?? []).find((x) => x.id === u.id);
+              return [u.id, { saetze: u.saetze, wdhVon: u.wdhVon, wdhBis: u.wdhBis, grunduebung: lib?.grund ?? false, steigerungKg: steigerungFuer(u.id) }];
+            }),
+          );
+        });
+        return { ...alt, vorlagen, zusatz, vorgaben };
+      });
+      return erster;
+    },
+    [aktualisiere],
+  );
+
   const benenneVorlage = useCallback(
     (index: number, titel: string) =>
       aktualisiere((alt) => ({ ...alt, titel: { ...alt.titel, [String(index)]: titel } })),
@@ -953,6 +981,7 @@ export function usePlanEinstellungen() {
     schalteTrainingstag,
     setzeTrainingstage,
     erstelleVorlage,
+    uebernehmeKiPlan,
     benenneVorlage,
     loescheVorlage,
     ordneZu,

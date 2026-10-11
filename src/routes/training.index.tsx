@@ -5,6 +5,7 @@ import { supplementDatenbank } from "@/lib/supplements-data";
 import { useMemo, useState } from "react";
 import { Card, Chip, Disclaimer, Section } from "@/components/ui-kit";
 import { TrainingNachtragen } from "@/components/training-nachtragen";
+import { KiPlanSheet } from "@/components/ki-plan-sheet";
 import { MuscleMap } from "@/components/muscle-map";
 import { zeitModi, muskelStatus, goalLabels, type MuscleKey } from "@/lib/demo-data";
 import { useOnboardingProfil } from "@/lib/onboarding-store";
@@ -34,7 +35,7 @@ import {
   type LibUebung,
   type Muster,
 } from "@/lib/exercise-library";
-import { ChevronDown, ChevronRight, ChevronUp, History, Plus, Repeat, Trash2, Trophy, X } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp, History, Plus, Repeat, Sparkles, Trash2, Trophy, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -80,6 +81,7 @@ function TrainingPage() {
     schalteTrainingstag,
     setzeTrainingstage,
     erstelleVorlage,
+    uebernehmeKiPlan,
     benenneVorlage,
     loescheVorlage,
     ordneZu,
@@ -93,6 +95,7 @@ function TrainingPage() {
   const [segment, setSegment] = useState<"heute" | "plaene" | "analyse">("heute");
   const [auswahl, setAuswahl] = useState<number | null>(null);
   const [booster, setBooster] = useState<string | null>(null);
+  const [kiOffen, setKiOffen] = useState(false);
   const supp = useSuppLog();
   const navigate = useNavigate();
 
@@ -285,6 +288,20 @@ function TrainingPage() {
       )}
       {segment === "plaene" && (
         <>
+      <button
+        onClick={() => setKiOffen(true)}
+        className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground"
+      >
+        <Sparkles className="h-4 w-4" /> Plan mit KI erstellen
+      </button>
+      {kiOffen && (
+        <KiPlanSheet
+          profil={profil}
+          eigene={einstellungen.eigene ?? []}
+          onSchliessen={() => setKiOffen(false)}
+          onUebernehmen={(t) => setTagIndex(uebernehmeKiPlan(t))}
+        />
+      )}
       <Section titel="Trainingsfokus wählen">
         <Card>
           <div className="flex flex-wrap gap-2">
