@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { BarcodeScanner } from "@/components/barcode-scanner";
 import { produktPerBarcode } from "@/lib/barcode.functions";
+import { fordereKi } from "@/lib/privatsphaere";
 import type { BarcodeProdukt } from "@/lib/barcode.server";
 
 
@@ -198,7 +199,12 @@ function ErnaehrungPage() {
             Barcode scannen
           </button>
           <button
-            onClick={() => kamera.current?.click()}
+            onClick={() => {
+              void fordereKi().then((ok) => {
+                if (ok) kamera.current?.click();
+                else toast("Foto-Erkennung ist ohne Einwilligung deaktiviert", { description: "In den Einstellungen aktivierbar." });
+              });
+            }}
             className="surface flex flex-col items-center gap-2 p-4 text-center text-xs font-bold transition-colors hover:border-primary/50"
           >
             <Camera className="h-5 w-5 text-primary" />

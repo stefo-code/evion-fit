@@ -73,7 +73,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
         <div className="mt-auto rounded-xl border border-border bg-secondary/40 p-3 text-[11px] leading-relaxed text-muted-foreground">
-          Deine Daten bleiben auf diesem Gerät. Keine medizinische Beratung.
+          Ohne Sync bleiben deine Daten auf diesem Gerät. Keine medizinische Beratung.
         </div>
       </aside>
 

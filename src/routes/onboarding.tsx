@@ -1,3 +1,4 @@
+import { pruefeSpitzname } from "@/lib/privatsphaere";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -320,6 +321,24 @@ function ZahlFeld({
   );
 }
 
+function SpitznameFeld({ value, onChange }: { value: string; onChange: (s: string) => void }) {
+  const fehler = pruefeSpitzname(value);
+  return (
+    <Feldgruppe label="Spitzname">
+      <input
+        value={value}
+        maxLength={20}
+        placeholder="z. B. Alex"
+        onChange={(e) => onChange(e.target.value.slice(0, 20))}
+        className="w-full rounded-2xl border border-border bg-card px-4 py-3.5 text-sm outline-none focus:border-primary"
+      />
+      <span className={"mt-1 block text-xs " + (fehler ? "text-destructive" : "text-muted-foreground")}>
+        {fehler ?? "Kein echter Name nötig"}
+      </span>
+    </Feldgruppe>
+  );
+}
+
 function TextFeld({
   label,
   value,
@@ -398,10 +417,7 @@ function Welcome({ onStart }: { onStart: () => void }) {
       <div className="mt-10 space-y-4">
         <PrimaryButton onClick={onStart}>LOS GEHT&apos;S</PrimaryButton>
         <p className="text-center text-sm text-muted-foreground">
-          Bereits ein Konto?{" "}
-          <button onClick={() => navigate({ to: "/auth" })} className="font-bold text-primary">
-            Anmelden
-          </button>
+          Kein Konto nötig. Später Sync aktivieren – optional im Profil.
         </p>
       </div>
     </div>
@@ -458,7 +474,7 @@ function KontoSchritt({ p, set }: SchrittProps) {
       </div>
       {p.kontoMethode === "email" && (
         <div className="space-y-4">
-          <TextFeld label="Vorname" value={p.name} onChange={(v) => set({ name: v })} platzhalter="Alex" />
+          <SpitznameFeld value={p.name} onChange={(v) => set({ name: v })} />
           <TextFeld
             label="E-Mail"
             value={p.email}
@@ -488,7 +504,7 @@ function UeberDich({ p, set }: SchrittProps) {
         sub="Diese Angaben helfen uns, deinen Plan optimal auf dich abzustimmen."
       />
       {!p.name && (
-        <TextFeld label="Wie dürfen wir dich nennen?" value={p.name} onChange={(v) => set({ name: v })} platzhalter="Alex" />
+        <SpitznameFeld value={p.name} onChange={(v) => set({ name: v })} />
       )}
       <Feldgruppe label="Geschlecht">
         <div className="grid grid-cols-3 gap-2.5">

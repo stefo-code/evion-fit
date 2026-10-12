@@ -27,6 +27,7 @@ import {
   effektivesProfil,
   type OnboardingProfil,
 } from "@/lib/onboarding-store";
+import { altersgruppe, rund } from "@/lib/privatsphaere";
 import { aktiveTrainingstage, wochentage, type PlanEinstellungen } from "@/lib/training-plan";
 
 const n = (v: number | null | undefined, digits = 1) =>
@@ -57,8 +58,7 @@ export function baueCoachKontext({ aktivitaet, ernaehrung, profil, plan }: Coach
   // Profil
   zeilen.push(
     "\n## Profil",
-    `Name: ${eff.name}`,
-    `Geschlecht: ${profil.geschlecht ?? "unbekannt"} | Alter: ${eff.alter ?? "—"} | Größe: ${eff.groesse ?? "—"} cm`,
+    `Geschlecht: ${profil.geschlecht ?? "unbekannt"} | Altersgruppe: ${altersgruppe(eff.alter)} | Größe: ca. ${rund(eff.groesse, 5) ?? "—"} cm`,
     `Ziel: ${eff.ziel} | Zielgewicht: ${eff.zielGewicht ?? "—"} kg | Tempo: ${profil.tempo} | Recomp-Fokus: ${profil.recompFokus}`,
     `Erfahrung: ${eff.erfahrung} | geplante Einheiten/Woche: ${eff.trainingstage} à ${eff.dauer} min`,
     `Trainingstage: ${aktiveTrainingstage(plan, eff.trainingstage).map((d) => wochentage[d]).join(", ")}`,
@@ -74,7 +74,7 @@ export function baueCoachKontext({ aktivitaet, ernaehrung, profil, plan }: Coach
   zeilen.push(
     "\n## Körperwerte (zuletzt erfasst)",
     k.datum ? `Letzte Messung: ${new Date(k.datum).toLocaleDateString("de-DE")} (vor ${tageSeitMessung(aktivitaet) ?? "?"} Tagen)` : "Noch keine Messung erfasst.",
-    `Gewicht: ${n(k.gewicht)} kg | Körperfett: ${n(k.koerperfett)} % | Wasser: ${n(k.wasser)} % | Muskeln: ${n(k.muskeln)} %`,
+    `Gewicht: ca. ${n(rund(k.gewicht))} kg | Körperfett: ${n(k.koerperfett)} % | Wasser: ${n(k.wasser)} % | Muskeln: ${n(k.muskeln)} %`,
     `Fettmasse: ${n(k.fettmasse)} kg | Magermasse: ${n(k.magermasse)} kg | BMI: ${n(k.bmi)}`,
     `Veränderung Gewicht: 7 T ${delta(veraenderung(aktivitaet, "gewicht", 7), "kg")}, 30 T ${delta(veraenderung(aktivitaet, "gewicht", 30), "kg")}, 90 T ${delta(veraenderung(aktivitaet, "gewicht", 90), "kg")}`,
     `Veränderung Körperfett: 30 T ${delta(veraenderung(aktivitaet, "koerperfett", 30), "%")} | Taille 30 T ${delta(veraenderung(aktivitaet, "taille", 30), "cm")}`,

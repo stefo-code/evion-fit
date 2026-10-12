@@ -5,6 +5,8 @@ import { profile, goalLabels, type Goal } from "@/lib/demo-data";
 import { Bell, Download, Timer, Trash2, User } from "lucide-react";
 import { toast } from "sonner";
 import { usePlanEinstellungen } from "@/lib/training-plan";
+import { setzeKiStatus, useKiStatus } from "@/lib/privatsphaere";
+import { KI_TEXT } from "@/components/ki-einwilligung";
 
 export const Route = createFileRoute("/einstellungen")({
   head: () => ({
@@ -24,6 +26,7 @@ function EinstellungenPage() {
   const [ziel, setZiel] = useState<Goal>(profile.goal);
   const [erinnerung, setErinnerung] = useState("Mittel");
   const { einstellungen, speichere } = usePlanEinstellungen();
+  const ki = useKiStatus();
 
   return (
     <div className="space-y-8">
@@ -106,6 +109,25 @@ function EinstellungenPage() {
           <p className="mt-3 text-sm text-muted-foreground">
             Nach Ablauf vibriert das Handy (wo vom Browser unterstützt).
           </p>
+        </Card>
+      </Section>
+
+      <Section titel="KI-Funktionen">
+        <Card>
+          <div className="flex items-center gap-3">
+            <p className="min-w-0 flex-1 text-sm text-muted-foreground">{KI_TEXT}</p>
+            <button
+              onClick={() => {
+                setzeKiStatus(ki === "ja" ? "nein" : "ja");
+                toast.success(ki === "ja" ? "Einwilligung widerrufen" : "KI-Funktionen aktiviert");
+              }}
+              className={"h-7 w-12 shrink-0 rounded-full transition-colors " + (ki === "ja" ? "bg-primary" : "bg-secondary")}
+              aria-label="KI-Einwilligung umschalten"
+              aria-pressed={ki === "ja"}
+            >
+              <span className={"block h-5 w-5 rounded-full bg-background transition-transform " + (ki === "ja" ? "translate-x-6" : "translate-x-1")} />
+            </button>
+          </div>
         </Card>
       </Section>
 

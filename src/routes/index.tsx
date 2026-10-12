@@ -18,6 +18,7 @@ import {
   volumen as satzVolumen,
 } from "@/lib/activity-store";
 import { readiness } from "@/lib/demo-data";
+import { BackupHinweis } from "@/components/backup-hinweis";
 import {
   aktiveTrainingstage,
   baueVorlagen,
@@ -347,6 +348,7 @@ function Cockpit() {
       )}
 
       <SuppCheckliste />
+      <BackupHinweis />
 
       {/* ZONE 3 — HINWEISE */}
       {(meilenstein || (!leer && nudgeAktiv)) && (

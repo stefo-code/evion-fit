@@ -17,6 +17,8 @@ import { useErnaehrung } from "@/lib/nutrition-store";
 import { usePlanEinstellungen } from "@/lib/training-plan";
 import { baueCoachKontext } from "@/lib/coach-context";
 import { coachAntwort } from "@/lib/coach.functions";
+import { fordereKi, useKiStatus } from "@/lib/privatsphaere";
+import { KiGesperrt } from "@/components/ki-einwilligung";
 
 export const Route = createFileRoute("/coach")({
   head: () => ({
@@ -149,6 +151,7 @@ function CoachPage() {
     },
   ]);
   const [input, setInput] = useState("");
+  const kiStatus = useKiStatus();
   const [laedt, setLaedt] = useState(false);
   const [fehler, setFehler] = useState<string | null>(null);
   const liste = useRef<HTMLUListElement>(null);
@@ -161,6 +164,7 @@ function CoachPage() {
   async function senden(text: string) {
     const frage = text.trim();
     if (!frage || laedt) return;
+    if (!(await fordereKi())) return;
     const verlauf: Msg[] = [...msgs, { rolle: "user", text: frage }];
     setMsgs(verlauf);
     setInput("");
@@ -226,6 +230,7 @@ function CoachPage() {
                 </Chip>
               ))}
             </div>
+            {kiStatus === "nein" && <div className="mb-2"><KiGesperrt /></div>}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -234,6 +239,7 @@ function CoachPage() {
               className="flex gap-2"
             >
               <input
+                disabled={kiStatus === "nein"}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Frage an deinen Coach …"
@@ -241,7 +247,7 @@ function CoachPage() {
               />
               <button
                 type="submit"
-                disabled={laedt || !input.trim()}
+                disabled={laedt || !input.trim() || kiStatus === "nein"}
                 className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground disabled:opacity-40"
                 aria-label="Senden"
               >

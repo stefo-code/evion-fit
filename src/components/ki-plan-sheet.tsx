@@ -6,6 +6,8 @@ import { Chip } from "@/components/ui-kit";
 import { uebungsBibliothek, type LibUebung } from "@/lib/exercise-library";
 import { effektivesProfil, type OnboardingProfil } from "@/lib/onboarding-store";
 import { kiPlanErstellen } from "@/lib/ki-plan.functions";
+import { altersgruppe, fordereKi, rund, useKiStatus } from "@/lib/privatsphaere";
+import { KiGesperrt } from "@/components/ki-einwilligung";
 type KiPlanTemplate = { titel: string; uebungen: { id: string; saetze: number; wdhVon: number; wdhBis: number; begruendung: string }[] };
 
 const EQUIPMENT = ["Körpergewicht", "Kurzhantel", "Langhantel", "Maschine", "Kabel", "Band"];
@@ -38,12 +40,14 @@ export function KiPlanSheet({
   const alle = [...uebungsBibliothek, ...eigene.filter((e) => !uebungsBibliothek.some((u) => u.id === e.id))];
   const nameVon = (id: string) => alle.find((u) => u.id === id)?.name ?? id;
 
+  const kiStatus = useKiStatus();
   async function los() {
+    if (!(await fordereKi())) return;
     setLaedt(true);
     setFehler(null);
     try {
       const profilText = [
-        `Geschlecht: ${profil.geschlecht ?? "unbekannt"}, Alter: ${eff.alter ?? "—"}, Größe: ${eff.groesse ?? "—"} cm`,
+        `Geschlecht: ${profil.geschlecht ?? "unbekannt"}, Altersgruppe: ${altersgruppe(eff.alter)}, Größe: ca. ${rund(eff.groesse, 5) ?? "—"} cm`,
         `Erfahrung: ${eff.erfahrung}`,
         `Trainingsorte: ${profil.orte.join(", ") || "—"}`,
         `Gesundheit: ${[...profil.einschraenkungen, profil.gesundheitNotiz].filter(Boolean).join("; ") || "—"}`,
@@ -104,8 +108,9 @@ export function KiPlanSheet({
               </div>
             </div>
             <label className={label}>Sonstiges<textarea className={feld} rows={3} value={freitext} onChange={(e) => setFreitext(e.target.value)} placeholder="Weitere Wünsche" /></label>
+            {kiStatus === "nein" && <KiGesperrt />}
             {fehler && <p className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{fehler}</p>}
-            <button onClick={los} disabled={laedt} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground disabled:opacity-60">
+            <button onClick={los} disabled={laedt || kiStatus === "nein"} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground disabled:opacity-60">
               {laedt ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
               {laedt ? "Plan wird erstellt …" : "Plan erstellen"}
             </button>
