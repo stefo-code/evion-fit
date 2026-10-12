@@ -417,10 +417,7 @@ function Welcome({ onStart }: { onStart: () => void }) {
       <div className="mt-10 space-y-4">
         <PrimaryButton onClick={onStart}>LOS GEHT&apos;S</PrimaryButton>
         <p className="text-center text-sm text-muted-foreground">
-          Kein Konto nötig. Später Sync aktivieren?{" "}
-          <button onClick={() => navigate({ to: "/auth" })} className="font-bold text-primary">
-            Optional
-          </button>
+          Kein Konto nötig. Später Sync aktivieren – optional im Profil.
         </p>
       </div>
     </div>
