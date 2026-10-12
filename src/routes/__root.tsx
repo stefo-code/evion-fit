@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell } from "@/components/app-shell";
 import { Toaster } from "@/components/ui/sonner";
+import { KiEinwilligungDialog } from "@/components/ki-einwilligung";
 
 
 function NotFoundComponent() {
@@ -137,6 +138,7 @@ function RootComponent() {
         <Outlet />
       </AppShell>
       <Toaster position="top-center" />
+      <KiEinwilligungDialog />
     </QueryClientProvider>
   );
 
