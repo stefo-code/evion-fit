@@ -18,6 +18,8 @@ import { goalLabels } from "@/lib/demo-data";
 import { berechnePlan, useOnboardingProfil, herkunftLabels } from "@/lib/onboarding-store";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { SyncBackup } from "@/components/sync-backup";
+import { pruefeSpitzname } from "@/lib/privatsphaere";
 
 export const Route = createFileRoute("/profil")({
   head: () => ({
@@ -91,6 +93,19 @@ function ProfilPage() {
             offen={offen === "Persönliche Daten"}
             onToggle={() => setOffen(offen === "Persönliche Daten" ? null : "Persönliche Daten")}
           >
+            <label className="mb-3 block rounded-xl border border-border bg-card p-3">
+              <span className="label-xs">Spitzname</span>
+              <input
+                value={profil.name}
+                maxLength={20}
+                placeholder="z. B. Alex"
+                onChange={(e) => aktualisiere({ name: e.target.value.slice(0, 20) })}
+                className="mt-1 w-full bg-transparent text-base font-bold outline-none"
+              />
+              <span className={cn("mt-1 block text-xs", pruefeSpitzname(profil.name) ? "text-destructive" : "text-muted-foreground")}>
+                {pruefeSpitzname(profil.name) ?? "Kein echter Name nötig"}
+              </span>
+            </label>
             <div className="grid gap-3 sm:grid-cols-3">
               <Zahl label="Alter" wert={profil.alter} einheit="Jahre" onChange={(n) => aktualisiere({ alter: n })} />
               <Zahl label="Größe" wert={profil.groesse} einheit="cm" onChange={(n) => aktualisiere({ groesse: n })} />
@@ -192,6 +207,8 @@ function ProfilPage() {
           </Bereich>
         </div>
       </Section>
+
+      <SyncBackup />
 
       <Section titel="Verwaltung">
         <div className="space-y-3">

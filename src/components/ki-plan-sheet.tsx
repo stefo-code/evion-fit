@@ -39,11 +39,12 @@ export function KiPlanSheet({
   const nameVon = (id: string) => alle.find((u) => u.id === id)?.name ?? id;
 
   async function los() {
+    if (!(await fordereKi())) return;
     setLaedt(true);
     setFehler(null);
     try {
       const profilText = [
-        `Geschlecht: ${profil.geschlecht ?? "unbekannt"}, Alter: ${eff.alter ?? "—"}, Größe: ${eff.groesse ?? "—"} cm`,
+        `Geschlecht: ${profil.geschlecht ?? "unbekannt"}, Altersgruppe: ${altersgruppe(eff.alter)}, Größe: ca. ${rund(eff.groesse, 5) ?? "—"} cm`,
         `Erfahrung: ${eff.erfahrung}`,
         `Trainingsorte: ${profil.orte.join(", ") || "—"}`,
         `Gesundheit: ${[...profil.einschraenkungen, profil.gesundheitNotiz].filter(Boolean).join("; ") || "—"}`,
