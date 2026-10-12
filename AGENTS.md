@@ -13,3 +13,5 @@
 - Keep the five primary navigation entries shared between mobile and desktop; map supplementary section URLs to their parent active entry so navigation stays consistent.
 - Workout is a guided step flow (warm-up, one exercise per screen, core) whose draft extends evion.workout.entwurf.v1 with optional fields; keeps old drafts and SatzLog compatible.
 - Personal training plan is seeded once into PlanEinstellungen (flag persoenlichV1) as custom templates with per-exercise vorgaben and a rotation; all new fields are optional so old saved plans keep loading.
+- Local-first: no screen requires login; optional sync stores one JSON snapshot of all evion.* localStorage keys per user in public.user_backups (merge then upload), so the local stores stay the single source of truth.
+- Every AI server call is gated client-side by fordereKi() (src/lib/privatsphaere.ts) and sends no names/IDs/emails; age as 5-year group, height/weight rounded.
