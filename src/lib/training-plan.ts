@@ -959,8 +959,14 @@ export function usePlanEinstellungen() {
     [aktualisiere],
   );
 
+  const uebernehmeRecompVorlage = useCallback(
+    () => aktualisiere((alt) => legePersoenlichenPlanAn(alt)),
+    [aktualisiere],
+  );
+
   return {
     einstellungen: state,
+    uebernehmeRecompVorlage,
     speichere,
     tausche,
     entferneUebung,

@@ -16,7 +16,6 @@ import {
   naechstesAusRotation,
   fokusFuerGeschlecht,
   fokusOptionen,
-  legePersoenlichenPlanAn,
   mappeEquipment,
   standardTrainingstage,
   usePlanEinstellungen,
@@ -86,6 +85,7 @@ function TrainingPage() {
     benenneVorlage,
     loescheVorlage,
     ordneZu,
+    uebernehmeRecompVorlage,
   } = usePlanEinstellungen();
   const { aktivitaet } = useAktivitaet();
   const rekorde = ermittleRekorde(aktivitaet);
@@ -298,7 +298,7 @@ function TrainingPage() {
       {!einstellungen.persoenlichV1 && (
         <button
           onClick={() => {
-            aktualisiere((alt) => legePersoenlichenPlanAn(alt));
+            uebernehmeRecompVorlage();
             toast.success("Vorlage „Recomp – Oberkörper-Fokus (4 Tage)“ übernommen");
           }}
           className="mt-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-border px-4 text-sm font-bold"
