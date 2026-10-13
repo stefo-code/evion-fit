@@ -55,9 +55,9 @@ function ReviewPage() {
           <div className="grid grid-cols-2 gap-5 sm:grid-cols-3">
             <Stat label="Trainings" value={String(woche.length)} />
             <Stat label="Volumen" value={f(vol)} unit="kg" />
-            <Stat label="Gewicht" value={dGewicht === null ? "–" : `${dGewicht > 0 ? "+" : ""}${f(dGewicht, 1)}`} unit={dGewicht === null ? undefined : "kg"} />
-            <Stat label="Protein Ø" value={proteinTage.length ? f(proteinTage.reduce((a, b) => a + b, 0) / proteinTage.length) : "–"} unit={proteinTage.length ? "g" : undefined} />
-            <Stat label="Schlaf Ø" value={schlaf.length ? f(schlaf.reduce((a, b) => a + b, 0) / schlaf.length, 1) : "–"} unit={schlaf.length ? "h" : undefined} />
+            <Stat label="Gewicht" value={dGewicht === null ? "–" : `${dGewicht > 0 ? "+" : ""}${f(dGewicht, 1)}`} unit={dGewicht === null ? "" : "kg"} />
+            <Stat label="Protein Ø" value={proteinTage.length ? f(proteinTage.reduce((a, b) => a + b, 0) / proteinTage.length) : "–"} unit={proteinTage.length ? "g" : ""} />
+            <Stat label="Schlaf Ø" value={schlaf.length ? f(schlaf.reduce((a, b) => a + b, 0) / schlaf.length, 1) : "–"} unit={schlaf.length ? "h" : ""} />
           </div>
         </Card>
       )}
