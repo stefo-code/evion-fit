@@ -31,7 +31,7 @@ function ReviewPage() {
     .map((m) => m.schlafStunden as number);
   const tage = Array.from({ length: 7 }, (_, i) => heuteKey(new Date(Date.now() - i * 86400000)));
   const proteinTage = tage
-    .map((t) => summiere(daten.mahlzeiten.filter((m) => heuteKey(new Date(m.zeit)) === t)).protein)
+    .map((t) => summiere(daten.mahlzeiten.filter((m) => heuteKey(new Date(m.datum)) === t)).protein)
     .filter((p) => p > 0);
   const leer = geladen && woche.length === 0 && dGewicht === null && schlaf.length === 0 && proteinTage.length === 0;
   const f = (n: number, d = 0) => n.toLocaleString("de-DE", { maximumFractionDigits: d });
