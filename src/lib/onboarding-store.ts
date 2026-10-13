@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { profile as demoProfil, type Goal } from "@/lib/demo-data";
+import type { Goal } from "@/lib/demo-data";
 
 export type Herkunft = "angegeben" | "beobachtet" | "gelernt" | "prognostiziert";
 
@@ -131,19 +131,19 @@ export function useOnboardingProfil() {
   return { profil, aktualisiere, geladen };
 }
 
-/** Anzeigeprofil: Onboarding-Angaben, sonst Demo-Werte. */
+/** Anzeigeprofil: nur echte Onboarding-Angaben; fehlende Werte = null. */
 export function effektivesProfil(p: OnboardingProfil) {
   return {
-    name: p.name || demoProfil.name,
-    ziel: p.abgeschlossen ? p.ziel : demoProfil.goal,
-    alter: p.alter ?? demoProfil.alter,
-    groesse: p.groesse ?? demoProfil.groesse,
-    gewicht: p.gewicht ?? demoProfil.gewicht,
-    zielGewicht: p.zielGewicht ?? demoProfil.zielGewicht,
-    trainingstage: p.abgeschlossen ? p.tage : demoProfil.trainingstage,
-    dauer: p.abgeschlossen ? p.dauer : 45,
-    ernaehrungsform: p.abgeschlossen ? p.ernaehrungsform : demoProfil.ernaehrungsform,
-    erfahrung: p.abgeschlossen ? p.erfahrung : demoProfil.erfahrung,
+    name: p.name.trim(),
+    ziel: p.ziel,
+    alter: p.alter,
+    groesse: p.groesse,
+    gewicht: p.gewicht,
+    zielGewicht: p.zielGewicht,
+    trainingstage: p.tage,
+    dauer: p.dauer,
+    ernaehrungsform: p.ernaehrungsform,
+    erfahrung: p.erfahrung,
   };
 }
 
@@ -161,9 +161,10 @@ export type EvionPlan = {
 
 /** Grobe, transparente Planberechnung (Mifflin-St Jeor + Zielkorrektur). */
 export function berechnePlan(p: OnboardingProfil): EvionPlan {
-  const gewicht = p.gewicht ?? demoProfil.gewicht;
-  const groesse = p.groesse ?? demoProfil.groesse;
-  const alter = p.alter ?? demoProfil.alter;
+  // Neutrale Rechengrößen, nur falls Angaben fehlen (werden nicht als Profilwerte angezeigt).
+  const gewicht = p.gewicht ?? 75;
+  const groesse = p.groesse ?? 172;
+  const alter = p.alter ?? 35;
   const basis =
     10 * gewicht +
     6.25 * groesse -

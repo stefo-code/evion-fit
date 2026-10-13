@@ -787,18 +787,8 @@ export function usePlanEinstellungen() {
   const [state, setState] = useState<PlanEinstellungen>(leer);
 
   useEffect(() => {
-    const geladen = ladePlanEinstellungen();
-    if (geladen.persoenlichV1) {
-      setState(geladen);
-      return;
-    }
-    const neu = legePersoenlichenPlanAn(geladen);
-    try {
-      window.localStorage.setItem(KEY, JSON.stringify(neu));
-    } catch {
-      /* Speicher nicht verfügbar */
-    }
-    setState(neu);
+    // Persönlicher Plan wird nicht mehr automatisch angelegt; vorhandene Daten bleiben unverändert.
+    setState(ladePlanEinstellungen());
   }, []);
 
   const aktualisiere = useCallback((fn: (alt: PlanEinstellungen) => PlanEinstellungen) => {
