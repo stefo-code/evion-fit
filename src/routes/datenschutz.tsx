@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { loescheKonto } from "@/lib/konto.functions";
-import { loescheLokaleDaten } from "@/lib/privatsphaere";
+import { loescheLokaleDaten, setzeKiStatus, useKiStatus } from "@/lib/privatsphaere";
 
 export const Route = createFileRoute("/datenschutz")({
   head: () => ({
@@ -44,7 +44,7 @@ const einwilligungen = [
   { key: "ernaehrung", titel: "Ernährungsdaten", zweck: "Kalorien- und Makroziele, Mahlzeitenvorschläge", pflicht: false },
   { key: "koerper", titel: "Körperdaten", zweck: "Fortschritt, Body Recomposition, adaptive Kalorien", pflicht: false },
   { key: "schlaf", titel: "Schlaf- und Erholungsdaten", zweck: "Körperstatus und Autoregulation", pflicht: false },
-  { key: "coach", titel: "Nutzung durch den KI-Coach", zweck: "Personalisierte Empfehlungen im Chat", pflicht: false },
+  { key: "coach", titel: "KI-Funktionen", zweck: "Coach, KI-Plan und Foto-Erkennung – Daten werden ohne Namen an einen KI-Dienst gesendet", pflicht: false },
   { key: "foto", titel: "Fotos von Mahlzeiten", zweck: "Schätzung von Lebensmitteln und Portionen", pflicht: false },
 ];
 
@@ -69,7 +69,8 @@ function DatenschutzPage() {
       setBusy(false);
     }
   };
-  const [aktiv, setAktiv] = useState<Record<string, boolean>>({
+  const ki = useKiStatus();
+  const [aktivLokal, setAktiv] = useState<Record<string, boolean>>({
     training: true,
     ernaehrung: true,
     koerper: true,
@@ -77,6 +78,10 @@ function DatenschutzPage() {
     coach: true,
     foto: false,
   });
+
+  const aktiv: Record<string, boolean> = { ...aktivLokal, coach: ki === "ja" };
+  const schalte = (k: string) =>
+    k === "coach" ? setzeKiStatus(ki === "ja" ? "nein" : "ja") : setAktiv((a) => ({ ...a, [k]: !a[k] }));
 
   return (
     <div className="space-y-8">
@@ -86,7 +91,7 @@ function DatenschutzPage() {
         </span>
         <div className="min-w-0">
           <p className="label-xs">Datenschutz</p>
-          <h1 className="truncate font-display text-2xl font-extrabold">Deine Gesundheitsdaten</h1>
+          <h1 className="break-words font-display text-2xl font-extrabold">Deine Gesundheitsdaten</h1>
         </div>
       </header>
 
@@ -107,7 +112,7 @@ function DatenschutzPage() {
                 </div>
                 <button
                   disabled={e.pflicht}
-                  onClick={() => setAktiv((a) => ({ ...a, [e.key]: !a[e.key] }))}
+                  onClick={() => schalte(e.key)}
                   className={
                     "h-7 w-12 shrink-0 rounded-full transition-colors " +
                     (aktiv[e.key] ? "bg-primary" : "bg-secondary") +
