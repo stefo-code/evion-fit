@@ -105,7 +105,7 @@ export async function erstelleKiPlan(a: KiPlanAnfrage): Promise<KiPlanTemplate[]
 
   if (res.status === 429) throw new Error("Gerade sind zu viele Anfragen unterwegs – bitte kurz warten.");
   if (res.status === 402) throw new Error("Die KI ist gerade nicht verfügbar, bitte später erneut versuchen.");
-  if (res.status === 403) throw new Error("Die KI-Nutzung ist für diesen Arbeitsbereich gerade gesperrt.");
+  if (res.status === 403) throw new Error("Die KI ist gerade nicht verfügbar, bitte später erneut versuchen.");
   if (!res.ok || !res.body) throw new Error("Die KI ist gerade nicht erreichbar.");
 
   // SSE einlesen und Textausgabe sammeln
