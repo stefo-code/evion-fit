@@ -1,7 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Card, Disclaimer, Section } from "@/components/ui-kit";
-import { datenquellen } from "@/lib/demo-data";
+const datenquellen = [
+  { feld: "Profil & Ziel", quelle: "Deine Angaben im Onboarding und Profil", qualitaet: "manuell" },
+  { feld: "Körperwerte", quelle: "Deine eingetragenen Messungen", qualitaet: "manuell" },
+  { feld: "Training", quelle: "Deine protokollierten Sätze", qualitaet: "manuell" },
+  { feld: "Ernährung & Wasser", quelle: "Deine Einträge, Fotos und Barcodes", qualitaet: "manuell" },
+  { feld: "Supplements", quelle: "Deine abgehakten Einnahmen", qualitaet: "manuell" },
+] as const;
 import { QualityTag } from "@/components/ui-kit";
 import { Shield, Trash2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";

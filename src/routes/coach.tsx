@@ -147,7 +147,7 @@ function CoachPage() {
   const [msgs, setMsgs] = useState<Msg[]>([
     {
       rolle: "coach",
-      text: `Hi ${eff.name}. Ich kenne deine Trainings, Körperwerte, Ernährung und Erholung aus der App. Frag mich konkret – zum Beispiel nach deinem Kaloriendefizit, deinem Trainingsvolumen oder was heute sinnvoll ist.`,
+      text: `Hi${eff.name ? ` ${eff.name}` : ""}. Ich kenne deine Trainings, Körperwerte, Ernährung und Erholung aus der App. Frag mich konkret – zum Beispiel nach deinem Kaloriendefizit, deinem Trainingsvolumen oder was heute sinnvoll ist.`,
     },
   ]);
   const [input, setInput] = useState("");
