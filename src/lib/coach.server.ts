@@ -51,7 +51,7 @@ export async function frageCoach({ kontext, verlauf }: CoachAnfrage): Promise<st
   });
 
   if (res.status === 429) throw new Error("Gerade sind zu viele Anfragen unterwegs – bitte kurz warten.");
-  if (res.status === 402) throw new Error("Das KI-Guthaben ist aufgebraucht.");
+  if (res.status === 402) throw new Error("Die KI ist gerade nicht verfügbar, bitte später erneut versuchen.");
   if (!res.ok) throw new Error("Der Coach ist gerade nicht erreichbar.");
 
   const json = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };

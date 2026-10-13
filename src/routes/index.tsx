@@ -3,7 +3,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronRight, Info, MessageSquare, Trophy, HelpCircle, X } from "lucide-react";
 import { Bar, Card, Disclaimer, Ring, Section } from "@/components/ui-kit";
-import { computeGoalScore, goalLabels, profile } from "@/lib/demo-data";
+import { computeGoalScore, goalLabels } from "@/lib/demo-data";
 import { cn } from "@/lib/utils";
 import { effektivesProfil, useOnboardingProfil } from "@/lib/onboarding-store";
 import {
@@ -17,7 +17,6 @@ import {
   verlauf,
   volumen as satzVolumen,
 } from "@/lib/activity-store";
-import { readiness } from "@/lib/demo-data";
 import { BackupHinweis } from "@/components/backup-hinweis";
 import {
   aktiveTrainingstage,
@@ -67,7 +66,10 @@ function erledigteNudges(): string[] {
 
 function Cockpit() {
   const navigate = useNavigate();
-  const { profil } = useOnboardingProfil();
+  const { profil, geladen } = useOnboardingProfil();
+  useEffect(() => {
+    if (geladen && !profil.abgeschlossen) void navigate({ to: "/onboarding" });
+  }, [geladen, profil.abgeschlossen, navigate]);
   const eff = effektivesProfil(profil);
   const { score, parts } = computeGoalScore(eff.ziel);
   const { aktivitaet } = useAktivitaet();
@@ -133,7 +135,8 @@ function Cockpit() {
   const einheitenWoche = trainingsTage.filter((t) => t.state === "erledigt").length;
 
   const eigeneReadiness = readinessAusMessungen(aktivitaet);
-  const bereitschaft = eigeneReadiness?.score ?? readiness.score;
+  const bereitschaft = eigeneReadiness?.score ?? 0;
+  const wochenScore = Math.min(100, Math.round((einheitenWoche / Math.max(1, gewaehlteTage.length)) * 100));
 
   const meilenstein = erfolgsStatus(aktivitaet).find((e) => !e.erreicht) ?? null;
 
@@ -163,13 +166,23 @@ function Cockpit() {
 
   const dim = leer ? "opacity-60" : "";
 
+  if (!geladen || !profil.abgeschlossen) {
+    return (
+      <div className="space-y-4" aria-busy="true">
+        <div className="h-72 animate-pulse rounded-3xl bg-secondary" />
+        <div className="h-10 animate-pulse rounded-xl bg-secondary" />
+        <div className="h-40 animate-pulse rounded-3xl bg-secondary" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 pb-28">
       {/* ZONE 1 — COCKPIT */}
       <Card className="hero-glow relative overflow-hidden">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
           <div className="min-w-0">
-            <p className="label-xs">Hallo, {eff.name}</p>
+            <p className="label-xs">Hallo{eff.name ? `, ${eff.name}` : ""}</p>
             <h1 className="mt-1 font-display text-xl font-extrabold leading-tight break-words sm:text-2xl">
               Ziel: {goalLabels[eff.ziel]}
             </h1>
@@ -179,7 +192,7 @@ function Cockpit() {
             aria-label="Dein Profil"
             className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/12 font-display text-sm font-extrabold text-primary"
           >
-            {eff.name.slice(0, 1).toUpperCase()}
+            {(eff.name || "E").slice(0, 1).toUpperCase()}
           </Link>
         </div>
 
@@ -191,31 +204,28 @@ function Cockpit() {
           <div className="min-w-0 flex-1 space-y-3">
             <Link to="/fortschritt" className={cn("flex items-center gap-3", dim)}>
               <Ring
-                value={leer ? 0 : bereitschaft}
-                label={leer ? "—" : String(bereitschaft)}
+                value={eigeneReadiness ? bereitschaft : 0}
+                label={eigeneReadiness ? String(bereitschaft) : "—"}
                 size={54}
                 stroke={6}
                 tone="info"
               />
               <div className="min-w-0">
                 <p className="text-sm font-semibold leading-tight">Bereitschaft</p>
-                <p className="truncate text-[11px] text-muted-foreground">Schlaf · Regeneration · Muskeln</p>
+                <p className="text-[11px] leading-snug text-muted-foreground">Schlaf · Regeneration · Muskeln</p>
               </div>
             </Link>
             <Link to="/wochenrueckblick" className={cn("flex items-center gap-3", dim)}>
               <Ring
-                value={leer ? 0 : profile.weeklyScore}
-                label={leer ? "—" : String(profile.weeklyScore)}
+                value={leer ? 0 : wochenScore}
+                label={leer ? "—" : String(wochenScore)}
                 size={54}
                 stroke={6}
                 tone="info"
               />
               <div className="min-w-0">
                 <p className="text-sm font-semibold leading-tight">
-                  Wochen-Score{" "}
-                  {!leer && (
-                    <span className="text-xs font-semibold text-success">+{profile.weeklyScoreDelta}</span>
-                  )}
+                  Wochen-Score
                 </p>
                 <p className="truncate text-[11px] text-muted-foreground">
                   {leer ? "— Einheiten / 7 Tage" : `${einheitenWoche} Einheiten / 7 Tage`}
@@ -296,7 +306,7 @@ function Cockpit() {
           },
           {
             titel: "Bereitschaft",
-            punkte: eigeneReadiness ? eigeneReadiness.gruende : readiness.warum,
+            punkte: eigeneReadiness ? eigeneReadiness.gruende : ["Noch keine Messungen zu Schlaf und Erholung."],
           },
           {
             titel: "Wochen-Score",

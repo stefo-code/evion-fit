@@ -1,12 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Card, Chip, Disclaimer, Section } from "@/components/ui-kit";
-import { profile, goalLabels, type Goal } from "@/lib/demo-data";
+import { Card, Chip, Section } from "@/components/ui-kit";
+import { goalLabels, type Goal } from "@/lib/demo-data";
+import { berechnePlan, useOnboardingProfil } from "@/lib/onboarding-store";
 import { Bell, Download, Timer, Trash2, User } from "lucide-react";
 import { toast } from "sonner";
 import { usePlanEinstellungen } from "@/lib/training-plan";
-import { setzeKiStatus, useKiStatus } from "@/lib/privatsphaere";
-import { KI_TEXT } from "@/components/ki-einwilligung";
+import { ladeBackupHerunter, loescheLokaleDaten, useKiStatus } from "@/lib/privatsphaere";
 
 export const Route = createFileRoute("/einstellungen")({
   head: () => ({
@@ -23,7 +23,11 @@ export const Route = createFileRoute("/einstellungen")({
 });
 
 function EinstellungenPage() {
-  const [ziel, setZiel] = useState<Goal>(profile.goal);
+  const { profil, aktualisiere } = useOnboardingProfil();
+  const ziel = profil.ziel;
+  const setZiel = (g: Goal) => aktualisiere({ ziel: g });
+  const plan = berechnePlan(profil);
+  const s = (v: number | null, e: string) => (v == null ? "–" : `${v} ${e}`);
   const [erinnerung, setErinnerung] = useState("Mittel");
   const { einstellungen, speichere } = usePlanEinstellungen();
   const ki = useKiStatus();
@@ -42,19 +46,19 @@ function EinstellungenPage() {
               <User className="h-6 w-6" />
             </span>
             <div className="min-w-0">
-              <p className="truncate font-display text-lg font-bold">{profile.name}</p>
+              <p className="truncate font-display text-lg font-bold">{profil.name || "–"}</p>
               <p className="truncate text-sm text-muted-foreground">
-                {profile.alter} Jahre · {profile.groesse} cm · {profile.gewicht} kg · {profile.erfahrung}
+                {s(profil.alter, "Jahre")} · {s(profil.groesse, "cm")} · {s(profil.gewicht, "kg")} · {profil.erfahrung}
               </p>
             </div>
           </div>
           <dl className="mt-5 grid gap-3 sm:grid-cols-2 text-sm">
-            <Feld label="Trainingsort" value={profile.trainingsort} />
-            <Feld label="Trainingstage" value={`${profile.trainingstage} pro Woche`} />
-            <Feld label="Ernährungsform" value={profile.ernaehrungsform} />
-            <Feld label="Unverträglichkeiten" value={profile.allergien.join(", ")} />
-            <Feld label="Kalorienziel" value={`${profile.kalorienZiel} kcal`} />
-            <Feld label="Proteinziel" value={`${profile.proteinZiel} g`} />
+            <Feld label="Trainingsort" value={[...profil.orte].join(", ") || "–"} />
+            <Feld label="Trainingstage" value={`${profil.tage} pro Woche`} />
+            <Feld label="Ernährungsform" value={profil.ernaehrungsform || "–"} />
+            <Feld label="Unverträglichkeiten" value={profil.allergien.join(", ") || "–"} />
+            <Feld label="Kalorienziel" value={`${plan.kalorien.toLocaleString("de-DE")} kcal`} />
+            <Feld label="Proteinziel" value={`${plan.protein} g`} />
           </dl>
         </Card>
       </Section>
@@ -113,21 +117,11 @@ function EinstellungenPage() {
       </Section>
 
       <Section titel="KI-Funktionen">
-        <Card>
-          <div className="flex items-center gap-3">
-            <p className="min-w-0 flex-1 text-sm text-muted-foreground">{KI_TEXT}</p>
-            <button
-              onClick={() => {
-                setzeKiStatus(ki === "ja" ? "nein" : "ja");
-                toast.success(ki === "ja" ? "Einwilligung widerrufen" : "KI-Funktionen aktiviert");
-              }}
-              className={"h-7 w-12 shrink-0 rounded-full transition-colors " + (ki === "ja" ? "bg-primary" : "bg-secondary")}
-              aria-label="KI-Einwilligung umschalten"
-              aria-pressed={ki === "ja"}
-            >
-              <span className={"block h-5 w-5 rounded-full bg-background transition-transform " + (ki === "ja" ? "translate-x-6" : "translate-x-1")} />
-            </button>
-          </div>
+        <Card className="flex items-center gap-3 text-sm">
+          KI-Einwilligung: {ki === "ja" ? "erteilt" : "nicht erteilt"}
+          <Link to="/datenschutz" className="ml-auto shrink-0 rounded-lg border border-border px-3 py-1.5 text-xs font-bold">
+            Verwalten
+          </Link>
         </Card>
       </Section>
 
@@ -152,7 +146,7 @@ function EinstellungenPage() {
             <Download className="h-4 w-4 shrink-0 text-muted-foreground" />
             Alle Daten als Export herunterladen
             <button
-              onClick={() => toast.success("Export wird vorbereitet (Demo)")}
+              onClick={() => ladeBackupHerunter()}
               className="ml-auto shrink-0 rounded-lg border border-border px-3 py-1.5 text-xs font-bold"
             >
               Exportieren
@@ -160,9 +154,14 @@ function EinstellungenPage() {
           </Card>
           <Card className="flex items-center gap-3 border-destructive/40 text-sm">
             <Trash2 className="h-4 w-4 shrink-0 text-destructive" />
-            Konto und alle Gesundheitsdaten löschen
+            Alle Daten auf diesem Gerät löschen
             <button
-              onClick={() => toast("Löschung angefordert (Demo)")}
+              onClick={() => {
+                if (window.confirm("Wirklich alle Daten auf diesem Gerät löschen?")) {
+                  loescheLokaleDaten();
+                  window.location.href = "/onboarding";
+                }
+              }}
               className="ml-auto shrink-0 rounded-lg border border-destructive/50 px-3 py-1.5 text-xs font-bold text-destructive"
             >
               Löschen
@@ -171,9 +170,6 @@ function EinstellungenPage() {
         </div>
       </Section>
 
-      <Disclaimer>
-        Dies ist ein Prototyp mit Demo-Profil. Änderungen werden nicht dauerhaft gespeichert.
-      </Disclaimer>
     </div>
   );
 }
