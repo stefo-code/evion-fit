@@ -2,11 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Card, Disclaimer, Section } from "@/components/ui-kit";
 const datenquellen = [
-  { feld: "Profil & Ziel", quelle: "Deine Angaben im Onboarding und Profil", qualitaet: "manuell" },
-  { feld: "Körperwerte", quelle: "Deine eingetragenen Messungen", qualitaet: "manuell" },
-  { feld: "Training", quelle: "Deine protokollierten Sätze", qualitaet: "manuell" },
-  { feld: "Ernährung & Wasser", quelle: "Deine Einträge, Fotos und Barcodes", qualitaet: "manuell" },
-  { feld: "Supplements", quelle: "Deine abgehakten Einnahmen", qualitaet: "manuell" },
+  { feld: "Profil & Ziel", quelle: "Deine Angaben im Onboarding und Profil", qualitaet: "gemessen" },
+  { feld: "Körperwerte", quelle: "Deine eingetragenen Messungen", qualitaet: "gemessen" },
+  { feld: "Training", quelle: "Deine protokollierten Sätze", qualitaet: "gemessen" },
+  { feld: "Ernährung & Wasser", quelle: "Deine Einträge, Fotos und Barcodes", qualitaet: "gemessen" },
+  { feld: "Supplements", quelle: "Deine abgehakten Einnahmen", qualitaet: "gemessen" },
 ] as const;
 import { QualityTag } from "@/components/ui-kit";
 import { Shield, Trash2 } from "lucide-react";
