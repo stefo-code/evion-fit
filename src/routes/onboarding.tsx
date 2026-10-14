@@ -30,7 +30,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { OnboardingSync } from "@/components/onboarding-sync";
 import { messFelder } from "@/lib/activity-store";
-import { supplements } from "@/lib/supplements-data";
+import { supplementDatenbank } from "@/lib/supplements-data";
 import { schreibeBesitzListe } from "@/lib/supplement-log";
 import { aktuellerOnboardingSchritt, onboardingSchritte, speichereOnboardingStartwerte, studioAusstattung } from "@/lib/onboarding-flow";
 import heroBild from "@/assets/onboarding-hero.png";
@@ -717,7 +717,7 @@ function ErnaehrungSchritt({ p, set }: SchrittProps) {
       </p>
       <Feldgruppe label="Welche Supplements nimmst du bereits? (optional)">
         <div className="flex flex-wrap gap-2">
-          {supplements.map((s) => (
+          {supplementDatenbank.map((s) => (
             <Pille key={s.id} aktiv={suppBesitz.includes(s.id)} onClick={() => suppUmschalten(s.id)}>
               {s.name}
             </Pille>
