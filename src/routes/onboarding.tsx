@@ -2,7 +2,6 @@ import { pruefeSpitzname } from "@/lib/privatsphaere";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
-  Activity,
   Apple,
   ArrowRight,
   Check,
@@ -11,8 +10,6 @@ import {
   Flame,
   Heart,
   Leaf,
-  Lock,
-  Mail,
   Repeat,
   Scale,
   Shield,
@@ -30,7 +27,10 @@ import {
   type OnboardingProfil,
 } from "@/lib/onboarding-store";
 import { cn } from "@/lib/utils";
-import { MessungForm } from "@/components/messung-form";
+import { Button } from "@/components/ui/button";
+import { OnboardingSync } from "@/components/onboarding-sync";
+import { messFelder } from "@/lib/activity-store";
+import { aktuellerOnboardingSchritt, onboardingSchritte, speichereOnboardingStartwerte, studioAusstattung } from "@/lib/onboarding-flow";
 import heroBild from "@/assets/onboarding-hero.png";
 
 export const Route = createFileRoute("/onboarding")({
@@ -50,29 +50,23 @@ export const Route = createFileRoute("/onboarding")({
   component: OnboardingPage,
 });
 
-const SCHRITTE = [
-  "konto",
-  "ueberdich",
-  "ziel",
-  "training",
-  "equipment",
-  "ernaehrung",
-  "gesundheit",
-  "messung",
-] as const;
+const SCHRITTE = onboardingSchritte;
 
 function OnboardingPage() {
   const navigate = useNavigate();
   const [p, setP] = useState<OnboardingProfil>(leeresProfil);
   const [phase, setPhase] = useState<"welcome" | "schritte" | "analyse" | "plan">("welcome");
   const [i, setI] = useState(0);
+  const [geladen, setGeladen] = useState(false);
+  const [fehler, setFehler] = useState("");
 
   useEffect(() => {
     const gespeichert = ladeProfil();
     setP(gespeichert);
+    setGeladen(true);
     if (!gespeichert.abgeschlossen && gespeichert.schritt > 0) {
       setPhase("schritte");
-      setI(Math.min(gespeichert.schritt, SCHRITTE.length - 1));
+      setI(aktuellerOnboardingSchritt(gespeichert));
     }
   }, []);
 
@@ -85,10 +79,30 @@ function OnboardingPage() {
   }
 
   function weiter() {
+    setFehler("");
+    if (SCHRITTE[i] === "ueberdich") {
+      const nameFehler = pruefeSpitzname(p.name);
+      if (nameFehler) { setFehler(nameFehler); return; }
+      if (p.gewicht !== null && (!Number.isFinite(p.gewicht) || p.gewicht < 30 || p.gewicht > 250)) {
+        setFehler("Bitte ein Gewicht zwischen 30 und 250 kg eingeben oder das Feld leer lassen."); return;
+      }
+      const datum = speichereOnboardingStartwerte(p);
+      if (datum) set({ startMessungDatum: datum });
+    }
+    if (SCHRITTE[i] === "messung") {
+      for (const feld of messFelder.filter((f) => f.key === "koerperfett" || f.gruppe === "umfang")) {
+        const wert = p.startwerte?.[feld.key as keyof NonNullable<OnboardingProfil["startwerte"]>];
+        if (typeof wert === "number" && (!Number.isFinite(wert) || wert < feld.min || wert > feld.max)) {
+          setFehler(`${feld.label}: bitte einen Wert zwischen ${feld.min} und ${feld.max} ${feld.einheit} eingeben.`); return;
+        }
+      }
+      const datum = speichereOnboardingStartwerte(p, true);
+      if (datum) set({ startMessungDatum: datum });
+    }
     if (i < SCHRITTE.length - 1) {
       const n = i + 1;
       setI(n);
-      set({ schritt: n });
+      set({ schritt: n, schrittVersion: 2 });
       window.scrollTo({ top: 0 });
     } else {
       setPhase("analyse");
@@ -100,11 +114,14 @@ function OnboardingPage() {
       setPhase("welcome");
       return;
     }
+    setFehler("");
     setI(i - 1);
+    set({ schritt: i - 1, schrittVersion: 2 });
     window.scrollTo({ top: 0 });
   }
 
-  if (phase === "welcome") return <Welcome onStart={() => setPhase("schritte")} />;
+  if (!geladen) return <div role="status" aria-label="Profil wird geladen" className="mx-auto max-w-xl animate-pulse space-y-6 px-5 pt-10"><div className="h-8 w-32 rounded bg-muted" /><div className="h-48 rounded bg-muted" /></div>;
+  if (phase === "welcome") return <Welcome onStart={() => { set({ schritt: 0, schrittVersion: 2 }); setPhase("schritte"); }} />;
   if (phase === "analyse") return <Analyse onFertig={() => setPhase("plan")} />;
   if (phase === "plan")
     return (
@@ -112,26 +129,26 @@ function OnboardingPage() {
         p={p}
         onStart={() => {
           // synchron persistieren, damit der Erststart-Check sofort greift
-          speichereProfil({ ...p, abgeschlossen: true, schritt: SCHRITTE.length });
+          speichereProfil({ ...ladeProfil(), abgeschlossen: true, schritt: SCHRITTE.length, schrittVersion: 2 });
           navigate({ to: "/" });
         }}
 
       />
     );
 
-  const aktuell = SCHRITTE[i]!;
-  const optional = aktuell === "gesundheit" || aktuell === "messung" || aktuell === "equipment";
+  const aktuell = SCHRITTE[i] ?? "ueberdich";
+  const optional = aktuell === "gesundheit";
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-5 pb-10 pt-6">
       <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-4">
-        <button
+        <Button variant="ghost"
           onClick={zurueck}
           aria-label="Zurück"
           className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border bg-card"
         >
           <ChevronLeft className="h-5 w-5" />
-        </button>
+        </Button>
         <div>
           <p className="text-center text-xs font-semibold text-muted-foreground">
             Schritt {i + 1} von {SCHRITTE.length}
@@ -151,27 +168,26 @@ function OnboardingPage() {
       </div>
 
       <div className="mt-8 flex-1 space-y-6">
-        {aktuell === "konto" && <KontoSchritt p={p} set={set} />}
         {aktuell === "ueberdich" && <UeberDich p={p} set={set} />}
         {aktuell === "ziel" && <ZielSchritt p={p} set={set} />}
         {aktuell === "training" && <TrainingSchritt p={p} set={set} />}
-        {aktuell === "equipment" && <EquipmentSchritt p={p} set={set} />}
         {aktuell === "ernaehrung" && <ErnaehrungSchritt p={p} set={set} />}
         {aktuell === "gesundheit" && <GesundheitSchritt p={p} set={set} />}
-        {aktuell === "messung" && <MessungSchritt />}
+        {aktuell === "messung" && <MessungSchritt p={p} set={set} />}
       </div>
 
       <div className="mt-10 space-y-3">
+        {fehler && <p role="alert" className="text-sm text-destructive">{fehler}</p>}
         <PrimaryButton onClick={weiter}>
           {i === SCHRITTE.length - 1 ? "Plan erstellen" : "Weiter"}
         </PrimaryButton>
         {optional && (
-          <button
+          <Button variant="ghost"
             onClick={weiter}
             className="w-full py-1 text-sm font-semibold text-muted-foreground hover:text-foreground"
           >
             Überspringen
-          </button>
+          </Button>
         )}
       </div>
     </div>
@@ -190,15 +206,15 @@ function PrimaryButton({
   className?: string;
 }) {
   return (
-    <button
+    <Button
       onClick={onClick}
       className={cn(
-        "w-full rounded-2xl bg-primary px-5 py-4 font-display text-base font-extrabold text-primary-foreground shadow-[var(--shadow-glow)] transition-transform active:scale-[0.99]",
+        "h-auto min-h-12 w-full whitespace-normal rounded-2xl bg-primary px-5 py-4 hover:bg-primary/90 font-display text-base font-extrabold text-primary-foreground shadow-[var(--shadow-glow)] transition-transform active:scale-[0.99]",
         className,
       )}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -234,11 +250,11 @@ function AuswahlKarte({
   onClick: () => void;
 }) {
   return (
-    <button
+    <Button variant="ghost"
       type="button"
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-3 rounded-2xl border bg-card p-4 text-left transition-all",
+        "h-auto min-h-12 w-full justify-start whitespace-normal rounded-2xl border bg-card p-4 text-left transition-all",
         aktiv
           ? "border-primary bg-primary/5 shadow-[var(--shadow-glow)]"
           : "border-border hover:border-primary/40",
@@ -255,11 +271,11 @@ function AuswahlKarte({
         </span>
       )}
       <span className="min-w-0">
-        <span className="block truncate font-semibold">{titel}</span>
-        {sub && <span className="block truncate text-xs text-muted-foreground">{sub}</span>}
+        <span className="block whitespace-normal break-words font-semibold">{titel}</span>
+        {sub && <span className="block whitespace-normal break-words text-xs text-muted-foreground">{sub}</span>}
       </span>
       {aktiv && <Check className="ml-auto h-5 w-5 shrink-0 text-primary" />}
-    </button>
+    </Button>
   );
 }
 
@@ -273,18 +289,18 @@ function Pille({
   onClick: () => void;
 }) {
   return (
-    <button
+    <Button variant="ghost"
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors",
+        "h-auto min-h-12 max-w-full whitespace-normal rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors",
         aktiv
           ? "border-primary bg-primary/10 text-primary"
           : "border-border bg-card text-muted-foreground hover:text-foreground",
       )}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -378,118 +394,20 @@ function toggle(liste: string[], wert: string) {
 /* ------------------------------------------------------------------ Screens */
 
 function Welcome({ onStart }: { onStart: () => void }) {
-  const navigate = useNavigate();
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 pb-8 pt-10">
-      <EvionLogo className="h-8 self-center" />
-      <p className="mt-2 self-center text-center text-sm font-semibold text-primary">Evolve. Every day.</p>
-
-      <div className="relative mt-8 flex-1">
-        <h1 className="font-display text-4xl font-extrabold leading-[1.1]">
-          Deine Reise.
-          <br />
-          Deine Ziele.
-          <br />
-          Wir machen den Rest.
-        </h1>
-        <p className="mt-4 max-w-[16rem] text-sm leading-relaxed text-muted-foreground">
-          Personalisiertes Training, smarte Ernährung und echter Fortschritt – alles in einer App.
-        </p>
-
-        <div className="pointer-events-none absolute -right-6 bottom-0 w-[62%] max-w-[280px]">
-          <div className="absolute inset-x-2 bottom-6 top-10 rounded-full bg-primary/10 blur-2xl" />
-          <img
-            src={heroBild}
-            alt="Sportliche Frau und sportlicher Mann"
-            width={912}
-            height={1104}
-            className="relative w-full object-contain"
-          />
-        </div>
-
-        <div className="relative mt-8 w-[58%] min-w-[190px] space-y-3">
-          <MiniKarte icon={Scale} wert="−4,2 kg" text="Gewicht in 8 Wochen" />
-          <MiniKarte icon={Flame} wert="91 %" text="Kalorienziel erreicht" />
-          <MiniKarte icon={Dumbbell} wert="14" text="Trainings diesen Monat" />
-        </div>
+    <div className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 pb-8 pt-8">
+      <EvionLogo className="h-8" />
+      <h1 className="mt-8 font-display text-3xl font-extrabold leading-tight">Dein Training. Deine Ernährung. Dein Fortschritt.</h1>
+      <img src={heroBild} alt="Sportliche Frau und sportlicher Mann" width={912} height={1104} className="mx-auto mt-6 h-64 w-full object-contain sm:h-80" />
+      <div className="mt-auto pt-6">
+        <PrimaryButton onClick={onStart}>Los geht’s <ArrowRight /></PrimaryButton>
+        <p className="mt-4 text-center text-sm text-muted-foreground">Kein Konto nötig. Sync ist am Ende optional.</p>
       </div>
-
-      <div className="mt-10 space-y-4">
-        <PrimaryButton onClick={onStart}>LOS GEHT&apos;S</PrimaryButton>
-        <p className="text-center text-sm text-muted-foreground">
-          Kein Konto nötig. Später Sync aktivieren – optional im Profil.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function MiniKarte({
-  icon: Icon,
-  wert,
-  text,
-}: {
-  icon: typeof Scale;
-  wert: string;
-  text: string;
-}) {
-  return (
-    <div className="flex items-center gap-3 rounded-2xl border border-border bg-card/90 p-3 shadow-sm backdrop-blur">
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary">
-        <Icon className="h-4.5 w-4.5" />
-      </span>
-      <span className="min-w-0">
-        <span className="num block text-base font-extrabold leading-none">{wert}</span>
-        <span className="block truncate text-[11px] text-muted-foreground">{text}</span>
-      </span>
     </div>
   );
 }
 
 type SchrittProps = { p: OnboardingProfil; set: (t: Partial<OnboardingProfil>) => void };
-
-function KontoSchritt({ p, set }: SchrittProps) {
-  return (
-    <>
-      <Titel titel="Dein EVION Konto" sub="Damit dein Plan und dein Fortschritt erhalten bleiben." />
-      <div className="space-y-3">
-        <AuswahlKarte
-          titel="Mit Google fortfahren"
-          icon={Zap}
-          aktiv={p.kontoMethode === "google"}
-          onClick={() => set({ kontoMethode: "google" })}
-        />
-        <AuswahlKarte
-          titel="Mit Apple fortfahren"
-          icon={Lock}
-          aktiv={p.kontoMethode === "apple"}
-          onClick={() => set({ kontoMethode: "apple" })}
-        />
-        <AuswahlKarte
-          titel="Mit E-Mail fortfahren"
-          icon={Mail}
-          aktiv={p.kontoMethode === "email"}
-          onClick={() => set({ kontoMethode: "email" })}
-        />
-      </div>
-      {p.kontoMethode === "email" && (
-        <div className="space-y-4">
-          <SpitznameFeld value={p.name} onChange={(v) => set({ name: v })} />
-          <TextFeld
-            label="E-Mail"
-            value={p.email}
-            onChange={(v) => set({ email: v })}
-            platzhalter="alex@example.com"
-          />
-        </div>
-      )}
-      <PrivacyCard>
-        Deine Gesundheitsdaten gehören dir. EVION verwendet sie ausschließlich für deine persönlichen
-        Fitness- und Gesundheitsempfehlungen.
-      </PrivacyCard>
-    </>
-  );
-}
 
 function UeberDich({ p, set }: SchrittProps) {
   const geschlechter: { key: Geschlecht; label: string }[] = [
@@ -503,13 +421,11 @@ function UeberDich({ p, set }: SchrittProps) {
         titel="Erzähl uns etwas über dich"
         sub="Diese Angaben helfen uns, deinen Plan optimal auf dich abzustimmen."
       />
-      {!p.name && (
-        <SpitznameFeld value={p.name} onChange={(v) => set({ name: v })} />
-      )}
+      <SpitznameFeld value={p.name} onChange={(v) => set({ name: v })} />
       <Feldgruppe label="Geschlecht">
         <div className="grid grid-cols-3 gap-2.5">
           {geschlechter.map((g) => (
-            <button
+            <Button variant="ghost"
               key={g.key}
               onClick={() => set({ geschlecht: g.key })}
               className={cn(
@@ -520,7 +436,7 @@ function UeberDich({ p, set }: SchrittProps) {
               )}
             >
               {g.label}
-            </button>
+            </Button>
           ))}
         </div>
       </Feldgruppe>
@@ -648,11 +564,18 @@ function TrainingSchritt({ p, set }: SchrittProps) {
               key={o}
               titel={o}
               aktiv={p.orte.includes(o)}
-              onClick={() => set({ orte: toggle(p.orte, o) })}
+              onClick={() => {
+                const orte = toggle(p.orte, o);
+                const equipment = orte.includes("Fitnessstudio")
+                  ? [...new Set([...p.equipment, ...studioAusstattung])]
+                  : p.equipment.filter((e) => e !== "Voll ausgestattetes Fitnessstudio");
+                set({ orte, equipment });
+              }}
             />
           ))}
         </div>
       </Feldgruppe>
+      <EquipmentSchritt p={p} set={set} />
       <Feldgruppe label="Wie oft möchtest du trainieren?">
         <div className="flex flex-wrap gap-2">
           {[2, 3, 4, 5, 6].map((t) => (
@@ -697,7 +620,7 @@ function EquipmentSchritt({ p, set }: SchrittProps) {
       ];
   return (
     <>
-      <Titel titel="Was steht dir zur Verfügung?" sub="Mehrfachauswahl – du kannst das jederzeit ändern." />
+      <Feldgruppe label="Verfügbare Ausstattung">
       <div className="flex flex-wrap gap-2">
         {optionen.map((o) => (
           <Pille key={o} aktiv={p.equipment.includes(o)} onClick={() => set({ equipment: toggle(p.equipment, o) })}>
@@ -705,6 +628,7 @@ function EquipmentSchritt({ p, set }: SchrittProps) {
           </Pille>
         ))}
       </div>
+      </Feldgruppe>
       <TextFeld
         label="Magst du bestimmte Übungen oder Trainingsarten? (optional)"
         value={p.mag}
@@ -821,15 +745,22 @@ function GesundheitSchritt({ p, set }: SchrittProps) {
   );
 }
 
-function MessungSchritt() {
+function MessungSchritt({ p, set }: SchrittProps) {
+  const felder = messFelder.filter((f) => f.key === "koerperfett" || f.gruppe === "umfang");
   return (
     <>
-      <Titel titel="Deine Startwerte" sub="Einmal messen – ab jetzt sieht EVION jede Veränderung." />
-      <MessungForm />
-      <PrivacyCard>
-        Gewicht reicht für den Start. Körperfett, Wasser und Muskeln kannst du von deiner Waage ablesen –
-        sie sind Schätzwerte und rein optional. Alles bleibt lokal auf deinem Gerät.
-      </PrivacyCard>
+      <Titel titel="Deine Startwerte" sub="Körperfett und Umfänge sind optional. Dein Gewicht ist bereits übernommen." />
+      <div className="border-y border-border py-4">
+        <p className="label-xs">Startgewicht</p>
+        <p className="num mt-1 text-2xl font-bold">{p.gewicht?.toLocaleString("de-DE") ?? "—"} <span className="text-sm text-muted-foreground">kg</span></p>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        {felder.map((f) => {
+          const key = f.key as keyof NonNullable<OnboardingProfil["startwerte"]>;
+          return <ZahlFeld key={key} label={f.label} einheit={f.einheit} value={p.startwerte?.[key] ?? null} onChange={(n) => set({ startwerte: { ...p.startwerte, [key]: n } })} />;
+        })}
+      </div>
+      <PrivacyCard>Die zusätzlichen Angaben werden mit deiner Startmessung gespeichert. Körperfettwerte von Waagen sind Schätzwerte.</PrivacyCard>
     </>
   );
 }
@@ -914,9 +845,9 @@ function PlanScreen({ p, onStart }: { p: OnboardingProfil; onStart: () => void }
 
       <div className="mt-6 grid grid-cols-2 gap-3">
         {kacheln.map((k) => (
-          <div key={k.label} className="rounded-2xl border border-border bg-card p-4">
+          <div key={k.label} className={cn("min-w-0 rounded-2xl border border-border bg-card p-4", k.label === "Ziel" && "col-span-2")}>
             <p className="label-xs">{k.label}</p>
-            <p className="num mt-1 text-xl font-extrabold leading-tight">{k.wert}</p>
+            <p className="num mt-1 break-words text-lg font-extrabold leading-tight">{k.wert}</p>
           </div>
         ))}
       </div>
@@ -934,10 +865,11 @@ function PlanScreen({ p, onStart }: { p: OnboardingProfil; onStart: () => void }
         an.
       </p>
 
+      <OnboardingSync />
       <div className="mt-auto pt-8">
         <PrimaryButton onClick={onStart}>
           <span className="inline-flex items-center justify-center gap-2">
-            MEINEN PLAN STARTEN <ArrowRight className="h-5 w-5" />
+            Meinen Plan starten <ArrowRight className="h-5 w-5" />
           </span>
         </PrimaryButton>
       </div>

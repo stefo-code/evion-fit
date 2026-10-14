@@ -15,3 +15,5 @@
 - Personal training plan is seeded once into PlanEinstellungen (flag persoenlichV1) as custom templates with per-exercise vorgaben and a rotation; all new fields are optional so old saved plans keep loading.
 - Local-first: no screen requires login; optional sync stores one JSON snapshot of all evion.* localStorage keys per user in public.user_backups (merge then upload), so the local stores stay the single source of truth.
 - Every AI server call is gated client-side by fordereKi() (src/lib/privatsphaere.ts) and sends no names/IDs/emails; age as 5-year group, height/weight rounded.
+
+- Onboarding uses an optional versioned step marker and the shared measurement API; this preserves old drafts and measurement history in the existing local stores.

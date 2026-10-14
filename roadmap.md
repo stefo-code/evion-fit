@@ -5,7 +5,7 @@
 - [x] Navigation und Darstellung prüfen.
 # EVION-Überarbeitung (Stef)
 - [x] Teil 1 – Demo-Daten entfernen, eine Datenquelle
-- [ ] Teil 2 – Onboarding
+- [x] Teil 2 – Onboarding: sechs Schritte, Startmessung, Trainingsort/Ausstattung, optionaler Sync; auf 360/390 px und mit alten Entwürfen geprüft.
 - [ ] Teil 3 – Home, Training, Workout
 - [ ] Teil 4 – Evidenzbasierte Pläne
 - [ ] Teil 5 – Übungsbibliothek & Bilder

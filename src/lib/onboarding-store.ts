@@ -24,6 +24,9 @@ export type OnboardingProfil = {
   version: 1;
   abgeschlossen: boolean;
   schritt: number;
+  schrittVersion?: 2;
+  startMessungDatum?: string;
+  startwerte?: Partial<Record<"koerperfett" | "taille" | "huefte" | "brust" | "arm" | "oberschenkel", number | null>>;
   name: string;
   kontoMethode: "google" | "apple" | "email" | null;
   email: string;
