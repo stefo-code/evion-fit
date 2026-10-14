@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Check, Moon } from "lucide-react";
 import { Card, Section } from "@/components/ui-kit";
-import { slotVon, supplementDatenbank, tagesSlots } from "@/lib/supplements-data";
+import { EISEN_ID, slotVon, supplementDatenbank, tagesSlots } from "@/lib/supplements-data";
 import { KOFFEIN_IDS, useSuppLog } from "@/lib/supplement-log";
 import { useOnboardingProfil } from "@/lib/onboarding-store";
 import { aktiveTrainingstage, usePlanEinstellungen } from "@/lib/training-plan";
@@ -35,7 +35,7 @@ export function SuppCheckliste({ titel = "Heute einnehmen", zeigeLeer = false }:
 
   const trainingSlots = new Set(["vor", "waehrend"]);
   const eintraege = supplementDatenbank
-    .filter((s) => besitz.includes(s.id))
+    .filter((s) => besitz.includes(s.id) && s.id !== EISEN_ID)
     .map((s) => ({ s, slot: slotVon[s.id] ?? "mahlzeit" }))
     .filter((e) => trainingstag || !trainingSlots.has(e.slot))
     .sort((a, b) => tagesSlots.findIndex((x) => x.id === a.slot) - tagesSlots.findIndex((x) => x.id === b.slot));

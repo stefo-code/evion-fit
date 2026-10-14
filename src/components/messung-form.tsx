@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ChevronDown, Scale } from "lucide-react";
+import { ChevronDown, Scale, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   feldDef,
@@ -132,9 +132,29 @@ export function MessungForm({
         <Scale className="h-4 w-4" /> Messung speichern
       </button>
       <p className="text-xs text-muted-foreground">
-        Alle Werte bleiben lokal auf deinem Gerät. Körperfett-, Wasser- und Muskelanteile von Waagen sind
+        Ohne Sync bleiben deine Werte auf diesem Gerät. Körperfett-, Wasser- und Muskelanteile von Waagen sind
         Schätzwerte – EVION stellt keine Diagnosen.
       </p>
+    </div>
+  );
+}
+
+/** Messformular als Bottom-Sheet hinter einem Auslöser wie „Messung eintragen“. */
+export function MessungFormSheet({ onSchliessen }: { onSchliessen: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50">
+      <button className="absolute inset-0 bg-foreground/40" aria-label="Schließen" onClick={onSchliessen} />
+      <div className="absolute inset-x-0 bottom-0 max-h-[90vh] overflow-y-auto rounded-t-3xl border-t border-border bg-card p-5 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+        <div className="flex items-center justify-between">
+          <p className="font-display text-xl font-extrabold">Messung eintragen</p>
+          <button onClick={onSchliessen} className="grid h-12 w-12 place-items-center" aria-label="Schließen">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="mt-2">
+          <MessungForm onGespeichert={onSchliessen} />
+        </div>
+      </div>
     </div>
   );
 }

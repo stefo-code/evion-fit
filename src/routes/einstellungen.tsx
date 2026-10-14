@@ -91,19 +91,36 @@ function EinstellungenPage() {
         </Card>
       </Section>
 
-      <Section titel="Satzpause">
+      <Section titel="Satzpausen">
         <Card>
           <p className="flex items-center gap-2 text-sm font-semibold">
-            <Timer className="h-4 w-4 text-primary" /> Countdown nach jedem Satz
+            <Timer className="h-4 w-4 text-primary" /> Pause Grundübungen
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
-            {[30, 45, 60, 90, 120, 180].map((s) => (
+            {[90, 120, 150, 180, 210].map((s) => (
               <Chip
                 key={s}
-                active={(einstellungen.pauseSek || 60) === s}
+                active={(einstellungen.pauseGrundSek ?? 150) === s}
                 onClick={() => {
-                  speichere({ pauseSek: s });
-                  toast.success(`Satzpause: ${s} Sekunden`);
+                  speichere({ pauseGrundSek: s });
+                  toast.success(`Pause Grundübungen: ${s} Sekunden`);
+                }}
+              >
+                {s} s
+              </Chip>
+            ))}
+          </div>
+          <p className="mt-5 flex items-center gap-2 text-sm font-semibold">
+            <Timer className="h-4 w-4 text-primary" /> Pause Isolation
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {[30, 45, 60, 75, 90, 120].map((s) => (
+              <Chip
+                key={s}
+                active={(einstellungen.pauseIsoSek ?? 75) === s}
+                onClick={() => {
+                  speichere({ pauseIsoSek: s });
+                  toast.success(`Pause Isolation: ${s} Sekunden`);
                 }}
               >
                 {s} s

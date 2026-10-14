@@ -3,7 +3,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, Disclaimer } from "@/components/ui-kit";
 import { bildFuer, type LibUebung } from "@/lib/exercise-library";
 import { useOnboardingProfil } from "@/lib/onboarding-store";
-import { baueVorlagen, mappeEquipment, aktiveTrainingstage, usePlanEinstellungen, type PlanKontext, type PlanUebung } from "@/lib/training-plan";
+import { baueVorlagen, mappeEquipment, aktiveTrainingstage, usePlanEinstellungen, type PlanKontext, type PlanUebung, type PlanEinstellungen, type Trainingstag } from "@/lib/training-plan";
+import { pauseFuer, standardAufwaermen } from "@/lib/training-dauer";
 import {
   speichereEinheit,
   useAktivitaet,
@@ -41,7 +42,7 @@ export const Route = createFileRoute("/training/workout")({
 });
 
 type Log = Record<string, SatzLog[]>;
-type Zeile = { gewicht: number; wdh: number; rpe: number | null; fertig: boolean; zeit?: string };
+type Zeile = { gewicht: number | null; wdh: number; rpe: number | null; fertig: boolean; zeit?: string };
 type Zeilen = Record<string, Zeile[]>;
 
 const ENTWURF_KEY = "evion.workout.entwurf.v1";
@@ -58,11 +59,16 @@ type WorkoutEntwurf = {
 };
 
 type CheckItem = { id: string; name: string; saetze: number; ziel: string };
-const AUFWAERMEN: CheckItem[] = [
-  { id: "wu-row", name: "Rudergerät", saetze: 1, ziel: "5 min locker" },
-  { id: "wu-facepull", name: "Face Pulls", saetze: 2, ziel: "12–15 Wdh. leicht" },
-  { id: "wu-yraise", name: "Y-Raises (Schrägbank)", saetze: 2, ziel: "12–15 Wdh. · 1–3 kg" },
-];
+
+/** Aufwärm-Checkliste passend zum Trainingstyp (Ober-/Unterkörper/Ganzkörper) und Einschränkungen. */
+function baueAufwaermenItems(tag: Trainingstag, einstellungen: PlanEinstellungen, einschraenkungen: string[]): CheckItem[] {
+  return standardAufwaermen(tag, einstellungen, einschraenkungen).map((text, i) => ({
+    id: `wu-${i}`,
+    name: text,
+    saetze: 1,
+    ziel: "Erledigt",
+  }));
+}
 const CORE: CheckItem[] = [
   { id: "core-plank", name: "Plank", saetze: 3, ziel: "45 s" },
   { id: "core-side", name: "Side-Plank", saetze: 3, ziel: "30 s pro Seite" },
@@ -110,7 +116,7 @@ function startZeilen(u: LibUebung, a: Aktivitaet): { zeilen: Zeile[]; erhoehen: 
   const erhoehen = last.length > 0 && last.every((s) => s.wdh >= max);
   const zeilen: Zeile[] = Array.from({ length: Math.max(u.zielSaetze, 1) }, (_, i) => {
     const l = last[i] ?? last[last.length - 1];
-    if (!l) return { gewicht: u.startGewicht, wdh: min, rpe: null, fertig: false };
+    if (!l) return { gewicht: u.startGewicht > 0 ? null : 0, wdh: min, rpe: null, fertig: false };
     return erhoehen
       ? { gewicht: +(l.gewicht + steigerung(u)).toFixed(1), wdh: min, rpe: null, fertig: false }
       : { gewicht: l.gewicht, wdh: l.wdh, rpe: null, fertig: false };
@@ -166,14 +172,20 @@ function WorkoutPage() {
   const tag = plan.find((t) => t.index === tagParam) ?? plan[0]!;
   const tagIndex = tag.index;
   const uebungen = tag.uebungen;
+  // Core-Übungen nicht zusätzlich im Hauptteil, wenn ein Core-Abschluss folgt.
+  const hauptUebungen = useMemo(() => uebungen.filter((u) => u.muster !== "core"), [uebungen]);
+  const aufwaermenItems = useMemo(
+    () => baueAufwaermenItems(tag, einstellungen, profil.einschraenkungen ?? []),
+    [tag, einstellungen, profil.einschraenkungen],
+  );
 
   const schritte: Schritt[] = useMemo(
     () => [
-      { typ: "check", id: "aufwaermen", titel: "Aufwärmen", items: AUFWAERMEN },
-      ...uebungen.map((u) => ({ typ: "uebung" as const, u })),
+      { typ: "check", id: "aufwaermen", titel: "Aufwärmen", items: aufwaermenItems },
+      ...hauptUebungen.map((u) => ({ typ: "uebung" as const, u })),
       { typ: "check", id: "core", titel: "Core-Abschluss", items: CORE },
     ],
-    [uebungen],
+    [hauptUebungen, aufwaermenItems],
   );
 
   const [entwurf] = useState(() => ladeEntwurf(tagParam));
@@ -241,13 +253,13 @@ function WorkoutPage() {
   const log: Log = useMemo(() => {
     const l: Log = {};
     for (const u of uebungen) {
-      const f = (zeilen[u.id] ?? []).filter((z) => z.fertig);
+      const f = (zeilen[u.id] ?? []).filter((z) => z.fertig && z.gewicht !== null);
       if (f.length)
         l[u.id] = f.map((z) => ({
           uebungId: u.id,
           name: u.name,
           muskel: u.muskel,
-          gewicht: z.gewicht,
+          gewicht: z.gewicht as number,
           wdh: z.wdh,
           rpe: z.rpe ?? 0,
           zeit: z.zeit ?? new Date().toISOString(),
@@ -414,7 +426,7 @@ function WorkoutPage() {
           onCheck={(id, n) => {
             const alt = checks[id] ?? 0;
             setChecks((c) => ({ ...c, [id]: n }));
-            if (n > alt && id !== "wu-row") starte(CHECK_PAUSE);
+            if (n > alt && id !== "wu-0") starte(CHECK_PAUSE);
           }}
         />
       ) : (
@@ -428,7 +440,7 @@ function WorkoutPage() {
           rpeOffen={rpeOffen}
           setRpeOffen={setRpeOffen}
           onChange={(z) => setZeilen((alt) => ({ ...alt, [schritt.u.id]: z }))}
-          onSatzFertig={() => starte(schritt.u.pauseSek ?? (schritt.u.grund ? 150 : 75))}
+          onSatzFertig={() => starte(pauseFuer(schritt.u, einstellungen))}
         />
       )}
 
@@ -672,7 +684,7 @@ function UebungSchritt({
                 <Check className="h-4 w-4" /> Satz {i + 1}
               </span>
               <span className="num font-bold">
-                {z.gewicht.toLocaleString("de-DE")} kg × {z.wdh}
+                {z.gewicht !== null ? z.gewicht.toLocaleString("de-DE") : "–"} kg × {z.wdh}
                 {z.rpe ? ` · RPE ${z.rpe}` : ""}
               </span>
               <button onClick={() => setze(i, { fertig: false })} className="min-h-12 px-2 text-sm font-semibold text-muted-foreground underline">
@@ -686,6 +698,11 @@ function UebungSchritt({
                 <Stepper label="Gewicht" unit="kg" value={z.gewicht} step={schrittG} onChange={(v) => setze(i, { gewicht: v })} />
                 <Stepper label="Wdh." value={z.wdh} step={1} onChange={(v) => setze(i, { wdh: v })} />
               </div>
+              {z.gewicht === null && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Wähle ein Gewicht für die Ziel-Wdh. mit 1–2 Wdh. Reserve
+                </p>
+              )}
               <button
                 onClick={() => setRpeOffen(!rpeOffen)}
                 aria-expanded={rpeOffen}
@@ -711,7 +728,8 @@ function UebungSchritt({
                   setze(i, { fertig: true, zeit: new Date().toISOString() });
                   onSatzFertig();
                 }}
-                className="mt-3 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary font-display text-lg font-extrabold text-primary-foreground active:scale-[0.99]"
+                disabled={z.gewicht === null}
+                className="mt-3 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary font-display text-lg font-extrabold text-primary-foreground active:scale-[0.99] disabled:opacity-40"
               >
                 <Check className="h-5 w-5" /> Satz {i + 1} fertig
               </button>
@@ -720,7 +738,7 @@ function UebungSchritt({
             <li key={i} className="flex min-h-14 items-center justify-between rounded-2xl border border-border px-4 text-muted-foreground">
               <span>Satz {i + 1}</span>
               <span className="num">
-                {z.gewicht.toLocaleString("de-DE")} kg × {z.wdh}
+                {z.gewicht !== null ? z.gewicht.toLocaleString("de-DE") : "–"} kg × {z.wdh}
               </span>
             </li>
           ),
@@ -729,7 +747,7 @@ function UebungSchritt({
       <button
         onClick={() => {
           const l = zeilen[zeilen.length - 1];
-          onChange([...zeilen, { gewicht: l?.gewicht ?? u.startGewicht, wdh: l?.wdh ?? bereich(u.wdhBereich)[0], rpe: null, fertig: false }]);
+          onChange([...zeilen, { gewicht: l ? l.gewicht : (u.startGewicht > 0 ? null : 0), wdh: l?.wdh ?? bereich(u.wdhBereich)[0], rpe: null, fertig: false }]);
         }}
         className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border text-sm font-bold text-muted-foreground"
       >
@@ -748,19 +766,67 @@ function Wert({ label, wert }: { label: string; wert: string }) {
   );
 }
 
-function Stepper({ label, unit, value, step, onChange }: { label: string; unit?: string; value: number; step: number; onChange: (v: number) => void }) {
+function Stepper({
+  label,
+  unit,
+  value,
+  step,
+  onChange,
+}: {
+  label: string;
+  unit?: string;
+  value: number | null;
+  step: number;
+  onChange: (v: number) => void;
+}) {
+  const [text, setText] = useState(value === null ? "" : value.toLocaleString("de-DE"));
+
+  useEffect(() => {
+    setText(value === null ? "" : value.toLocaleString("de-DE"));
+  }, [value]);
+
+  function uebernehmen(raw: string) {
+    const normal = raw.replace(",", ".").trim();
+    const n = Number(normal);
+    if (normal !== "" && Number.isFinite(n)) onChange(Math.max(0, n));
+  }
+
   return (
-    <div className="rounded-2xl bg-secondary/50 p-2 text-center">
-      <p className="label-xs">{label}</p>
-      <div className="mt-1 grid grid-cols-[3rem_minmax(0,1fr)_3rem] items-center">
-        <button onClick={() => onChange(Math.max(0, +(value - step).toFixed(2)))} className="grid h-12 w-12 place-items-center rounded-xl bg-card" aria-label={`${label} verringern`}>
+    <div className="rounded-2xl bg-secondary/50 p-2">
+      <p className="label-xs text-center">{label}</p>
+      <div className="mt-1 grid grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-1">
+        <button
+          type="button"
+          onClick={() => onChange(Math.max(0, +((value ?? 0) - step).toFixed(2)))}
+          className="grid h-11 w-11 place-items-center rounded-xl bg-card"
+          aria-label={`${label} verringern`}
+        >
           <Minus className="h-5 w-5" />
         </button>
-        <p className="num text-2xl font-extrabold leading-none">
-          {value.toLocaleString("de-DE")}
-          {unit && <span className="ml-0.5 text-xs text-muted-foreground">{unit}</span>}
-        </p>
-        <button onClick={() => onChange(+(value + step).toFixed(2))} className="grid h-12 w-12 place-items-center rounded-xl bg-primary text-primary-foreground" aria-label={`${label} erhöhen`}>
+        <div className="flex min-w-0 items-baseline justify-center gap-0.5 overflow-hidden">
+          <input
+            type="text"
+            inputMode="decimal"
+            value={text}
+            onFocus={(e) => e.currentTarget.select()}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (/^[0-9]*[.,]?[0-9]*$/.test(v)) setText(v);
+            }}
+            onBlur={(e) => uebernehmen(e.target.value)}
+            placeholder="–"
+            aria-label={label}
+            className="num w-full min-w-0 bg-transparent text-center font-display font-extrabold leading-none outline-none"
+            style={{ fontSize: "clamp(1.25rem, 6vw, 1.75rem)" }}
+          />
+          {unit && <span className="shrink-0 text-xs text-muted-foreground">{unit}</span>}
+        </div>
+        <button
+          type="button"
+          onClick={() => onChange(+((value ?? 0) + step).toFixed(2))}
+          className="grid h-11 w-11 place-items-center rounded-xl bg-primary text-primary-foreground"
+          aria-label={`${label} erhöhen`}
+        >
           <Plus className="h-5 w-5" />
         </button>
       </div>

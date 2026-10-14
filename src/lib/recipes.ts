@@ -1,38 +1,29 @@
 /**
  * Rezeptdatenbank und Vorschlagslogik.
  *
- * Rezepte werden nach vorhandenen Zutaten („Was habe ich zu Hause?“), den
- * offenen Kalorien/Protein des Tages und der Ernährungsform bewertet.
+ * Rezepte werden nach offenen Kalorien/Protein der verbleibenden Mahlzeiten,
+ * Tageszeit, Training, Allergien/Abneigungen, Lieblingsgerichten und
+ * Abwechslung (zuletzt gekocht/angesehen) bewertet. Siehe TEIL 6 im Spec.
  */
 
-export type Zutat = {
-  /** Anzeigename inkl. Menge, z. B. „150 g Hähnchenbrust“. */
-  text: string;
-  /** Normalisierter Suchbegriff für den Vorratsabgleich. */
-  key: string;
-  /** Vorratsübliche Grundzutat (Salz, Öl …) – zählt beim Abgleich nicht mit. */
-  basis?: boolean;
-};
+import {
+  rezepteGeneriert,
+  type Allergen,
+  type Kueche,
+  type MahlzeitTyp,
+  type Rezept,
+  type ZielEignung,
+  type Zutat,
+} from "@/lib/recipes-data";
 
-export type Rezept = {
-  id: string;
-  name: string;
-  zeit: number;
-  portionen: number;
-  kcal: number;
-  protein: number;
-  kh: number;
-  fett: number;
-  tags: string[];
-  vegetarisch: boolean;
-  vegan: boolean;
-  zutaten: Zutat[];
-  schritte: string[];
-};
+export type { Allergen, Kueche, MahlzeitTyp, Rezept, ZielEignung, Zutat };
 
 const z = (text: string, key: string, basis = false): Zutat => ({ text, key, basis });
 
-export const rezepte: Rezept[] = [
+/** Handgeschriebene „Klassiker“ – werden unten um die neuen Felder ergänzt. */
+type AltRezept = Omit<Rezept, "mahlzeit" | "kueche" | "allergene" | "pescetarisch" | "mealPrep" | "budget" | "zielEignung">;
+
+const alteRezepteRoh: AltRezept[] = [
   {
     id: "haehnchen-reis-brokkoli",
     name: "Hähnchen mit Reis & Brokkoli",
@@ -195,11 +186,7 @@ export const rezepte: Rezept[] = [
       z("200 g passierte Tomaten", "tomaten"),
       z("1 Knoblauchzehe", "knoblauch", true),
     ],
-    schritte: [
-      "Nudeln kochen.",
-      "Knoblauch anbraten, Tomaten zugeben, 8 Minuten einkochen.",
-      "Thunfisch unterheben und mit den Nudeln mischen.",
-    ],
+    schritte: ["Nudeln kochen.", "Knoblauch anbraten, Tomaten zugeben, 8 Minuten einkochen.", "Thunfisch unterheben und mit den Nudeln mischen."],
   },
   {
     id: "tofu-gemuese-wok",
@@ -219,11 +206,7 @@ export const rezepte: Rezept[] = [
       z("70 g Reis (roh)", "reis"),
       z("2 EL Sojasauce", "sojasauce", true),
     ],
-    schritte: [
-      "Tofu würfeln und knusprig anbraten.",
-      "Gemüse zugeben und 5 Minuten scharf braten.",
-      "Mit Sojasauce ablöschen, mit Reis servieren.",
-    ],
+    schritte: ["Tofu würfeln und knusprig anbraten.", "Gemüse zugeben und 5 Minuten scharf braten.", "Mit Sojasauce ablöschen, mit Reis servieren."],
   },
   {
     id: "huettenkaese-brot",
@@ -287,11 +270,7 @@ export const rezepte: Rezept[] = [
       z("1 Knoblauchzehe", "knoblauch", true),
       z("1 EL Olivenöl", "öl", true),
     ],
-    schritte: [
-      "Zucchini in Streifen schneiden.",
-      "Garnelen mit Knoblauch 3 Minuten braten.",
-      "Zucchini zugeben und 2 Minuten mitbraten.",
-    ],
+    schritte: ["Zucchini in Streifen schneiden.", "Garnelen mit Knoblauch 3 Minuten braten.", "Zucchini zugeben und 2 Minuten mitbraten."],
   },
   {
     id: "kichererbsen-salat",
@@ -386,11 +365,7 @@ export const rezepte: Rezept[] = [
     tags: ["Nach dem Training", "Schnell"],
     vegetarisch: true,
     vegan: false,
-    zutaten: [
-      z("30 g Proteinpulver", "proteinpulver"),
-      z("1 Banane", "banane"),
-      z("300 ml Milch", "milch"),
-    ],
+    zutaten: [z("30 g Proteinpulver", "proteinpulver"), z("1 Banane", "banane"), z("300 ml Milch", "milch")],
     schritte: ["Alles in den Mixer geben.", "30 Sekunden mixen."],
   },
   {
@@ -412,11 +387,7 @@ export const rezepte: Rezept[] = [
       z("150 g Sojaschnetzel", "soja"),
       z("Chili, Kreuzkümmel", "gewürze", true),
     ],
-    schritte: [
-      "Sojaschnetzel einweichen und anbraten.",
-      "Tomaten, Bohnen und Mais zugeben.",
-      "20 Minuten köcheln und kräftig würzen.",
-    ],
+    schritte: ["Sojaschnetzel einweichen und anbraten.", "Tomaten, Bohnen und Mais zugeben.", "20 Minuten köcheln und kräftig würzen."],
   },
   {
     id: "lachs-quinoa",
@@ -430,15 +401,58 @@ export const rezepte: Rezept[] = [
     tags: ["Omega-3", "Bowl"],
     vegetarisch: false,
     vegan: false,
-    zutaten: [
-      z("160 g Lachsfilet", "lachs"),
-      z("70 g Quinoa", "quinoa"),
-      z("150 g Avocado", "avocado"),
-      z("100 g Gurke", "gurke"),
-    ],
+    zutaten: [z("160 g Lachsfilet", "lachs"), z("70 g Quinoa", "quinoa"), z("150 g Avocado", "avocado"), z("100 g Gurke", "gurke")],
     schritte: ["Quinoa garen.", "Lachs 10 Minuten bei 190 °C backen.", "Alles in einer Schüssel anrichten."],
   },
 ];
+
+const allergenWoerter: [RegExp, Allergen][] = [
+  [/milch|käse|quark|skyr|feta|joghurt|butter|hüttenkäse/i, "laktose"],
+  [/brot|wrap|nudeln|couscous|fladenbrot|naan|bulgur/i, "gluten"],
+  [/nüsse|mandel|cashew/i, "nuesse"],
+  [/soja|tofu|edamame|sojasauce/i, "soja"],
+  [/\bei\b|eier/i, "ei"],
+  [/lachs|thunfisch|kabeljau|forelle/i, "fisch"],
+  [/garnelen|meeresfrüchte/i, "meeresfruechte"],
+];
+
+function mahlzeitAusTags(tags: string[], name: string): MahlzeitTyp {
+  const t = tags.join(" ").toLowerCase();
+  if (t.includes("frühstück")) return "Frühstück";
+  if (t.includes("nach dem training")) return "Post-Workout";
+  if (t.includes("snack") || t.includes("to go")) return "Snack";
+  if (/wrap|salat|bowl/i.test(name) && !t.includes("meal prep")) return "Mittag";
+  return "Abend";
+}
+
+function zielAusMakros(kcal: number, protein: number): ZielEignung[] {
+  const out: ZielEignung[] = [];
+  if (kcal <= 550 && protein >= 30) out.push("fettabbau");
+  if (kcal >= 450 && kcal <= 700 && protein >= 35) out.push("recomp");
+  if (kcal >= 600 && protein >= 40) out.push("muskelaufbau");
+  return out.length ? out : ["recomp"];
+}
+
+const alteRezepte: Rezept[] = alteRezepteRoh.map((r) => {
+  const allergene = new Set<Allergen>();
+  for (const zt of r.zutaten) {
+    for (const [regex, a] of allergenWoerter) if (regex.test(zt.text)) allergene.add(a);
+  }
+  const pescetarisch = !r.vegetarisch && /lachs|thunfisch|garnelen|kabeljau|forelle/i.test(r.zutaten.map((z2) => z2.text).join(" "));
+  return {
+    ...r,
+    mahlzeit: mahlzeitAusTags(r.tags, r.name),
+    kueche: /curry|wok|quinoa/i.test(r.name) ? "asiatisch" : /chili/i.test(r.name) ? "mexikanisch" : "mediterran",
+    allergene: [...allergene],
+    pescetarisch,
+    mealPrep: r.tags.includes("Meal Prep"),
+    budget: r.tags.includes("Günstig"),
+    zielEignung: zielAusMakros(r.kcal, r.protein),
+  } satisfies Rezept;
+});
+
+/** Gesamte Rezeptdatenbank: handgeschriebene Klassiker + generierte Vielfalt. */
+export const rezepte: Rezept[] = [...alteRezepte, ...rezepteGeneriert];
 
 export type RezeptTreffer = {
   rezept: Rezept;
@@ -447,6 +461,9 @@ export type RezeptTreffer = {
   abdeckung: number;
   score: number;
   passung: string;
+  portionsfaktor: number;
+  kcalAngepasst: number;
+  proteinAngepasst: number;
 };
 
 function normalisiere(s: string) {
@@ -464,34 +481,147 @@ function passt(zutat: Zutat, vorrat: string[]): boolean {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Verlauf: zuletzt angesehene/gekochte Rezepte (eigener, additiver Speicher)
+// ---------------------------------------------------------------------------
+
+export type VerlaufEintrag = { id: string; zeit: number; typ: "angesehen" | "gekocht" };
+type Verlauf = { version: 1; eintraege: VerlaufEintrag[] };
+
+const VERLAUF_KEY = "evion.rezepte.verlauf.v1";
+const leererVerlauf: Verlauf = { version: 1, eintraege: [] };
+
+export function ladeVerlauf(): Verlauf {
+  if (typeof window === "undefined") return leererVerlauf;
+  try {
+    const roh = window.localStorage.getItem(VERLAUF_KEY);
+    if (!roh) return leererVerlauf;
+    return { ...leererVerlauf, ...(JSON.parse(roh) as Partial<Verlauf>) };
+  } catch {
+    return leererVerlauf;
+  }
+}
+
+function schreibeVerlauf(v: Verlauf) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(VERLAUF_KEY, JSON.stringify({ ...v, eintraege: v.eintraege.slice(-200) }));
+  } catch {
+    /* Speicher nicht verfügbar – nur für diese Sitzung relevant. */
+  }
+}
+
+export function vermerkeAngesehen(id: string) {
+  const v = ladeVerlauf();
+  schreibeVerlauf({ ...v, eintraege: [...v.eintraege, { id, zeit: Date.now(), typ: "angesehen" }] });
+}
+
+export function vermerkeGekocht(id: string) {
+  const v = ladeVerlauf();
+  schreibeVerlauf({ ...v, eintraege: [...v.eintraege, { id, zeit: Date.now(), typ: "gekocht" }] });
+}
+
+/** Abwertung 0 (kein Abzug) bis 1 (maximaler Abzug) je nach letztem Kontakt. */
+function abwertung(id: string, verlauf: Verlauf, jetzt: number): number {
+  const letzte = verlauf.eintraege.filter((e) => e.id === id).sort((a, b) => b.zeit - a.zeit)[0];
+  if (!letzte) return 0;
+  const tageSeit = (jetzt - letzte.zeit) / 86_400_000;
+  const basis = letzte.typ === "gekocht" ? 1 : 0.6;
+  if (tageSeit >= 7) return 0;
+  return basis * (1 - tageSeit / 7);
+}
+
+// ---------------------------------------------------------------------------
+// Vorschlagslogik
+// ---------------------------------------------------------------------------
+
 export type RezeptKontext = {
   vorrat: string[];
+  /** Offene kcal/Protein für den gesamten restlichen Tag. */
   offenKcal: number;
   offenProtein: number;
+  /** Anzahl noch ausstehender Mahlzeiten heute (mind. 1). */
+  verbleibendeMahlzeiten: number;
   ernaehrungsform: string;
   allergien?: string[];
+  /** Freitext der Abneigungen, z. B. „Pilze, Rosenkohl“. */
+  abneigungen?: string;
+  /** Freitext der Lieblingsgerichte – Treffer werden bevorzugt. */
+  lieblingsgerichte?: string;
+  favoritenIds?: string[];
+  /** Hat heute bereits trainiert und Training liegt kurz zurück. */
+  kuerzlichTrainiert?: boolean;
+  jetzt?: Date;
+  mahlzeitFilter?: MahlzeitTyp | null;
+  kuecheFilter?: Kueche | null;
+  zeitFilter?: number | null;
 };
 
-/** Bewertet alle Rezepte gegen Vorrat, offene Makros und Ernährungsform. */
+/** Leitet aus der Uhrzeit (und optional „gerade trainiert“) den Mahlzeitentyp ab. */
+export function mahlzeitentypFuerZeit(datum: Date, kuerzlichTrainiert: boolean): MahlzeitTyp {
+  if (kuerzlichTrainiert) return "Post-Workout";
+  const stunde = datum.getHours();
+  if (stunde >= 5 && stunde < 10) return "Frühstück";
+  if (stunde >= 10 && stunde < 14) return "Mittag";
+  if (stunde >= 14 && stunde < 17) return "Snack";
+  if (stunde >= 17 && stunde < 22) return "Abend";
+  return "Snack";
+}
+
+export const kuechenListe: Kueche[] = ["mediterran", "asiatisch", "mexikanisch", "orientalisch", "indisch", "schweizerisch-deutsch"];
+export const mahlzeitListe: MahlzeitTyp[] = ["Frühstück", "Mittag", "Abend", "Snack", "Pre-Workout", "Post-Workout"];
+
+/** Bewertet alle Rezepte gegen Vorrat, offene Makros, Zeitpunkt und Vorlieben. */
 export function rezeptVorschlaege(ctx: RezeptKontext): RezeptTreffer[] {
   const vegan = /vegan/i.test(ctx.ernaehrungsform);
   const vegetarisch = vegan || /vegetar/i.test(ctx.ernaehrungsform);
+  const pescetarisch = /pescetar/i.test(ctx.ernaehrungsform);
   const allergien = (ctx.allergien ?? []).map(normalisiere).filter((a) => a.length > 2);
+  const abneigungen = (ctx.abneigungen ?? "")
+    .split(/[,;]/)
+    .map(normalisiere)
+    .filter((a) => a.length > 2);
+  const lieblinge = (ctx.lieblingsgerichte ?? "")
+    .split(/[,;]/)
+    .map(normalisiere)
+    .filter((a) => a.length > 2);
+  const favoriten = new Set(ctx.favoritenIds ?? []);
+
+  const jetzt = ctx.jetzt ?? new Date();
+  const mahlzeitAuto = ctx.mahlzeitFilter ?? mahlzeitentypFuerZeit(jetzt, !!ctx.kuerzlichTrainiert);
+  const verlauf = ladeVerlauf();
+  const jetztMs = jetzt.getTime();
+
+  const verbleibend = Math.max(1, ctx.verbleibendeMahlzeiten);
+  const zielKcalProMahlzeit = ctx.offenKcal > 0 ? ctx.offenKcal / verbleibend : 450;
+  const zielProteinProMahlzeit = ctx.offenProtein > 0 ? ctx.offenProtein / verbleibend : 30;
 
   return rezepte
-    .filter((r) => (vegan ? r.vegan : vegetarisch ? r.vegetarisch : true))
-    .filter((r) => !r.zutaten.some((zt) => allergien.some((a) => normalisiere(zt.key).includes(a) || a.includes(normalisiere(zt.key)))))
+    .filter((r) => (vegan ? r.vegan : vegetarisch ? r.vegetarisch : pescetarisch ? r.vegetarisch || r.pescetarisch : true))
+    .filter((r) => !r.allergene.some((a) => allergien.includes(a)))
+    .filter((r) => !abneigungen.some((a) => normalisiere(r.name).includes(a) || r.zutaten.some((zt) => normalisiere(zt.text).includes(a))))
+    .filter((r) => (ctx.kuecheFilter ? r.kueche === ctx.kuecheFilter : true))
+    .filter((r) => (ctx.mahlzeitFilter ? r.mahlzeit === ctx.mahlzeitFilter : true))
+    .filter((r) => (ctx.zeitFilter ? r.zeit <= ctx.zeitFilter : true))
     .map<RezeptTreffer>((r) => {
       const relevant = r.zutaten.filter((zt) => !zt.basis);
       const vorhanden = relevant.filter((zt) => passt(zt, ctx.vorrat));
       const fehlt = relevant.filter((zt) => !passt(zt, ctx.vorrat));
       const abdeckung = relevant.length ? vorhanden.length / relevant.length : 0;
 
-      const kcalDiff = Math.abs(r.kcal - Math.max(250, ctx.offenKcal));
-      const proteinBonus = ctx.offenProtein > 0 ? Math.min(1, r.protein / Math.max(20, ctx.offenProtein)) : 0.5;
+      // Portionsfaktor, damit das Rezept möglichst genau das Mahlzeitenziel trifft.
+      const portionsfaktor = Math.max(0.5, Math.min(2.5, Math.round((zielKcalProMahlzeit / r.kcal) * 20) / 20));
+      const kcalAngepasst = Math.round(r.kcal * portionsfaktor);
+      const proteinAngepasst = Math.round(r.protein * portionsfaktor);
+
+      const kcalDiff = Math.abs(kcalAngepasst - zielKcalProMahlzeit);
+      const proteinBonus = zielProteinProMahlzeit > 0 ? Math.min(1, proteinAngepasst / zielProteinProMahlzeit) : 0.5;
+      const mahlzeitBonus = r.mahlzeit === mahlzeitAuto ? 18 : 0;
+      const favoritBonus = favoriten.has(r.id) || lieblinge.some((l) => normalisiere(r.name).includes(l)) ? 14 : 0;
+      const abwertungAbzug = abwertung(r.id, verlauf, jetztMs) * 20;
 
       const score =
-        abdeckung * 60 + proteinBonus * 25 + Math.max(0, 20 - kcalDiff / 30) + (r.zeit <= 15 ? 4 : 0);
+        abdeckung * 40 + proteinBonus * 22 + Math.max(0, 16 - kcalDiff / 25) + mahlzeitBonus + favoritBonus - abwertungAbzug + (r.zeit <= 15 ? 4 : 0);
 
       const passung =
         abdeckung === 1
@@ -507,6 +637,9 @@ export function rezeptVorschlaege(ctx: RezeptKontext): RezeptTreffer[] {
         abdeckung,
         score,
         passung,
+        portionsfaktor,
+        kcalAngepasst,
+        proteinAngepasst,
       };
     })
     .sort((a, b) => b.score - a.score);

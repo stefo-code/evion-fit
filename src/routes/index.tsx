@@ -1,7 +1,7 @@
 import { SuppCheckliste } from "@/components/supp-checkliste";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight, Info, MessageSquare, Trophy, HelpCircle, X } from "lucide-react";
+import { ChevronRight, Info, MessageSquare, Trophy, X } from "lucide-react";
 import { Bar, Card, Disclaimer, Ring, Section } from "@/components/ui-kit";
 import { computeGoalScore, goalLabels } from "@/lib/demo-data";
 import { cn } from "@/lib/utils";
@@ -26,6 +26,7 @@ import {
   vorlageFuerTag,
   type PlanKontext,
 } from "@/lib/training-plan";
+import { berechneDauerMin } from "@/lib/training-dauer";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -53,17 +54,6 @@ export const Route = createFileRoute("/")({
 });
 
 const wochentage = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"] as const;
-const NUDGE_KEY = "evion.nudges.v1";
-
-function erledigteNudges(): string[] {
-  if (typeof window === "undefined") return [];
-  try {
-    return JSON.parse(window.localStorage.getItem(NUDGE_KEY) ?? "[]") as string[];
-  } catch {
-    return [];
-  }
-}
-
 function Cockpit() {
   const navigate = useNavigate();
   const { profil, geladen } = useOnboardingProfil();
@@ -96,6 +86,7 @@ function Cockpit() {
   const naechsterTag =
     vorlageFuerTag(plan, einstellungen, gewaehlteTage, (new Date().getDay() + 6) % 7) ?? plan[0];
   const naechsterTagIndex = naechsterTag?.index ?? 0;
+  const naechsterDauerMin = naechsterTag ? berechneDauerMin(naechsterTag, einstellungen) : profil.dauer || 45;
 
   const einheitenGesamt = aktivitaet.einheiten.length;
   const leer = einheitenGesamt < 1;
@@ -148,21 +139,7 @@ function Cockpit() {
         ? "Gewicht seit Start weitgehend stabil – bei steigendem Volumen ein Recomposition-Muster."
         : `In den letzten 7 Tagen wurden ${einheitenWoche} Einheiten protokolliert.`;
 
-  // --- Adaptive Rückfrage (Schwelle: ≥3 Einheiten in 30 Tagen) --------------
-  const einheiten30 = einheitenSeit(aktivitaet, 30).length;
-  const [nudgeErledigt, setNudgeErledigt] = useState(true);
-  useEffect(() => {
-    setNudgeErledigt(erledigteNudges().includes("dauer-40"));
-  }, []);
-  const nudgeAktiv = einheiten30 >= 3 && !nudgeErledigt;
-  function nudgeSchliessen() {
-    const neu = [...new Set([...erledigteNudges(), "dauer-40"])];
-    window.localStorage.setItem(NUDGE_KEY, JSON.stringify(neu));
-    setNudgeErledigt(true);
-  }
-
   const [infoOpen, setInfoOpen] = useState(false);
-  const [nudgeOpen, setNudgeOpen] = useState(false);
 
   const dim = leer ? "opacity-60" : "";
 
@@ -227,7 +204,7 @@ function Cockpit() {
                 <p className="text-sm font-semibold leading-tight">
                   Wochen-Score
                 </p>
-                <p className="truncate text-[11px] text-muted-foreground">
+                <p className="text-[11px] leading-snug text-muted-foreground">
                   {leer ? "— Einheiten / 7 Tage" : `${einheitenWoche} Einheiten / 7 Tage`}
                 </p>
               </div>
@@ -320,28 +297,18 @@ function Cockpit() {
       />
 
       {/* ZONE 2 — HEUTE */}
-      <div className="border-y border-border py-3 text-sm">
-        {naechsterTag && gewaehlteTage.includes(heuteIdx) ? (
+      {naechsterTag && gewaehlteTage.includes(heuteIdx) && (
+        <div className="border-y border-border py-3 text-sm">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="text-muted-foreground">
-              Heute geplant: {naechsterTag.titel}, {profil.dauer || 45} Min
+            <span className="text-muted-foreground break-words">
+              Heute geplant: {naechsterTag.titel}, {naechsterDauerMin} Min
             </span>
             <Link to="/training/workout" search={{ tag: naechsterTagIndex }} className="font-semibold text-primary">
               Starten
             </Link>
-            <Link to="/training" className="font-semibold text-muted-foreground underline">
-              Weniger Zeit?
-            </Link>
           </div>
-        ) : (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="text-muted-foreground">Heute kein Training geplant</span>
-            <Link to="/training" className="font-semibold text-primary">
-              Trotzdem trainieren
-            </Link>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Leerzustand-Zeile */}
       {leer && (
@@ -358,51 +325,30 @@ function Cockpit() {
       )}
 
       <SuppCheckliste />
-      <BackupHinweis />
 
       {/* ZONE 3 — HINWEISE */}
-      {(meilenstein || (!leer && nudgeAktiv)) && (
-        <Section titel="Hinweise">
-          <Card className="p-0">
-            <div className="divide-y divide-border">
-              {meilenstein && (
-                <HinweisZeile
-                  icon={<Trophy className="h-4 w-4" />}
-                  titel={meilenstein.titel}
-                  unterzeile={
-                    leer
-                      ? meilenstein.beschreibung
-                      : `noch ${Math.max(0, meilenstein.ziel - meilenstein.aktuell).toLocaleString("de-DE")} bis zum Ziel`
-                  }
-                  fortschritt={(meilenstein.aktuell / meilenstein.ziel) * 100}
-                  onClick={() => navigate({ to: "/erfolge" })}
-                />
-              )}
-              {!leer && nudgeAktiv && (
-                <HinweisZeile
-                  icon={<HelpCircle className="h-4 w-4" />}
-                  titel="Trainingsdauer anpassen?"
-                  unterzeile="Deine Trainings dauern durchschnittlich 38 statt 60 Minuten."
-                  onClick={() => setNudgeOpen(true)}
-                  onDismiss={nudgeSchliessen}
-                />
-              )}
+      <Section titel="Hinweise">
+        <Card className="p-0">
+          <div className="divide-y divide-border">
+            {meilenstein && (
+              <HinweisZeile
+                icon={<Trophy className="h-4 w-4" />}
+                titel={meilenstein.titel}
+                unterzeile={
+                  leer
+                    ? meilenstein.beschreibung
+                    : `noch ${Math.max(0, meilenstein.ziel - meilenstein.aktuell).toLocaleString("de-DE")} bis zum Ziel`
+                }
+                fortschritt={(meilenstein.aktuell / meilenstein.ziel) * 100}
+                onClick={() => navigate({ to: "/erfolge" })}
+              />
+            )}
+            <div className="px-5 py-4">
+              <BackupHinweis />
             </div>
-          </Card>
-        </Section>
-      )}
-
-      {nudgeOpen && (
-        <FrageSheet
-          titel="Trainingsdauer anpassen?"
-          text="Soll EVION zukünftige Workouts auf etwa 40 Minuten auslegen?"
-          onAntwort={() => {
-            nudgeSchliessen();
-            setNudgeOpen(false);
-          }}
-          onClose={() => setNudgeOpen(false)}
-        />
-      )}
+          </div>
+        </Card>
+      </Section>
 
       {/* ZONE 4 */}
       <Disclaimer>
@@ -516,39 +462,6 @@ function TabSheet({
             </li>
           ))}
         </ul>
-      </div>
-    </div>
-  );
-}
-
-function FrageSheet({
-  titel,
-  text,
-  onAntwort,
-  onClose,
-}: {
-  titel: string;
-  text: string;
-  onAntwort: (a: string) => void;
-  onClose: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 z-50">
-      <button aria-label="Schließen" onClick={onClose} className="absolute inset-0 bg-foreground/30 backdrop-blur-sm" />
-      <div className="absolute inset-x-0 bottom-0 rounded-t-3xl border-t border-border bg-card p-5 pb-8">
-        <p className="font-display text-base font-extrabold">{titel}</p>
-        <p className="mt-2 text-sm text-muted-foreground">{text}</p>
-        <div className="mt-4 flex gap-2">
-          {["Ja, anpassen", "Nein"].map((a) => (
-            <button
-              key={a}
-              onClick={() => onAntwort(a)}
-              className="rounded-xl border border-border bg-card px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:border-primary hover:text-primary"
-            >
-              {a}
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   );

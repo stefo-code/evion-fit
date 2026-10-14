@@ -30,6 +30,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { OnboardingSync } from "@/components/onboarding-sync";
 import { messFelder } from "@/lib/activity-store";
+import { supplementDatenbank } from "@/lib/supplements-data";
+import { schreibeBesitzListe } from "@/lib/supplement-log";
 import { aktuellerOnboardingSchritt, onboardingSchritte, speichereOnboardingStartwerte, studioAusstattung } from "@/lib/onboarding-flow";
 import heroBild from "@/assets/onboarding-hero.png";
 
@@ -649,6 +651,23 @@ function EquipmentSchritt({ p, set }: SchrittProps) {
 }
 
 function ErnaehrungSchritt({ p, set }: SchrittProps) {
+  const [suppBesitz, setSuppBesitz] = useState<string[]>([]);
+
+  useEffect(() => {
+    try {
+      const roh = localStorage.getItem("evion.supplements.besitz.v1");
+      if (roh) setSuppBesitz(JSON.parse(roh));
+    } catch {
+      /* ignorieren */
+    }
+  }, []);
+
+  function suppUmschalten(id: string) {
+    const naechste = suppBesitz.includes(id) ? suppBesitz.filter((x) => x !== id) : [...suppBesitz, id];
+    setSuppBesitz(naechste);
+    schreibeBesitzListe(naechste);
+  }
+
   return (
     <>
       <Titel titel="Wie ernährst du dich?" />
@@ -696,6 +715,15 @@ function ErnaehrungSchritt({ p, set }: SchrittProps) {
       <p className="text-xs text-muted-foreground">
         Damit kann EVION Mahlzeiten und Rezepte vorschlagen, die zu deinem Ziel und deinem Alltag passen.
       </p>
+      <Feldgruppe label="Welche Supplements nimmst du bereits? (optional)">
+        <div className="flex flex-wrap gap-2">
+          {supplementDatenbank.map((s) => (
+            <Pille key={s.id} aktiv={suppBesitz.includes(s.id)} onClick={() => suppUmschalten(s.id)}>
+              {s.name}
+            </Pille>
+          ))}
+        </div>
+      </Feldgruppe>
     </>
   );
 }
