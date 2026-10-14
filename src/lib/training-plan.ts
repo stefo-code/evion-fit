@@ -13,6 +13,8 @@ import type { Geschlecht } from "@/lib/onboarding-store";
 import {
   uebungById,
   uebungsBibliothek,
+  einschraenkungTags,
+  type Einschraenkung,
   type Equipment,
   type LibUebung,
   type Muster,
@@ -62,13 +64,13 @@ export const fokusOptionen: {
   },
   {
     id: "arme-straffen",
-    titel: "Arme straffen",
-    beschreibung: "Mehr Volumen für Schultern, Bizeps und Trizeps bei erhaltener Basis.",
+    titel: "Arme & Schultern betonen",
+    beschreibung: "Mehr Volumen für Schultern, Bizeps und Trizeps bei erhaltener Basis – Beine bleiben mit 2 Übungen pro Woche im Plan.",
   },
   {
     id: "bauch-weg",
-    titel: "Bauch weg",
-    beschreibung: "Rumpfkraft plus kalorienintensive Ganzkörperübungen (Fettabbau entsteht über die Ernährung).",
+    titel: "Rumpf & Haltung",
+    beschreibung: "Kräftigt die Körpermitte und verbessert die Haltung – lokaler Fettabbau an einer Stelle ist nicht möglich.",
   },
   {
     id: "gesaess-beine",
@@ -108,6 +110,8 @@ export type PlanKontext = {
   tage: number;
   dauer: number;
   fokus: Fokus;
+  /** Harte Einschränkungen aus dem Profil (Schulter, Rücken, Knie, Hüfte, Herz-Kreislauf). */
+  einschraenkungen?: Einschraenkung[];
 };
 
 export const standardKontext: PlanKontext = {
@@ -119,7 +123,10 @@ export const standardKontext: PlanKontext = {
   tage: 4,
   dauer: 45,
   fokus: "ausgewogen",
+  einschraenkungen: [],
 };
+
+export { einschraenkungTags };
 
 /** Übersetzt Onboarding-Equipment-Labels in Bibliotheks-Kategorien. */
 export function mappeEquipment(labels: string[]): Equipment[] {
