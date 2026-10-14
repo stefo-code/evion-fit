@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { synchronisiere } from "@/components/sync-backup";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { ladeProfil, speichereProfil } from "@/lib/onboarding-store";
 
 export function OnboardingSync() {
   const { user, laedt } = useAuth();
@@ -22,6 +23,7 @@ export function OnboardingSync() {
         konto = data.user;
       }
       if (!konto) throw new Error("Kein Konto verfügbar");
+      speichereProfil({ ...ladeProfil(), abgeschlossen: true });
       await synchronisiere(konto.id);
       setFertig(true);
     } catch {

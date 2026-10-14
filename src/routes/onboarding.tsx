@@ -86,7 +86,8 @@ function OnboardingPage() {
       if (p.gewicht !== null && (!Number.isFinite(p.gewicht) || p.gewicht < 30 || p.gewicht > 250)) {
         setFehler("Bitte ein Gewicht zwischen 30 und 250 kg eingeben oder das Feld leer lassen."); return;
       }
-      set({ startMessungDatum: speichereOnboardingStartwerte(p) });
+      const datum = speichereOnboardingStartwerte(p);
+      if (datum) set({ startMessungDatum: datum });
     }
     if (SCHRITTE[i] === "messung") {
       for (const feld of messFelder.filter((f) => f.key === "koerperfett" || f.gruppe === "umfang")) {
@@ -95,7 +96,8 @@ function OnboardingPage() {
           setFehler(`${feld.label}: bitte einen Wert zwischen ${feld.min} und ${feld.max} ${feld.einheit} eingeben.`); return;
         }
       }
-      set({ startMessungDatum: speichereOnboardingStartwerte(p, true) });
+      const datum = speichereOnboardingStartwerte(p, true);
+      if (datum) set({ startMessungDatum: datum });
     }
     if (i < SCHRITTE.length - 1) {
       const n = i + 1;
@@ -843,7 +845,7 @@ function PlanScreen({ p, onStart }: { p: OnboardingProfil; onStart: () => void }
 
       <div className="mt-6 grid grid-cols-2 gap-3">
         {kacheln.map((k) => (
-          <div key={k.label} className="rounded-2xl border border-border bg-card p-4">
+          <div key={k.label} className={cn("min-w-0 rounded-2xl border border-border bg-card p-4", k.label === "Ziel" && "col-span-2")}>
             <p className="label-xs">{k.label}</p>
             <p className="num mt-1 break-words text-lg font-extrabold leading-tight">{k.wert}</p>
           </div>
