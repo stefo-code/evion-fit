@@ -518,7 +518,8 @@ export function erzeugePlan(kontext: PlanKontext): Trainingstag[] {
     // Kürzen, falls über dem Maximum: zuerst bei Isolationsübungen am Ende reduzieren.
     idx = mitSaetzen.length - 1;
     while (summe > budget.max && mitSaetzen.some((u) => u.zielSaetze > 2)) {
-      const u = mitSaetzen[idx % mitSaetzen.length]!;
+      const n = mitSaetzen.length;
+      const u = mitSaetzen[((idx % n) + n) % n]!;
       if (u.zielSaetze > 2) {
         u.zielSaetze -= 1;
         summe -= 1;
