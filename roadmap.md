@@ -1,12 +1,8 @@
-# Navigation
-- [x] Mobile und Desktop-Navigation vereinfachen, Safe-Area und Eintragen berücksichtigen.
-- [x] Essen/Supplements und Verlauf/Erfolge mit gemeinsamen Segmenten verbinden.
-- [x] Einstellungen und Datenschutz unten im Profil verlinken.
-- [x] Navigation und Darstellung prüfen.
 # EVION-Überarbeitung (Stef)
-- [x] Teil 1 – Demo-Daten entfernen, eine Datenquelle
-- [x] Teil 2 – Onboarding: sechs Schritte, Startmessung, Trainingsort/Ausstattung, optionaler Sync; auf 360/390 px und mit alten Entwürfen geprüft.
-- [ ] Teil 3 – Home, Training, Workout
-- [ ] Teil 4 – Evidenzbasierte Pläne
-- [ ] Teil 5 – Übungsbibliothek & Bilder
-- [ ] Teil 6 – Rezepte, Supplements, Verlauf
+- [x] Teil 1 – Demo-Daten entfernen
+- [x] Teil 2 – Onboarding
+- [x] Teil 3 – Home, Training, Workout
+- [x] Teil 4 – Evidenzbasierte Pläne (Generator + KI-Plan, Tests)
+- [x] Teil 5.1 – Übungsbibliothek erweitert
+- [ ] Teil 5.2 – Übungsbilder: Stapel 1 (5 Übungen m/w) fertig; ~40 Übungen offen + Korrekturen (Preacher-Curls, Katze-Kuh w, Beinbeuger w, Laufband, Burpees, Bergsteiger) – wartet auf Freigabe je Stapel
+- [x] Teil 6 – Rezepte (122), Supplements, Verlauf, Einstellungen
