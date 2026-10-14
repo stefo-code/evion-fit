@@ -17,7 +17,7 @@ import {
   verlauf,
   type MessFeld,
 } from "@/lib/activity-store";
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -38,7 +38,7 @@ export const Route = createFileRoute("/fortschritt")({
       { title: "Fortschritt – EVION" },
       {
         name: "description",
-        content: "Gewicht, Körperfett, Muskeln, Wasser, Umfänge, Kraft und Erholung im Verlauf.",
+        content: "Gewicht, Körperfett, Muskeln, Wasser, Umfänge und Erholung im Verlauf.",
       },
       { property: "og:title", content: "Fortschritt – EVION" },
       { property: "og:description", content: "Sichtbarer Fortschritt – auch wenn das Gewicht stagniert." },
@@ -129,7 +129,12 @@ function FortschrittPage() {
         <p className="label-xs">Fortschritt</p>
         <h1 className="mt-1 font-display text-3xl font-extrabold">Deine Entwicklung</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Alle Auswertungen entstehen aus deinen protokollierten Trainings und selbst erfassten Messwerten.
+          Körperwerte und Erholung aus deinen selbst erfassten Messwerten. Deine Trainingsauswertung
+          findest du in{" "}
+          <Link to="/training" className="font-semibold text-primary underline-offset-2 hover:underline">
+            Training › Analyse
+          </Link>
+          .
         </p>
       </header>
 
@@ -141,26 +146,25 @@ function FortschrittPage() {
         ))}
       </div>
 
+      <button
+        onClick={() => setMessenOffen(true)}
+        className="w-full rounded-xl bg-primary px-5 py-3 text-sm font-extrabold uppercase tracking-wide text-primary-foreground sm:w-auto"
+      >
+        Messung eintragen
+      </button>
+
       {keineDaten && (
         <Card className="border-primary/40 bg-primary/10">
           <p className="font-display text-lg font-extrabold">Noch keine eigenen Daten</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Trage unten deine erste Messung ein oder schließe ein Training ab – danach füllen sich alle
-            Diagramme automatisch.
+            Trage oben deine erste Messung ein – danach füllen sich alle Diagramme automatisch.
           </p>
-          <Link
-            to="/training/workout"
-            search={{ tag: 0 }}
-            className="mt-4 inline-flex rounded-xl bg-primary px-5 py-2.5 text-sm font-extrabold uppercase tracking-wide text-primary-foreground"
-          >
-            Training starten
-          </Link>
         </Card>
       )}
 
       <Section titel="Überblick">
         <Card>
-          <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-5">
             <Stat
               label="Gewicht"
               value={gewichtDelta === null ? "—" : `${gewichtDelta > 0 ? "+" : ""}${gewichtDelta.toLocaleString("de-DE")}`}
@@ -174,24 +178,10 @@ function FortschrittPage() {
               delta={zeit.label}
               tone={fettDelta !== null && fettDelta < 0 ? "good" : "default"}
             />
-            <Stat
-              label="Volumen"
-              value={volumenGesamt.toLocaleString("de-DE")}
-              unit="kg"
-              delta={`${saetzeGesamt} Sätze`}
-            />
-            <Stat
-              label="Kraft"
-              value={kraftDelta === null ? "—" : `${kraftDelta > 0 ? "+" : ""}${kraftDelta}`}
-              unit="%"
-              delta={topUebung?.name ?? "noch keine Rekorde"}
-              tone={kraftDelta && kraftDelta > 0 ? "good" : "default"}
-            />
           </div>
           {zielFortschritt !== null && (
             <p className="mt-4 rounded-xl bg-secondary/50 p-4 text-sm leading-relaxed">
               Du hast {zielFortschritt} % der Strecke zu deinem Zielgewicht ({zielGewicht} kg) zurückgelegt.
-              Kraft- und Volumenentwicklung zeigen, ob die Substanz dabei erhalten bleibt.
             </p>
           )}
           {recomp && (
@@ -208,12 +198,6 @@ function FortschrittPage() {
             Körperfett-, Wasser- und Muskelanteile aus Waagen sind Schätzungen. Aussagekräftig ist der
             Trend über mehrere Wochen, nicht der Einzelwert.
           </Disclaimer>
-        </Card>
-      </Section>
-
-      <Section titel="Messung eintragen">
-        <Card>
-          <MessungForm />
         </Card>
       </Section>
 
@@ -390,112 +374,6 @@ function FortschrittPage() {
         </Card>
       </Section>
 
-      <Section titel="Trainingsvolumen pro Woche">
-        <Card>
-          {wochenVolumen.length > 0 ? (
-            <div className="h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={wochenVolumen} margin={{ left: -18, right: 4, top: 8 }}>
-                  <CartesianGrid stroke="var(--border)" vertical={false} />
-                  <XAxis dataKey="woche" {...axis} />
-                  <YAxis {...axis} />
-                  <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--muted)" }} />
-                  <RBar dataKey="volumen" name="Volumen (kg)" fill="var(--primary)" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">Noch kein Training protokolliert.</p>
-          )}
-          <p className="mt-3 text-sm text-muted-foreground">
-            Gesamtvolumen bisher: {gesamtVolumen(aktivitaet).toLocaleString("de-DE")} kg ·{" "}
-            {einheitenSeit(aktivitaet, 7).length} Einheiten in den letzten 7 Tagen · Serie{" "}
-            {streak(aktivitaet)}
-          </p>
-        </Card>
-      </Section>
-
-      <Section titel="Kraftentwicklung (geschätztes 1RM)">
-        <Card>
-          {kraftDaten.length > 1 ? (
-            <>
-              <div className="h-52">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={kraftDaten} margin={{ left: -18, right: 4, top: 8 }}>
-                    <CartesianGrid stroke="var(--border)" vertical={false} />
-                    <XAxis dataKey="datum" {...axis} />
-                    <YAxis domain={["dataMin - 5", "dataMax + 5"]} {...axis} />
-                    <Tooltip contentStyle={tooltipStyle} />
-                    <Line
-                      type="monotone"
-                      dataKey="e1rm"
-                      name={`${topUebung?.name} (kg)`}
-                      stroke="var(--primary)"
-                      strokeWidth={2.5}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                <QualityTag quality="berechnet" /> Epley-Schätzung aus deinen Sätzen.
-              </div>
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Nach der zweiten Einheit mit derselben Übung erscheint hier deine Kraftkurve.
-            </p>
-          )}
-          {prs.length > 0 && (
-            <ul className="mt-4 divide-y divide-border">
-              {prs.slice(0, 5).map((r) => (
-                <li key={r.uebungId} className="flex justify-between gap-3 py-2 text-sm">
-                  <span className="truncate">{r.name}</span>
-                  <span className="num shrink-0 font-semibold">
-                    {r.gewicht} kg × {r.wdh} · ≈ {r.e1rm} kg
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-          <Link to="/erfolge" className="mt-4 inline-flex text-xs font-bold uppercase tracking-wider text-primary">
-            Alle Erfolge & Rekorde
-          </Link>
-        </Card>
-      </Section>
-
-      <Section titel="Letzte Einheiten">
-        <Card className="p-2">
-          {aktivitaet.einheiten.length === 0 ? (
-            <p className="px-3 py-4 text-sm text-muted-foreground">Noch keine Einheit abgeschlossen.</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {[...aktivitaet.einheiten]
-                .reverse()
-                .slice(0, 8)
-                .map((e) => (
-                  <li key={e.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 px-3 py-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold">{e.titel}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {new Date(e.datum).toLocaleDateString("de-DE", {
-                          weekday: "short",
-                          day: "2-digit",
-                          month: "2-digit",
-                        })}{" "}
-                        · {e.saetze.length} Sätze · {e.dauerMin} min
-                      </p>
-                    </div>
-                    <span className="num shrink-0 text-sm font-bold">
-                      {volumen(e.saetze).toLocaleString("de-DE")} kg
-                    </span>
-                  </li>
-                ))}
-            </ul>
-          )}
-        </Card>
-      </Section>
-
       <Section titel="Alle Messungen">
         <Card className="p-2">
           {aktivitaet.messungen.length === 0 ? (
@@ -536,6 +414,8 @@ function FortschrittPage() {
           )}
         </Card>
       </Section>
+
+      {messenOffen && <MessungFormSheet onSchliessen={() => setMessenOffen(false)} />}
     </div>
   );
 }

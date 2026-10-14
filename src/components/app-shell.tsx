@@ -96,6 +96,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       {/* Mobile Tab-Bar */}
+      {pathname !== "/training/workout" && (
       <nav aria-label="Hauptnavigation" className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-sidebar/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
         <ul className="mx-auto grid max-w-lg grid-cols-5">
           {main.map((i) => {
@@ -118,6 +119,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           })}
         </ul>
       </nav>
+      )}
 
       {/* Globaler „+ Eintragen“-Einstieg */}
       {pathname !== "/training/workout" && <Button

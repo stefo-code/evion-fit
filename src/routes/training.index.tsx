@@ -23,6 +23,7 @@ import {
   wochentage,
   wochentageKurz,
   type Fokus,
+  type PlanEinstellungen,
   type PlanKontext,
   type Trainingstag,
 } from "@/lib/training-plan";
@@ -482,6 +483,7 @@ function TrainingPage() {
           </label>
         </Card>
 
+        {einstellungen.festeTage && (
         <Card className="mt-3 p-2">
           <p className="label-xs px-3 pt-2">Template je Trainingstag</p>
           <ul className="divide-y divide-border">
@@ -507,6 +509,7 @@ function TrainingPage() {
             })}
           </ul>
         </Card>
+        )}
       </Section>
       <Section titel="Trainings-Rotation">
         <Card className="p-2">
@@ -525,20 +528,20 @@ function TrainingPage() {
                       <span className="block break-words">{t.titel}</span>
                       {t.index === naechstes.index && <span className="text-xs text-primary">nächstes Training</span>}
                     </span>
+                    <button onClick={() => verschiebeRotation(pos, -1)} disabled={pos === 0} aria-label={`${t.titel} in der Rotation nach oben`} className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-border disabled:opacity-30">
+                      <ChevronUp className="h-4 w-4" />
+                    </button>
+                    <button onClick={() => verschiebeRotation(pos, 1)} disabled={pos === rotation.length - 1} aria-label={`${t.titel} in der Rotation nach unten`} className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-border disabled:opacity-30">
+                      <ChevronDown className="h-4 w-4" />
+                    </button>
+                    <button onClick={() => speichere({ rotation: rotation.filter((x) => x !== i) })} aria-label={`${t.titel} aus der Rotation entfernen`} className="grid h-9 w-9 shrink-0 place-items-center text-muted-foreground">
+                      <X className="h-4 w-4" />
+                    </button>
                     {t.index !== naechstes.index && (
-                      <button onClick={() => setzeNaechster(i)} aria-label={`${t.titel} als nächstes festlegen`} className="grid h-9 w-9 place-items-center rounded-full border border-border text-primary">
+                      <button onClick={() => setzeNaechster(i)} aria-label={`${t.titel} als nächstes festlegen`} className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-border text-primary">
                         <CalendarCheck className="h-4 w-4" />
                       </button>
                     )}
-                    <button onClick={() => verschiebeRotation(pos, -1)} disabled={pos === 0} aria-label={`${t.titel} in der Rotation nach oben`} className="grid h-9 w-9 place-items-center rounded-full border border-border disabled:opacity-30">
-                      <ChevronUp className="h-4 w-4" />
-                    </button>
-                    <button onClick={() => verschiebeRotation(pos, 1)} disabled={pos === rotation.length - 1} aria-label={`${t.titel} in der Rotation nach unten`} className="grid h-9 w-9 place-items-center rounded-full border border-border disabled:opacity-30">
-                      <ChevronDown className="h-4 w-4" />
-                    </button>
-                    <button onClick={() => speichere({ rotation: rotation.filter((x) => x !== i) })} aria-label={`${t.titel} aus der Rotation entfernen`} className="grid h-9 w-9 place-items-center text-muted-foreground">
-                      <X className="h-4 w-4" />
-                    </button>
                   </li>
                 );
               })}
@@ -612,6 +615,19 @@ function TrainingPage() {
             </button>
           </div>
         </Card>
+      </Section>
+      <Section titel={`Aufwärmen – ${tag.titel}`}>
+        <AufwaermenEditor
+          tag={tag}
+          einstellungen={einstellungen}
+          einschraenkungen={profil.einschraenkungen ?? []}
+          onSpeichern={(liste) => speichere({ aufwaermen: { ...(einstellungen.aufwaermen ?? {}), [String(tag.index)]: liste } })}
+          onZuruecksetzen={() => {
+            const rest = { ...(einstellungen.aufwaermen ?? {}) };
+            delete rest[String(tag.index)];
+            speichere({ aufwaermen: rest });
+          }}
+        />
       </Section>
       <Section titel={`Übungen – ${tag.titel}`}>
         <div className="space-y-3">
@@ -1089,6 +1105,65 @@ function UebungHinzufuegen({
           </div>
         </div>
       )}
+    </Card>
+  );
+}
+
+/** Editierbares Aufwärmprogramm je Template (gespeichert in PlanEinstellungen.aufwaermen[index]). */
+function AufwaermenEditor({
+  tag,
+  einstellungen,
+  einschraenkungen,
+  onSpeichern,
+  onZuruecksetzen,
+}: {
+  tag: Trainingstag;
+  einstellungen: PlanEinstellungen;
+  einschraenkungen: string[];
+  onSpeichern: (liste: string[]) => void;
+  onZuruecksetzen: () => void;
+}) {
+  const uebersteuert = !!einstellungen.aufwaermen?.[String(tag.index)]?.length;
+  const liste = standardAufwaermen(tag, einstellungen, einschraenkungen);
+
+  return (
+    <Card>
+      <ul className="space-y-2">
+        {liste.map((schritt, i) => (
+          <li key={i} className="flex items-center gap-2">
+            <input
+              value={schritt}
+              onChange={(e) => {
+                const neu = [...liste];
+                neu[i] = e.target.value;
+                onSpeichern(neu);
+              }}
+              aria-label={`Aufwärmschritt ${i + 1}`}
+              className="min-w-0 flex-1 rounded-xl border border-border bg-card px-3 py-2 text-sm"
+            />
+            <button
+              onClick={() => onSpeichern(liste.filter((_, x) => x !== i))}
+              aria-label={`Aufwärmschritt ${i + 1} entfernen`}
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-muted-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-3 flex flex-wrap gap-3">
+        <button
+          onClick={() => onSpeichern([...liste, ""])}
+          className="flex items-center gap-1.5 text-xs font-bold text-primary underline"
+        >
+          <Plus className="h-3.5 w-3.5" /> Schritt hinzufügen
+        </button>
+        {uebersteuert && (
+          <button onClick={onZuruecksetzen} className="text-xs font-bold text-muted-foreground underline">
+            Auf Standard zurücksetzen
+          </button>
+        )}
+      </div>
     </Card>
   );
 }
