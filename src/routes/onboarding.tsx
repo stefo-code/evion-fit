@@ -206,7 +206,7 @@ function PrimaryButton({
   className?: string;
 }) {
   return (
-    <Button variant="ghost"
+    <Button
       onClick={onClick}
       className={cn(
         "h-auto min-h-12 w-full whitespace-normal rounded-2xl bg-primary px-5 py-4 hover:bg-primary/90 font-display text-base font-extrabold text-primary-foreground shadow-[var(--shadow-glow)] transition-transform active:scale-[0.99]",
