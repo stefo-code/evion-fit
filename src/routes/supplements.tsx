@@ -3,7 +3,11 @@ import { useMemo, useState } from "react";
 import { BereichNavigation, Card, Chip, Disclaimer, Section } from "@/components/ui-kit";
 import { goalLabels } from "@/lib/demo-data";
 import {
+  EISEN_ID,
   empfehlungen,
+  evidenzStufeFarbe,
+  evidenzStufeLabel,
+  stufeEvidenz,
   stufenFarbe,
   supplementDatenbank,
   tagesplan,
@@ -72,13 +76,14 @@ function SupplementsPage() {
     .filter((e) => kategorie === "Alle" || e.supp.kategorie === kategorie)
     .filter((e) => !nurRelevant || e.stufe === "Priorität" || e.stufe === "Sinnvoll");
 
-  const plan = useMemo(() => tagesplan(ctx, trainingstag), [
+  const plan = useMemo(() => tagesplan(ctx, trainingstag, log.besitz), [
     ctx.ziel,
     ctx.geschlecht,
     ctx.alter,
     ctx.trainingstage,
     ctx.ernaehrungsform,
     trainingstag,
+    log.besitz,
   ]);
 
   const top = alle.filter((e) => e.stufe === "Priorität").slice(0, 4);
@@ -227,6 +232,9 @@ function SupplementsPage() {
                   <p className="truncate text-xs text-muted-foreground">
                     {s.kategorie} · Evidenz: {s.evidenz}
                   </p>
+                  <span className={cn("mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider", evidenzStufeFarbe[stufeEvidenz(s.id)])}>
+                    {evidenzStufeLabel[stufeEvidenz(s.id)]}
+                  </span>
                 </div>
                 <span className="flex shrink-0 items-center gap-2">
                   <span
@@ -241,16 +249,22 @@ function SupplementsPage() {
                 </span>
               </button>
               <div className="px-5 pb-4">
-                <button
-                  onClick={() => log.schalteBesitz(s.id)}
-                  aria-pressed={log.besitz.includes(s.id)}
-                  className={cn(
-                    "flex min-h-12 items-center gap-2 rounded-xl border px-4 text-sm font-bold",
-                    log.besitz.includes(s.id) ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground",
-                  )}
-                >
-                  <Check className="h-4 w-4" /> Habe ich
-                </button>
+                {s.id === EISEN_ID ? (
+                  <p className="rounded-xl bg-destructive/10 px-4 py-3 text-sm font-semibold text-destructive">
+                    Nur bei ärztlich nachgewiesenem Mangel – kein Bestandteil des Standard-Tagesplans.
+                  </p>
+                ) : (
+                  <button
+                    onClick={() => log.schalteBesitz(s.id)}
+                    aria-pressed={log.besitz.includes(s.id)}
+                    className={cn(
+                      "flex min-h-12 items-center gap-2 rounded-xl border px-4 text-sm font-bold",
+                      log.besitz.includes(s.id) ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground",
+                    )}
+                  >
+                    <Check className="h-4 w-4" /> Habe ich
+                  </button>
+                )}
               </div>
               {open && (
                 <div className="border-t border-border p-5 text-sm">

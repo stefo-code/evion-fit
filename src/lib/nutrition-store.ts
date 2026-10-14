@@ -26,12 +26,14 @@ export type Ernaehrung = {
   wasser: Record<string, number>;
   /** Vorrat zu Hause (freie Texteingabe). */
   vorrat: string[];
+  /** Favorisierte Rezept-IDs (additiv). */
+  favoriten?: string[];
 };
 
 const KEY = "evion.ernaehrung.v1";
 const EVENT = "evion:ernaehrung";
 
-export const leereErnaehrung: Ernaehrung = { version: 1, mahlzeiten: [], wasser: {}, vorrat: [] };
+export const leereErnaehrung: Ernaehrung = { version: 1, mahlzeiten: [], wasser: {}, vorrat: [], favoriten: [] };
 
 export function heuteKey(d: Date = new Date()) {
   return d.toISOString().slice(0, 10);
@@ -140,6 +142,18 @@ export function useErnaehrung() {
     [aktualisiere],
   );
 
+  const favoritUmschalten = useCallback(
+    (id: string) =>
+      aktualisiere((alt) => {
+        const favoriten = alt.favoriten ?? [];
+        return {
+          ...alt,
+          favoriten: favoriten.includes(id) ? favoriten.filter((f) => f !== id) : [...favoriten, id],
+        };
+      }),
+    [aktualisiere],
+  );
+
   const heutigeMahlzeiten = useMemo(
     () => daten.mahlzeiten.filter((m) => m.datum.slice(0, 10) === heuteKey()),
     [daten.mahlzeiten],
@@ -156,5 +170,7 @@ export function useErnaehrung() {
     wasserHinzufuegen,
     vorratHinzufuegen,
     vorratEntfernen,
+    favoriten: daten.favoriten ?? [],
+    favoritUmschalten,
   };
 }

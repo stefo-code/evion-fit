@@ -7,7 +7,7 @@ import { Card, Chip, Disclaimer, Section } from "@/components/ui-kit";
 import { TrainingNachtragen } from "@/components/training-nachtragen";
 import { KiPlanSheet } from "@/components/ki-plan-sheet";
 import { MuscleMap } from "@/components/muscle-map";
-import { zeitModi, muskelStatus, goalLabels, type MuscleKey } from "@/lib/demo-data";
+import { muskelStatus, goalLabels, type MuscleKey } from "@/lib/demo-data";
 import { useOnboardingProfil } from "@/lib/onboarding-store";
 import {
   aktiveTrainingstage,
@@ -24,7 +24,9 @@ import {
   wochentageKurz,
   type Fokus,
   type PlanKontext,
+  type Trainingstag,
 } from "@/lib/training-plan";
+import { berechneDauerMin, standardAufwaermen } from "@/lib/training-dauer";
 
 
 import {
@@ -35,7 +37,7 @@ import {
   type LibUebung,
   type Muster,
 } from "@/lib/exercise-library";
-import { ChevronDown, ChevronRight, ChevronUp, History, Plus, Repeat, Sparkles, Trash2, Trophy, X } from "lucide-react";
+import { CalendarCheck, ChevronDown, ChevronRight, ChevronUp, History, Plus, Repeat, Sparkles, Trash2, Trophy, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -84,6 +86,7 @@ function TrainingPage() {
     uebernehmeKiPlan,
     benenneVorlage,
     loescheVorlage,
+    stelleVorlageWiederher,
     ordneZu,
     uebernehmeRecompVorlage,
   } = usePlanEinstellungen();
@@ -95,12 +98,12 @@ function TrainingPage() {
   const [pickerOffen, setPickerOffen] = useState(false);
   const [segment, setSegment] = useState<"heute" | "plaene" | "analyse">("heute");
   const [auswahl, setAuswahl] = useState<number | null>(null);
+  const [andereOffen, setAndereOffen] = useState(false);
   const [booster, setBooster] = useState<string | null>(null);
   const [kiOffen, setKiOffen] = useState(false);
   const supp = useSuppLog();
   const navigate = useNavigate();
 
-  const modus = zeitModi.find((m) => m.minuten === zeit) ?? zeitModi[2]!;
 
   const gewaehlteTage = useMemo(
     () => aktiveTrainingstage(einstellungen, profil.tage || 4),
@@ -124,6 +127,8 @@ function TrainingPage() {
 
 
   const plan = useMemo(() => baueVorlagen(kontext, einstellungen), [kontext, einstellungen]);
+  const planLeer = plan.length === 0;
+  const tagDummy: Trainingstag = { index: -1, titel: "", uebungen: [] };
   const [neuerName, setNeuerName] = useState("");
   const [nachtragen, setNachtragen] = useState(false);
   const rotation = (einstellungen.rotation ?? []).filter((i) => plan.some((t) => t.index === i));
@@ -131,6 +136,15 @@ function TrainingPage() {
     speichere({ naechster: { index: i, seit: Date.now() } });
     setAuswahl(null);
     toast.success(`${plan.find((t) => t.index === i)?.titel} ist als nächstes festgelegt`);
+  };
+  const loescheMitUndo = (index: number, titel: string) => {
+    if (!window.confirm(`„${titel}“ wirklich löschen?`)) return;
+    loescheVorlage(index);
+    if (tagIndex === index) setTagIndex(plan.find((t) => t.index !== index)?.index ?? 0);
+    toast(`Template „${titel}“ gelöscht`, {
+      duration: 5000,
+      action: { label: "Rückgängig", onClick: () => stelleVorlageWiederher(index) },
+    });
   };
   const verschiebeRotation = (pos: number, r: -1 | 1) => {
     const neu = [...rotation];
@@ -141,7 +155,7 @@ function TrainingPage() {
   };
 
 
-  const tag = plan.find((t) => t.index === tagIndex) ?? plan[0]!;
+  const tag = plan.find((t) => t.index === tagIndex) ?? plan[0] ?? tagDummy;
   const verfuegbareFokus = useMemo(
     () => fokusFuerGeschlecht(profil.geschlecht),
     [profil.geschlecht],
@@ -152,6 +166,7 @@ function TrainingPage() {
   const fokusInfo = fokusOptionen.find((f) => f.id === aktiverFokus)!;
 
   const naechstes = useMemo(() => {
+    if (plan.length === 0) return tagDummy;
     const gewaehlt = plan.find((t) => t.index === auswahl);
     if (gewaehlt) return gewaehlt;
     const fest = festgelegtesTraining(plan, einstellungen, aktivitaet.einheiten);
@@ -165,15 +180,13 @@ function TrainingPage() {
     if (rot) return rot;
     const letzte = aktivitaet.einheiten[aktivitaet.einheiten.length - 1];
     const i = letzte ? plan.findIndex((t) => t.index === letzte.tagIndex) : -1;
-    return plan[(i + 1) % Math.max(plan.length, 1)] ?? plan[0]!;
+    return plan[(i + 1) % Math.max(plan.length, 1)] ?? plan[0] ?? tagDummy;
   }, [plan, auswahl, einstellungen, gewaehlteTage, aktivitaet]);
   const starteWorkout = () => {
     setBooster(null);
     navigate({ to: "/training/workout", search: { tag: naechstes.index, dauer: zeit } });
   };
-  const geschaetzteMin = Math.round(
-    12 + naechstes.uebungen.reduce((s, u) => s + (u.zielSaetze * ((u.grund ? 150 : 75) + 45)) / 60, 0),
-  );
+  const geschaetzteMin = berechneDauerMin(naechstes, einstellungen);
 
 
   return (
@@ -203,6 +216,14 @@ function TrainingPage() {
       </div>
       {segment === "heute" && (
         <>
+          {planLeer ? (
+            <Card>
+              <p className="text-sm text-muted-foreground">
+                Noch kein Trainingsplan vorhanden – lege unter „Pläne" ein Training an.
+              </p>
+            </Card>
+          ) : (
+            <>
           <AutoregulationsHinweis />
           <Card className="border-primary/40">
             <p className="label-xs">Nächstes Training</p>
@@ -236,6 +257,12 @@ function TrainingPage() {
             >
               <History className="h-4 w-4" /> Training nachtragen
             </button>
+            <button
+              onClick={() => setAndereOffen(true)}
+              className="mt-3 block w-full text-center text-sm font-semibold text-primary underline"
+            >
+              Anderes Training wählen
+            </button>
           </Card>
           {nachtragen && (
             <TrainingNachtragen plan={plan} standardIndex={naechstes.index} onSchliessen={() => setNachtragen(false)} />
@@ -264,30 +291,88 @@ function TrainingPage() {
             </div>
           )}
 
-          <Section titel="Anderes Training wählen">
-            <div className="flex flex-wrap gap-2">
-              {plan.map((t) => (
-                <Chip key={t.index} active={t.index === naechstes.index} onClick={() => setAuswahl(t.index)}>
-                  {t.titel}
-                </Chip>
-              ))}
-            </div>
-          </Section>
-          <Section titel="Wie viel Zeit hast du?">
-            <Card>
-              <div className="flex flex-wrap gap-2">
-                {zeitModi.map((m) => (
-                  <Chip key={m.minuten} active={zeit === m.minuten} onClick={() => setZeit(m.minuten)}>
-                    {m.titel}
-                  </Chip>
-                ))}
-              </div>
-              <p className="mt-3 text-sm text-muted-foreground">{modus.beschreibung}</p>
-            </Card>
-          </Section>
+            </>
+          )}
         </>
       )}
+      {andereOffen && (
+        <div className="fixed inset-0 z-50">
+          <button aria-label="Schließen" onClick={() => setAndereOffen(false)} className="absolute inset-0 bg-foreground/30 backdrop-blur-sm" />
+          <div className="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-3xl border-t border-border bg-card p-5 pb-8">
+            <div className="flex items-center">
+              <p className="font-display text-base font-extrabold">Anderes Training wählen</p>
+              <button onClick={() => setAndereOffen(false)} aria-label="Schließen" className="ml-auto grid h-8 w-8 place-items-center rounded-full bg-secondary">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <ul className="mt-4 divide-y divide-border">
+              {plan.map((t) => {
+                const letzte = [...aktivitaet.einheiten].reverse().find((e) => e.tagIndex === t.index);
+                return (
+                  <li key={t.index}>
+                    <button
+                      onClick={() => {
+                        setAuswahl(t.index);
+                        setAndereOffen(false);
+                      }}
+                      className="flex w-full items-center justify-between gap-3 py-3 text-left"
+                    >
+                      <span className="min-w-0">
+                        <span className="block break-words text-sm font-semibold">{t.titel}</span>
+                        <span className="block text-xs text-muted-foreground">
+                          {t.uebungen.length} Übungen ·{" "}
+                          {letzte ? `zuletzt ${new Date(letzte.datum).toLocaleDateString("de-DE")}` : "noch nie trainiert"}
+                        </span>
+                      </span>
+                      {t.index === naechstes.index && <span className="shrink-0 text-xs font-semibold text-primary">aktuell</span>}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
+      )}
       {segment === "plaene" && (
+        <>
+      {planLeer ? (
+        <Card>
+          <p className="label-xs">Noch keine Trainingspläne</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Lege dein erstes Training an – mit KI, selbst erstellt oder aus einer Vorlage.
+          </p>
+          <div className="mt-4 space-y-2">
+            <button
+              onClick={() => setKiOffen(true)}
+              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground"
+            >
+              <Sparkles className="h-4 w-4" /> Plan mit KI erstellen
+            </button>
+            <button
+              onClick={() => {
+                const titel = window.prompt("Name für dein Training")?.trim();
+                if (titel) {
+                  const idx = erstelleVorlage(titel);
+                  setTagIndex(idx);
+                  toast.success(`Template „${titel}“ erstellt – füge jetzt Übungen hinzu`);
+                }
+              }}
+              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-border px-4 text-sm font-bold"
+            >
+              <Plus className="h-4 w-4" /> Eigenen Plan erstellen
+            </button>
+            <button
+              onClick={() => {
+                uebernehmeRecompVorlage();
+                toast.success("Vorlage „Recomp – Oberkörper-Fokus (4 Tage)“ übernommen");
+              }}
+              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-border px-4 text-sm font-bold"
+            >
+              Vorlage wählen
+            </button>
+          </div>
+        </Card>
+      ) : (
         <>
       <button
         onClick={() => setKiOffen(true)}
@@ -441,8 +526,8 @@ function TrainingPage() {
                       {t.index === naechstes.index && <span className="text-xs text-primary">nächstes Training</span>}
                     </span>
                     {t.index !== naechstes.index && (
-                      <button onClick={() => setzeNaechster(i)} className="min-h-10 px-1 text-xs font-semibold text-primary underline">
-                        Als nächstes festlegen
+                      <button onClick={() => setzeNaechster(i)} aria-label={`${t.titel} als nächstes festlegen`} className="grid h-9 w-9 place-items-center rounded-full border border-border text-primary">
+                        <CalendarCheck className="h-4 w-4" />
                       </button>
                     )}
                     <button onClick={() => verschiebeRotation(pos, -1)} disabled={pos === 0} aria-label={`${t.titel} in der Rotation nach oben`} className="grid h-9 w-9 place-items-center rounded-full border border-border disabled:opacity-30">
@@ -519,18 +604,12 @@ function TrainingPage() {
                 Als nächstes festlegen
               </button>
             )}
-            {tag.index >= 100 && (
-              <button
-                className="text-destructive underline"
-                onClick={() => {
-                  loescheVorlage(tag.index);
-                  setTagIndex(plan[0]?.index ?? 0);
-                  toast(`Template „${tag.titel}“ gelöscht`);
-                }}
-              >
-                Template löschen
-              </button>
-            )}
+            <button
+              className="text-destructive underline"
+              onClick={() => loescheMitUndo(tag.index, tag.titel)}
+            >
+              Template löschen
+            </button>
           </div>
         </Card>
       </Section>
@@ -682,6 +761,8 @@ function TrainingPage() {
           </button>
         )}
       </Section>
+        </>
+      )}
         </>
       )}
       {segment === "analyse" && (

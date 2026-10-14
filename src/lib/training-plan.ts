@@ -535,6 +535,14 @@ export type PlanEinstellungen = {
   ohneBooster?: number[];
   /** Persönlicher 4er-Plan wurde einmalig angelegt. */
   persoenlichV1?: boolean;
+  /** Pause Grundübungen in Sekunden (Standard 150). */
+  pauseGrundSek?: number;
+  /** Pause Isolationsübungen in Sekunden (Standard 75). */
+  pauseIsoSek?: number;
+  /** Bearbeitetes Aufwärmen je Template-Index (Liste von Texten). */
+  aufwaermen?: Record<string, string[]>;
+  /** Gelöschte generierte Templates (Template-Indizes < 100). */
+  geloescht?: number[] | undefined;
 };
 
 const KEY = "evion.trainingsplan.v1";
@@ -554,9 +562,11 @@ const leer: PlanEinstellungen = {
 
 /** Alle Trainings-Templates: Vorschläge plus eigene, inkl. aller Anpassungen. */
 export function baueVorlagen(kontext: PlanKontext, e: PlanEinstellungen): Trainingstag[] {
+  const geloescht = new Set(e.geloescht ?? []);
+  const generiert = erzeugePlan(kontext).filter((t) => !geloescht.has(t.index));
   const eigene: Trainingstag[] = (e.vorlagen ?? []).map((v) => ({ index: v.index, titel: v.titel, uebungen: [] }));
   return wendeAnpassungenAn(
-    wendeTauschAn([...erzeugePlan(kontext), ...eigene], e.tausch, kontext),
+    wendeTauschAn([...generiert, ...eigene], e.tausch, kontext),
     e,
     kontext,
   ).map((t) => {
@@ -943,12 +953,29 @@ export function usePlanEinstellungen() {
     [aktualisiere],
   );
 
+  /** Löscht ein Template (eigenes oder generiertes). Generierte werden in `geloescht` vermerkt. */
   const loescheVorlage = useCallback(
+    (index: number) =>
+      aktualisiere((alt) => {
+        const basis: PlanEinstellungen = {
+          ...alt,
+          vorlagen: (alt.vorlagen ?? []).filter((v) => v.index !== index),
+          geloescht: index < 100 ? [...new Set([...(alt.geloescht ?? []), index])] : alt.geloescht,
+          zuordnung: Object.fromEntries(Object.entries(alt.zuordnung ?? {}).filter(([, v]) => v !== index)),
+          rotation: (alt.rotation ?? []).filter((i) => i !== index),
+        };
+        if (alt.naechster?.index === index) basis.naechster = null;
+        return basis;
+      }),
+    [aktualisiere],
+  );
+
+  /** Stellt ein zuvor gelöschtes generiertes Template wieder her (für „Rückgängig“). */
+  const stelleVorlageWiederher = useCallback(
     (index: number) =>
       aktualisiere((alt) => ({
         ...alt,
-        vorlagen: (alt.vorlagen ?? []).filter((v) => v.index !== index),
-        zuordnung: Object.fromEntries(Object.entries(alt.zuordnung ?? {}).filter(([, v]) => v !== index)),
+        geloescht: (alt.geloescht ?? []).filter((i) => i !== index),
       })),
     [aktualisiere],
   );
@@ -980,6 +1007,7 @@ export function usePlanEinstellungen() {
     uebernehmeKiPlan,
     benenneVorlage,
     loescheVorlage,
+    stelleVorlageWiederher,
     ordneZu,
   };
 }

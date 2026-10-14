@@ -6,13 +6,27 @@ import type { FotoAnalyse } from "@/lib/food-vision.server";
 import { Bar, BereichNavigation, Card, Chip, Disclaimer, Ring, Section } from "@/components/ui-kit";
 import { berechnePlan, useOnboardingProfil } from "@/lib/onboarding-store";
 import { useErnaehrung } from "@/lib/nutrition-store";
-import { lebensmittel, rezeptVorschlaege, vorratVorschlaege, type RezeptTreffer } from "@/lib/recipes";
+import { useAktivitaet } from "@/lib/activity-store";
+import {
+  kuechenListe,
+  lebensmittel,
+  mahlzeitListe,
+  rezeptVorschlaege,
+  vermerkeAngesehen,
+  vermerkeGekocht,
+  vorratVorschlaege,
+  type Kueche,
+  type MahlzeitTyp,
+  type RezeptTreffer,
+} from "@/lib/recipes";
 import {
   Camera,
   ChevronDown,
   Droplets,
+  Heart,
   Loader2,
   Plus,
+  RefreshCcw,
   ScanBarcode,
   Search,
   Trash2,

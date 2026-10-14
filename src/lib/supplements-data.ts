@@ -483,6 +483,58 @@ export function empfehlungen(ctx: SuppKontext): Empfehlung[] {
   return liste.sort((a, b) => b.score - a.score);
 }
 
+// ---------------------------------------------------------------------------
+// Evidenzstufen (TEIL 6): A = gut belegt, B = solide Hinweise, C = situativ,
+// „Nicht empfohlen“ = bei gedecktem Proteinbedarf ohne Zusatznutzen.
+// ---------------------------------------------------------------------------
+
+export type EvidenzStufe = "A" | "B" | "C" | "Nicht empfohlen";
+
+export const EISEN_ID = "eisen";
+
+export const evidenzStufeVon: Record<string, EvidenzStufe> = {
+  creatin: "A",
+  whey: "A",
+  mehrkomponenten: "A",
+  veganprotein: "A",
+  koffein: "A",
+  vitd3: "B",
+  omega3: "B",
+  betaalanin: "B",
+  elektrolyte: "C",
+  citrullin: "C",
+  magnesium: "C",
+  hmb: "C",
+  ashwagandha: "C",
+  b12: "B",
+  bcaa: "Nicht empfohlen",
+  eaa: "Nicht empfohlen",
+  kollagen: "Nicht empfohlen",
+  carnitin: "Nicht empfohlen",
+  gruentee: "Nicht empfohlen",
+  arginin: "Nicht empfohlen",
+  eisen: "Nicht empfohlen",
+};
+
+/** Liefert die Evidenzstufe eines Präparats (Standard: situativ/C). */
+export function stufeEvidenz(id: string): EvidenzStufe {
+  return evidenzStufeVon[id] ?? "C";
+}
+
+export const evidenzStufeLabel: Record<EvidenzStufe, string> = {
+  A: "Stufe A – gut belegt",
+  B: "Stufe B – solide Hinweise",
+  C: "Stufe C – situativ",
+  "Nicht empfohlen": "Nicht empfohlen",
+};
+
+export const evidenzStufeFarbe: Record<EvidenzStufe, string> = {
+  A: "bg-success/15 text-success",
+  B: "bg-primary/15 text-primary",
+  C: "bg-secondary text-muted-foreground",
+  "Nicht empfohlen": "bg-destructive/10 text-destructive",
+};
+
 export const stufenFarbe: Record<Stufe, string> = {
   Priorität: "bg-primary/15 text-primary",
   Sinnvoll: "bg-success/15 text-success",
@@ -543,10 +595,14 @@ export type TagesplanSlot = Slot & { eintraege: TagesplanEintrag[] };
  * Baut einen konkreten Einnahmeplan aus den Empfehlungen: nur Präparate der
  * Stufen „Priorität“ und „Sinnvoll“, sortiert nach Relevanz, je Zeitfenster.
  */
-export function tagesplan(ctx: SuppKontext, trainingstag = true): TagesplanSlot[] {
-  const relevant = empfehlungen(ctx).filter(
-    (e) => e.stufe === "Priorität" || e.stufe === "Sinnvoll",
-  );
+export function tagesplan(ctx: SuppKontext, trainingstag = true, besitz: string[] = []): TagesplanSlot[] {
+  // Nur Präparate, die der Nutzer besitzt, plus Empfehlungen der Evidenzstufe A.
+  // Eisen nie im Tagesplan (nur Hinweis bei ärztlich nachgewiesenem Mangel).
+  const stufeAIds = Object.entries(evidenzStufeVon)
+    .filter(([, v]) => v === "A")
+    .map(([id]) => id);
+  const erlaubt = new Set([...besitz, ...stufeAIds].filter((id) => id !== EISEN_ID));
+  const relevant = empfehlungen(ctx).filter((e) => erlaubt.has(e.supp.id));
 
   const eintraege: TagesplanEintrag[] = relevant.map((e) => ({
     supp: e.supp,

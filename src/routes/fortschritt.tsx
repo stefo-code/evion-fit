@@ -1,35 +1,26 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { BereichNavigation, Card, Chip, Disclaimer, QualityTag, Section, Stat } from "@/components/ui-kit";
-import { MessungForm } from "@/components/messung-form";
+import { MessungFormSheet } from "@/components/messung-form";
 import { effektivesProfil, useOnboardingProfil } from "@/lib/onboarding-store";
 import {
-  e1rmVerlauf,
-  einheitenSeit,
   ersterWert,
   feldDef,
-  gesamtVolumen,
   kompositionsVerlauf,
   koerperKennzahlen,
   letzterWert,
   messFelder,
   readinessAusMessungen,
   recompSignal,
-  rekorde,
-  streak,
   useAktivitaet,
   veraenderung,
   verlauf,
-  volumen,
-  volumenProWoche,
   type MessFeld,
 } from "@/lib/activity-store";
-import { Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import {
   Area,
   AreaChart,
-  Bar as RBar,
-  BarChart,
   CartesianGrid,
   Line,
   LineChart,
@@ -81,20 +72,13 @@ function FortschrittPage() {
   const { aktivitaet, geladen, messungLoeschen } = useAktivitaet();
   const [zeit, setZeit] = useState(zeitraeume[1]!);
   const [metrik, setMetrik] = useState<MessFeld>("gewicht");
-
-  const grenze = Date.now() - zeit.tage * 86400000;
-  const einheiten = aktivitaet.einheiten.filter((e) => new Date(e.datum).getTime() >= grenze);
+  const [messenOffen, setMessenOffen] = useState(false);
 
   const kurve = verlauf(aktivitaet, metrik, zeit.tage);
   const komposition = kompositionsVerlauf(aktivitaet, zeit.tage);
   const kennzahlen = koerperKennzahlen(aktivitaet, eff.groesse);
   const recomp = recompSignal(aktivitaet);
   const readiness = readinessAusMessungen(aktivitaet);
-
-  const prs = rekorde(aktivitaet);
-  const topUebung = prs[0];
-  const kraftDaten = topUebung ? e1rmVerlauf(aktivitaet, topUebung.uebungId) : [];
-  const wochenVolumen = volumenProWoche(aktivitaet, 10);
 
   const startGewicht = ersterWert(aktivitaet, "gewicht")?.wert ?? profil.gewicht ?? null;
   const aktuellGewicht = letzterWert(aktivitaet, "gewicht")?.wert ?? profil.gewicht ?? null;
@@ -105,16 +89,6 @@ function FortschrittPage() {
     startGewicht !== null && aktuellGewicht !== null && zielGewicht !== null && startGewicht !== zielGewicht
       ? Math.max(0, Math.min(100, Math.round(((startGewicht - aktuellGewicht) / (startGewicht - zielGewicht)) * 100)))
       : null;
-
-  const volumenGesamt = einheiten.reduce((s, e) => s + volumen(e.saetze), 0);
-  const saetzeGesamt = einheiten.reduce((s, e) => s + e.saetze.length, 0);
-  const kraftDelta = useMemo(() => {
-    if (kraftDaten.length < 2) return null;
-    const a = kraftDaten[0]!.e1rm;
-    const b = kraftDaten[kraftDaten.length - 1]!.e1rm;
-    if (!a) return null;
-    return Math.round(((b - a) / a) * 100);
-  }, [kraftDaten]);
 
   const umfangDaten = useMemo(() => {
     const grenzeU = Date.now() - zeit.tage * 86400000;

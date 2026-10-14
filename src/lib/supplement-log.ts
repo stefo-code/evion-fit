@@ -33,6 +33,10 @@ function schreibe(key: string, wert: unknown) {
   }
 }
 
+export function schreibeBesitzListe(ids: string[]) {
+  schreibe(BESITZ_KEY, Array.from(new Set(ids)));
+}
+
 export function useSuppLog() {
   const [log, setLog] = useState<SuppLog>({});
   const [besitz, setBesitz] = useState<string[]>([]);
