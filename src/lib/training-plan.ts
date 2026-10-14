@@ -147,128 +147,94 @@ export function mappeEquipment(labels: string[]): Equipment[] {
 
 type Session = { titel: string; muster: Muster[] };
 
-/**
- * Fokus-spezifische Wochenvorlagen.
- *
- * Jede Vorlage ist eine Liste von Einheiten mit Bewegungsmustern in der
- * Reihenfolge ihrer Priorität. Die Muster des Fokus stehen bewusst vorne,
- * damit sie bei knappem Zeitbudget nicht herausfallen.
- */
-const fokusVorlagen: Record<Exclude<Fokus, "ausgewogen" | "maximalkraft">, Session[]> = {
-  muskelaufbau: [
-    { titel: "Oberkörper – Drücken", muster: ["druecken", "druecken", "schulter", "arme", "core"] },
-    { titel: "Unterkörper – Kniebeuge", muster: ["kniebeuge", "kniebeuge", "huefte", "core"] },
-    { titel: "Oberkörper – Ziehen", muster: ["ziehen", "ziehen", "schulter", "arme", "core"] },
-    { titel: "Unterkörper – Hüfte", muster: ["huefte", "huefte", "kniebeuge", "core"] },
-    { titel: "Oberkörper gemischt", muster: ["druecken", "ziehen", "schulter", "arme", "arme"] },
-    { titel: "Schwachstellen & Rumpf", muster: ["huefte", "arme", "schulter", "core", "kniebeuge"] },
-  ],
-  fettverbrennung: [
-    { titel: "Ganzkörper-Zirkel A", muster: ["kniebeuge", "druecken", "ziehen", "kondition", "core"] },
-    { titel: "Ganzkörper-Zirkel B", muster: ["huefte", "ziehen", "schulter", "kondition", "core"] },
-    { titel: "Kraft & Intervalle", muster: ["kniebeuge", "kondition", "druecken", "kondition", "core"] },
-    { titel: "Ganzkörper-Zirkel C", muster: ["huefte", "druecken", "ziehen", "kondition", "core"] },
-    { titel: "Metabolik & Rumpf", muster: ["kondition", "kniebeuge", "core", "kondition", "arme"] },
-    { titel: "Oberkörper & Kondition", muster: ["ziehen", "druecken", "schulter", "kondition", "core"] },
-  ],
-  ausdauer: [
-    { titel: "Grundlagenausdauer", muster: ["kondition", "kondition", "core", "huefte"] },
-    { titel: "Intervalle & Kraft", muster: ["kondition", "kniebeuge", "ziehen", "kondition"] },
-    { titel: "Herz-Kreislauf lang", muster: ["kondition", "kondition", "core", "mobility"] },
-    { titel: "Kraftausdauer Ganzkörper", muster: ["kniebeuge", "druecken", "ziehen", "kondition", "core"] },
-    { titel: "Intervalle intensiv", muster: ["kondition", "kondition", "kondition", "core"] },
-    { titel: "Locker & Mobilität", muster: ["kondition", "mobility", "core", "huefte"] },
-  ],
-  "arme-straffen": [
-
-    { titel: "Arme & Drücken", muster: ["arme", "schulter", "arme", "druecken", "core"] },
-    { titel: "Arme & Ziehen", muster: ["arme", "ziehen", "arme", "schulter", "core"] },
-    { titel: "Schultern & Arme", muster: ["schulter", "arme", "arme", "schulter", "core"] },
-    { titel: "Arme & Oberkörper", muster: ["arme", "arme", "druecken", "ziehen", "schulter"] },
-    { titel: "Beine & Rumpf (Ausgleich)", muster: ["kniebeuge", "huefte", "core", "arme", "schulter"] },
-    { titel: "Arme intensiv", muster: ["arme", "arme", "schulter", "arme", "core"] },
-  ],
-  "bauch-weg": [
-    { titel: "Rumpf & Ganzkörper A", muster: ["core", "core", "kniebeuge", "druecken", "core"] },
-    { titel: "Rumpf & Ganzkörper B", muster: ["core", "core", "huefte", "ziehen", "core"] },
-    { titel: "Bauch intensiv", muster: ["core", "core", "core", "kniebeuge", "ziehen"] },
-    { titel: "Rumpf & Oberkörper", muster: ["core", "core", "druecken", "ziehen", "schulter"] },
-    { titel: "Rumpf & Unterkörper", muster: ["core", "core", "huefte", "kniebeuge", "core"] },
-    { titel: "Bauch & Stoffwechsel", muster: ["core", "core", "kniebeuge", "huefte", "core"] },
-  ],
-  "gesaess-beine": [
-    { titel: "Gesäß – Hüftstreckung", muster: ["huefte", "huefte", "huefte", "kniebeuge", "core"] },
-    { titel: "Beine – Kniebeuge", muster: ["kniebeuge", "kniebeuge", "huefte", "kniebeuge", "core"] },
-    { titel: "Gesäß & Rumpf", muster: ["huefte", "huefte", "kniebeuge", "core", "core"] },
-    { titel: "Beine & Gesäß gemischt", muster: ["kniebeuge", "huefte", "kniebeuge", "huefte", "core"] },
-    { titel: "Oberkörper (Ausgleich)", muster: ["ziehen", "druecken", "schulter", "huefte", "core"] },
-    { titel: "Gesäß-Feinschliff", muster: ["huefte", "huefte", "kniebeuge", "core", "huefte"] },
-  ],
-  "ruecken-schonend": [
-    { titel: "Oberkörper geführt", muster: ["druecken", "ziehen", "schulter", "arme", "core"] },
-    { titel: "Beine geführt", muster: ["kniebeuge", "huefte", "kniebeuge", "core", "mobility"] },
-    { titel: "Rücken & Haltung", muster: ["ziehen", "ziehen", "core", "mobility", "arme"] },
-    { titel: "Ganzkörper schonend", muster: ["huefte", "druecken", "ziehen", "kniebeuge", "core"] },
-    { titel: "Rumpf & Mobilität", muster: ["core", "mobility", "ziehen", "huefte", "core"] },
-    { titel: "Oberkörper & Arme", muster: ["druecken", "ziehen", "arme", "schulter", "core"] },
-  ],
-  rueckbildung: [
-    { titel: "Beckenboden & Rumpf", muster: ["mobility", "core", "huefte", "mobility"] },
-    { titel: "Ganzkörper sanft", muster: ["mobility", "kniebeuge", "ziehen", "core"] },
-    { titel: "Kraft & Haltung", muster: ["huefte", "ziehen", "schulter", "mobility"] },
-    { titel: "Aufbau Ganzkörper", muster: ["kniebeuge", "druecken", "ziehen", "core"] },
-  ],
+/** Hauptmuskel je Bewegungsmuster – für Wochenvolumen und 1-Compound+1-Komplementär-Logik. */
+const hauptMuskelVonMuster: Partial<Record<Muster, string>> = {
+  druecken: "Brust",
+  ziehen: "Ruecken",
+  kniebeuge: "Beine",
+  huefte: "Gesaess",
+  schulter: "Schultern",
 };
 
-function wochenVorlage(k: PlanKontext): Session[] {
-  const tage = Math.max(2, Math.min(6, k.tage || 3));
-
-  const vorlage = fokusVorlagen[k.fokus as keyof typeof fokusVorlagen];
-  if (vorlage) {
-    return Array.from({ length: Math.min(tage, 6) }, (_, i) => vorlage[i % vorlage.length]!).map(
-      (s, i) => ({ ...s, titel: i < vorlage.length ? s.titel : `${s.titel} II` }),
-    );
+/** Welche Bewegungsmuster für den gewählten Fokus zusätzlich betont werden (für Volumen & Reihenfolge). */
+function fokusMuskelBetonung(fokus: Fokus): Muster[] {
+  switch (fokus) {
+    case "arme-straffen":
+      return ["arme", "schulter"];
+    case "gesaess-beine":
+      return ["huefte", "kniebeuge"];
+    case "maximalkraft":
+    case "muskelaufbau":
+      return ["druecken", "ziehen", "kniebeuge"];
+    case "ausdauer":
+      return ["kondition"];
+    case "ruecken-schonend":
+      return ["ziehen"];
+    case "rueckbildung":
+      return ["mobility", "huefte"];
+    default:
+      return [];
   }
+}
 
-  /** Echtes Ganzkörpertraining: jede Einheit deckt Beine, Hüfte, Drücken, Ziehen und Rumpf ab. */
+/**
+ * Wochensplit nach Trainingstagen (TEIL 4):
+ * 2–3 Tage → Ganzkörper, 4 Tage → Oberkörper/Unterkörper, 5 Tage → OK/UK + Push/Pull/Beine,
+ * 6 Tage → Push/Pull/Beine ×2. Der Fokus bestimmt nicht den Split, sondern Betonung & Reihenfolge
+ * innerhalb der Einheiten (siehe `ordnePattern`).
+ */
+function sessionsFuerTage(tage: number): Session[] {
   const ganzkoerper = (n: number): Session[] =>
     Array.from({ length: n }, (_, i) => ({
       titel: `Ganzkörper ${String.fromCharCode(65 + i)}`,
       muster:
         i % 2 === 0
-          ? (["kniebeuge", "druecken", "ziehen", "huefte", "core"] as Muster[])
-          : (["huefte", "ziehen", "druecken", "kniebeuge", "core"] as Muster[]),
+          ? (["kniebeuge", "druecken", "ziehen", "huefte", "schulter", "arme"] as Muster[])
+          : (["huefte", "ziehen", "druecken", "kniebeuge", "schulter", "arme"] as Muster[]),
     }));
 
-  if (tage <= 3) return ganzkoerper(tage);
+  if (tage <= 3) return ganzkoerper(Math.max(2, tage));
 
   if (tage === 4) {
     return [
-      { titel: "Oberkörper – Drücken", muster: ["druecken", "schulter", "arme", "core"] },
-      { titel: "Unterkörper – Kniebeuge", muster: ["kniebeuge", "huefte", "core"] },
-      { titel: "Oberkörper – Ziehen", muster: ["ziehen", "ziehen", "arme", "core"] },
-      { titel: "Unterkörper – Hüfte", muster: ["huefte", "kniebeuge", "core"] },
+      { titel: "Oberkörper A", muster: ["druecken", "ziehen", "schulter", "arme"] },
+      { titel: "Unterkörper A", muster: ["kniebeuge", "huefte"] },
+      { titel: "Oberkörper B", muster: ["ziehen", "druecken", "schulter", "arme"] },
+      { titel: "Unterkörper B", muster: ["huefte", "kniebeuge"] },
     ];
   }
 
-  const split: Session[] = [
-    { titel: "Push", muster: ["druecken", "schulter", "arme"] },
-    { titel: "Pull", muster: ["ziehen", "ziehen", "arme"] },
-    { titel: "Beine", muster: ["kniebeuge", "huefte", "core"] },
-    { titel: "Oberkörper", muster: ["druecken", "ziehen", "schulter"] },
-    { titel: "Unterkörper & Rumpf", muster: ["huefte", "kniebeuge", "core"] },
-    { titel: "Schwachstellen", muster: ["arme", "schulter", "core"] },
+  if (tage === 5) {
+    return [
+      { titel: "Oberkörper", muster: ["druecken", "ziehen", "schulter", "arme"] },
+      { titel: "Unterkörper", muster: ["kniebeuge", "huefte"] },
+      { titel: "Push", muster: ["druecken", "schulter", "arme"] },
+      { titel: "Pull", muster: ["ziehen", "arme"] },
+      { titel: "Beine", muster: ["kniebeuge", "huefte"] },
+    ];
+  }
+
+  // 6 Tage: Push/Pull/Beine im Doppellauf.
+  return [
+    { titel: "Push A", muster: ["druecken", "schulter", "arme"] },
+    { titel: "Pull A", muster: ["ziehen", "arme"] },
+    { titel: "Beine A", muster: ["kniebeuge", "huefte"] },
+    { titel: "Push B", muster: ["druecken", "schulter", "arme"] },
+    { titel: "Pull B", muster: ["ziehen", "arme"] },
+    { titel: "Beine B", muster: ["kniebeuge", "huefte"] },
   ];
-  return split.slice(0, tage);
 }
 
-/** Zusätzliche Muster, die ohne Fokus-Vorlage eingestreut werden. */
-function fokusMuster(fokus: Fokus): Muster[] {
-  return fokus in fokusVorlagen ? [] : ["core"];
+/**
+ * Stellt die Muster einer Einheit so um, dass Grundübungs-Muster (Drücken/Ziehen/Kniebeuge/Hüfte)
+ * vor Isolationsmustern stehen und Fokus-Muskeln früh in der Einheit erscheinen.
+ */
+function ordnePattern(muster: Muster[], fokus: Fokus): Muster[] {
+  const betont = new Set(fokusMuskelBetonung(fokus));
+  const grundMuster: Muster[] = ["kniebeuge", "druecken", "ziehen", "huefte"];
+  const prio = (m: Muster) => (betont.has(m) ? 0 : grundMuster.includes(m) ? 1 : 2);
+  return [...muster].sort((a, b) => prio(a) - prio(b));
 }
-
-
-
 
 function bewerte(u: LibUebung, k: PlanKontext): number {
   let s = 10;
@@ -279,11 +245,17 @@ function bewerte(u: LibUebung, k: PlanKontext): number {
   if (k.equipment.length > 0 && !u.equipment.some((e) => k.equipment.includes(e))) {
     if (!u.equipment.includes("körpergewicht")) return -1;
   }
+  // Harte Einschränkungen: Übungen, die bei einer gemeldeten Einschränkung zu meiden sind, fallen
+  // vollständig raus – unabhängig von sonstiger Eignung.
+  const einschraenkungen = k.einschraenkungen ?? [];
+  if (einschraenkungen.length > 0 && u.meidetBei?.some((m) => einschraenkungen.includes(m))) return -1;
+  if (einschraenkungen.length > 0 && u.bevorzugtBei?.some((m) => einschraenkungen.includes(m))) s += 6;
 
   // Erfahrung & Alter
   const alter = k.alter ?? 35;
   if (k.erfahrung === "Anfänger" && !u.einsteiger) s -= 6;
-  if (alter >= 55 && !u.rueckenschonend) s -= 4;
+  if (alter >= 50 && !u.rueckenschonend) s -= 4;
+  if (alter >= 50 && u.rueckenschonend) s += 2;
   if (alter >= 55 && u.einsteiger) s += 1;
   if (k.erfahrung === "Erfahren" && u.grund) s += 1;
 
@@ -292,7 +264,7 @@ function bewerte(u: LibUebung, k: PlanKontext): number {
     s += u.grund ? 4 : -3;
     if (u.equipment.includes("langhantel")) s += 2;
   }
-  if (k.ziel === "muskelaufbau") s += u.grund ? 2 : 1;
+  if (k.ziel === "muskelaufbau" || k.ziel === "recomposition") s += u.grund ? 2 : 1;
   if (k.ziel === "fettabbau") s += u.muster === "core" || u.equipment.includes("maschine") ? 1 : 0;
   if (k.ziel === "fitness") {
     s += u.einsteiger ? 3 : -2;
@@ -301,15 +273,7 @@ function bewerte(u: LibUebung, k: PlanKontext): number {
     if (u.id === "bank-lh" || u.id === "kreuzheben" || u.id === "kniebeuge-lh") s -= 4;
   }
 
-  // Geschlechtsspezifische Präferenzen (statistische Schwerpunkte, jederzeit änderbar)
-  if (k.geschlecht === "weiblich") {
-    if (u.muster === "huefte" || u.muskel === "Gesäß") s += 2;
-    if (u.id === "bank-lh") s -= 3;
-    if (u.muster === "mobility") s += 1;
-  }
-  if (k.geschlecht === "maennlich" && (u.muster === "druecken" || u.muskel === "Rücken")) s += 1;
-
-  // Fokus
+  // Fokus (keine Geschlechts-Gewichtung – siehe TEIL 4)
   switch (k.fokus) {
     case "muskelaufbau":
       // Hypertrophie: mehrgelenkige Übungen mit hoher Spannung, ergänzt um Isolation.
@@ -331,7 +295,6 @@ function bewerte(u: LibUebung, k: PlanKontext): number {
     case "arme-straffen":
       if (u.muster === "arme" || u.muster === "schulter") s += 5;
       break;
-
     case "bauch-weg":
       if (u.muster === "core") s += 5;
       if (u.grund) s += 2; // hoher Energieverbrauch
@@ -384,10 +347,11 @@ function begruendung(u: LibUebung, k: PlanKontext): string {
   }
   if (u.grund) teile.push("Grundübung mit hohem Reiz");
   if (k.erfahrung === "Anfänger" && u.einsteiger) teile.push("technisch leicht zu lernen");
-  if ((k.alter ?? 35) >= 55 && u.rueckenschonend) teile.push("gelenk- und rückenfreundlich");
-  if (k.geschlecht === "weiblich" && (u.muskel === "Gesäß" || u.muster === "huefte"))
-    teile.push("starker Gesäß-Reiz");
-  if (teile.length === 0) teile.push("deckt das geplante Bewegungsmuster ab");
+  if ((k.alter ?? 35) >= 50 && u.rueckenschonend) teile.push("gelenk- und rückenfreundlich");
+  const einschraenkungen = k.einschraenkungen ?? [];
+  if (einschraenkungen.length > 0 && u.bevorzugtBei?.some((m) => einschraenkungen.includes(m)))
+    teile.push("schonende Alternative bei deiner Einschränkung");
+  if (teile.length === 0) teile.push("deckt das geplante Bewegungsmuster effektiv ab");
   return teile.join(" · ");
 }
 
@@ -412,13 +376,68 @@ function begruendungFuerManuell(u: LibUebung, k?: PlanKontext): string {
   return basis;
 }
 
-function waehle(muster: Muster, k: PlanKontext, benutzt: Set<string>): LibUebung | null {
+/** Wählt die beste verfügbare Übung für ein Muster; `bevorzugeMuskel` steuert z. B. Trizeps/Bizeps am Push/Pull-Tag. */
+function waehle(
+  muster: Muster,
+  k: PlanKontext,
+  benutzt: Set<string>,
+  bevorzugeMuskel?: string,
+): LibUebung | null {
   const kandidaten = uebungsBibliothek
     .filter((u) => u.muster === muster && !benutzt.has(u.id))
-    .map((u) => ({ u, s: bewerte(u, k) }))
+    .map((u) => ({
+      u,
+      s: bewerte(u, k) + (bevorzugeMuskel && u.muskel === bevorzugeMuskel ? 5 : 0),
+    }))
     .filter((x) => x.s >= 0)
     .sort((a, b) => b.s - a.s);
   return kandidaten[0]?.u ?? null;
+}
+
+/** Zweite, ergänzende Übung zum selben Muster (Komplementär zur Compound-Übung): bevorzugt gedehnte
+ * Endposition / stabile Variante statt eines weiteren freien Grundhebens. */
+function waehleKomplementaer(
+  muster: Muster,
+  k: PlanKontext,
+  benutzt: Set<string>,
+  bevorzugeMuskel?: string,
+): LibUebung | null {
+  const kandidaten = uebungsBibliothek
+    .filter((u) => u.muster === muster && !benutzt.has(u.id))
+    .map((u) => {
+      let s = bewerte(u, k);
+      if (bevorzugeMuskel && u.muskel === bevorzugeMuskel) s += 5;
+      // Komplementär: Isolation/Maschine/geführte und gedehnte Varianten bevorzugen.
+      if (!u.grund) s += 3;
+      if (u.equipment.includes("maschine") || u.equipment.includes("kabel")) s += 2;
+      if (/dehnung|gestreckt/i.test(u.hinweis)) s += 3;
+      return { u, s };
+    })
+    .filter((x) => x.s >= 0)
+    .sort((a, b) => b.s - a.s);
+  return kandidaten[0]?.u ?? null;
+}
+
+/** Zielsätze je Satztyp (Compound/Isolation) und Ziel (TEIL 4: Wiederholungsbereiche nach Ziel). */
+function wdhBereichFuer(k: PlanKontext, compound: boolean): string {
+  switch (k.ziel) {
+    case "kraft":
+      return compound ? "3–6" : "6–10";
+    case "fitness":
+      return "8–15";
+    case "muskelaufbau":
+    case "recomposition":
+    case "fettabbau":
+    default:
+      return compound ? "6–10" : "10–15";
+  }
+}
+
+/** Satzanzahl pro Einheit nach Dauer (TEIL 4: 60≈16–20, 45≈12–15, 30≈8–10 Arbeitssätze gesamt). */
+function satzBudgetFuerDauer(dauer: number): { min: number; max: number; uebungen: number } {
+  if (dauer <= 30) return { min: 8, max: 10, uebungen: 4 };
+  if (dauer <= 45) return { min: 12, max: 15, uebungen: 5 };
+  return { min: 16, max: 20, uebungen: 7 };
 }
 
 export type Trainingstag = {
@@ -427,35 +446,87 @@ export type Trainingstag = {
   uebungen: PlanUebung[];
 };
 
-/** Erzeugt den Wochenplan aus dem Kontext. */
+/** Erzeugt den Wochenplan aus dem Kontext (TEIL 4). */
 export function erzeugePlan(kontext: PlanKontext): Trainingstag[] {
   // Rückbildung ist nur nach einer Schwangerschaft sinnvoll.
   const k: PlanKontext =
     kontext.fokus === "rueckbildung" && kontext.geschlecht === "maennlich"
       ? { ...kontext, fokus: "ausgewogen" }
       : kontext;
-  const vorlage = wochenVorlage(k);
-  const extra = fokusMuster(k.fokus);
 
+  const tage = Math.max(2, Math.min(6, k.tage || 3));
+  const sessions = sessionsFuerTage(tage);
+  const budget = satzBudgetFuerDauer(k.dauer);
 
-  return vorlage.map((s, i) => {
+  // Oberkörper-lastiger Fokus (Arme/Schultern betonen): Beine insgesamt auf max. 2 Übungen/Woche begrenzen.
+  const beinLimitProWoche = k.fokus === "arme-straffen" ? 2 : Infinity;
+  let beinUebungenGenutzt = 0;
+
+  return sessions.map((s, i) => {
     const benutzt = new Set<string>();
-    // Fokus-Muster direkt nach der ersten Grundübung einfügen, damit sie nicht
-    // durch das Zeitbudget herausfallen.
-    const musterListe = [s.muster[0]!, ...extra, ...s.muster.slice(1)];
-    const maxUebungen = k.dauer <= 20 ? 3 : k.dauer <= 30 ? 4 : k.dauer <= 45 ? 5 : 6;
+    const musterListe = ordnePattern(s.muster, k.fokus);
+    const titelLower = s.titel.toLowerCase();
+    // Arme folgen dem Tag: Push → Trizeps, Pull/Ziehen-lastig → Bizeps.
+    const armMuskelFuerTag = titelLower.includes("pull")
+      ? "Bizeps"
+      : titelLower.includes("push")
+        ? "Trizeps"
+        : undefined;
 
     const uebungen: PlanUebung[] = [];
-
-    for (const m of musterListe) {
-      if (uebungen.length >= maxUebungen) break;
-      const u = waehle(m, k, benutzt);
-      if (!u) continue;
+    const push = (u: LibUebung) => {
       benutzt.add(u.id);
       uebungen.push({ ...u, begruendung: begruendung(u, k) });
+    };
+
+    // Durchlauf 1: je Hauptmuster eine Compound-Übung (Grundübungen zuerst, Fokus-Muskeln früh).
+    for (const m of musterListe) {
+      if (uebungen.length >= budget.uebungen) break;
+      if ((m === "kniebeuge" || m === "huefte") && beinUebungenGenutzt >= beinLimitProWoche) continue;
+      const bevorzugt = m === "arme" ? armMuskelFuerTag : undefined;
+      const u = waehle(m, k, benutzt, bevorzugt);
+      if (!u) continue;
+      push(u);
+      if (m === "kniebeuge" || m === "huefte") beinUebungenGenutzt++;
     }
 
-    return { index: i, titel: s.titel, uebungen };
+    // Durchlauf 2: je Hauptmuskel (Drücken/Ziehen/Kniebeuge/Hüfte/Schulter) eine komplementäre Übung.
+    for (const m of musterListe) {
+      if (uebungen.length >= budget.uebungen) break;
+      if (!hauptMuskelVonMuster[m]) continue;
+      if ((m === "kniebeuge" || m === "huefte") && beinUebungenGenutzt >= beinLimitProWoche) continue;
+      const u = waehleKomplementaer(m, k, benutzt);
+      if (!u) continue;
+      push(u);
+      if (m === "kniebeuge" || m === "huefte") beinUebungenGenutzt++;
+    }
+
+    // Satzbudget: Zielsätze je Übung setzen (Compound mehr Sätze als Isolation) und an das Dauer-Budget anpassen.
+    const mitSaetzen = uebungen.map((u) => ({
+      ...u,
+      zielSaetze: u.grund ? (k.ziel === "kraft" ? 5 : 4) : 3,
+      wdhBereich: wdhBereichFuer(k, u.grund),
+    }));
+    let summe = mitSaetzen.reduce((a, u) => a + u.zielSaetze, 0);
+    let idx = 0;
+    // Auffüllen, falls unter dem Minimum (z. B. wenig Übungen gefunden).
+    while (summe < budget.min && mitSaetzen.length > 0) {
+      mitSaetzen[idx % mitSaetzen.length]!.zielSaetze += 1;
+      summe += 1;
+      idx++;
+    }
+    // Kürzen, falls über dem Maximum: zuerst bei Isolationsübungen am Ende reduzieren.
+    idx = mitSaetzen.length - 1;
+    while (summe > budget.max && mitSaetzen.some((u) => u.zielSaetze > 2)) {
+      const u = mitSaetzen[idx % mitSaetzen.length]!;
+      if (u.zielSaetze > 2) {
+        u.zielSaetze -= 1;
+        summe -= 1;
+      }
+      idx--;
+    }
+
+    return { index: i, titel: s.titel, uebungen: mitSaetzen };
   });
 }
 
@@ -705,6 +776,64 @@ const PERSOENLICH_TEMPLATES: { titel: string; booster: boolean; uebungen: Zeile[
   },
 ];
 
+/** Normalisiert Übungsnamen für den Dedupe-Vergleich (Groß-/Kleinschreibung, Leerzeichen). */
+function normalisierterName(s: string): string {
+  return s.toLowerCase().trim().replace(/\s+/g, " ");
+}
+
+/** Nächste freie ID für eine von der KI neu definierte Übung. */
+function naechsteEigeneKiId(belegt: Set<string>): string {
+  let i = 1;
+  while (belegt.has(`eigen-ki-${i}`)) i++;
+  return `eigen-ki-${i}`;
+}
+
+/** Ordnet einen Freitext-Muskel grob einem Bewegungsmuster zu (für Bild & Alternativen). */
+function musterAusMuskel(muskel: string, grund: boolean): Muster {
+  const m = muskel.toLowerCase();
+  if (m.includes("brust")) return "druecken";
+  if (m.includes("rücken") || m.includes("ruecken") || m.includes("lat")) return "ziehen";
+  if (m.includes("gesäß") || m.includes("gesaess") || m.includes("hüfte") || m.includes("huefte")) return "huefte";
+  if (m.includes("bein") || m.includes("quad") || m.includes("oberschenkel")) return "kniebeuge";
+  if (m.includes("schulter")) return "schulter";
+  if (m.includes("bizeps") || m.includes("trizeps") || m.includes("arm")) return "arme";
+  if (m.includes("bauch") || m.includes("core") || m.includes("rumpf") || m.includes("beckenboden")) return "core";
+  if (m.includes("ausdauer") || m.includes("herz") || m.includes("kondition")) return "kondition";
+  if (m.includes("mobil")) return "mobility";
+  return grund ? "druecken" : "core";
+}
+
+function steigerungFuerAusstattung(equipment: Equipment[]): number {
+  const nurKh = equipment.includes("kurzhantel") && !equipment.some((x) => x === "kabel" || x === "maschine");
+  return nurKh ? 2 : 2.5;
+}
+
+/** Von der KI neu definierte Übung (wird beim Übernehmen zu einer eigenen Übung). */
+export type KiNeueUebungEingabe = { name: string; muskel: string; equipment: string[]; grund: boolean; wdh: string; technik: string };
+export type KiUebungEingabe = { id: string; saetze: number; wdhVon: number; wdhBis: number; neu?: KiNeueUebungEingabe | undefined };
+export type KiTemplateEingabe = { titel: string; uebungen: KiUebungEingabe[] };
+
+/** Baut aus einem KI-Vorschlag für eine neue Übung einen eigenen Bibliothekseintrag (Platzhalterbild). */
+function eigeneAusKiVorschlag(id: string, neu: KiNeueUebungEingabe, wdhVon: number, wdhBis: number): LibUebung {
+  const equipment = mappeEquipment(neu.equipment);
+  return {
+    id,
+    name: neu.name.slice(0, 120) || "Neue Übung",
+    muskel: neu.muskel.slice(0, 80) || "Ganzkörper",
+    muster: musterAusMuskel(neu.muskel, neu.grund),
+    equipment: equipment.length > 0 ? equipment : ["körpergewicht"],
+    grund: neu.grund,
+    zielSaetze: 3,
+    wdhBereich: neu.wdh || `${wdhVon}–${wdhBis}`,
+    startGewicht: 0,
+    hinweis: neu.technik.slice(0, 300),
+    rueckenschonend: true,
+    rueckbildung: false,
+    einsteiger: !neu.grund,
+    bildMuster: true,
+  };
+}
+
 function steigerungFuer(id: string): number {
   if (id === "beinpresse" || id === "rdl-kh" || id === "kreuzheben") return 5;
   const u = uebungById.get(id) ?? PERSOENLICH_EIGENE.find((x) => x.id === id);
@@ -928,7 +1057,7 @@ export function usePlanEinstellungen() {
 
   /** Übernimmt KI-Templates als eigene Vorlagen mit Vorgaben. Gibt den ersten Index zurück. */
   const uebernehmeKiPlan = useCallback(
-    (templates: { titel: string; uebungen: { id: string; saetze: number; wdhVon: number; wdhBis: number }[] }[]) => {
+    (templates: KiTemplateEingabe[]) => {
       let erster = 100;
       aktualisiere((alt) => {
         const start = Math.max(99, ...(alt.vorlagen ?? []).map((v) => v.index)) + 1;
@@ -936,18 +1065,52 @@ export function usePlanEinstellungen() {
         const vorlagen = [...(alt.vorlagen ?? [])];
         const zusatz = { ...alt.zusatz };
         const vorgaben = { ...(alt.vorgaben ?? {}) };
+        const eigene = [...(alt.eigene ?? [])];
+        const idNachName = new Map<string, string>();
+        for (const u of uebungsBibliothek) idNachName.set(normalisierterName(u.name), u.id);
+        for (const u of eigene) idNachName.set(normalisierterName(u.name), u.id);
+        const belegteIds = new Set<string>([...uebungById.keys(), ...eigene.map((u) => u.id)]);
+
         templates.forEach((t, i) => {
           const index = start + i;
           vorlagen.push({ index, titel: t.titel });
-          zusatz[String(index)] = t.uebungen.map((u) => u.id);
-          vorgaben[String(index)] = Object.fromEntries(
-            t.uebungen.map((u) => {
-              const lib = uebungById.get(u.id) ?? (alt.eigene ?? []).find((x) => x.id === u.id);
-              return [u.id, { saetze: u.saetze, wdhVon: u.wdhVon, wdhBis: u.wdhBis, grunduebung: lib?.grund ?? false, steigerungKg: steigerungFuer(u.id) }];
-            }),
-          );
+          const ids: string[] = [];
+          const vg: Record<string, Vorgabe> = {};
+          for (const u of t.uebungen) {
+            let lib: LibUebung | undefined;
+            let id = u.id;
+
+            if (u.neu) {
+              const key = normalisierterName(u.neu.name);
+              const vorhandeneId = idNachName.get(key);
+              if (vorhandeneId) {
+                id = vorhandeneId;
+                lib = uebungById.get(id) ?? eigene.find((x) => x.id === id);
+              } else {
+                id = naechsteEigeneKiId(belegteIds);
+                belegteIds.add(id);
+                lib = eigeneAusKiVorschlag(id, u.neu, u.wdhVon, u.wdhBis);
+                eigene.push(lib);
+                idNachName.set(key, id);
+              }
+            } else {
+              lib = uebungById.get(id) ?? eigene.find((x) => x.id === id);
+            }
+            if (!lib || ids.includes(id)) continue;
+
+            ids.push(id);
+            vg[id] = {
+              saetze: u.saetze,
+              wdhVon: u.wdhVon,
+              wdhBis: u.wdhBis,
+              grunduebung: lib.grund,
+              steigerungKg: steigerungFuerAusstattung(lib.equipment),
+            };
+          }
+          zusatz[String(index)] = ids;
+          vorgaben[String(index)] = vg;
         });
-        return { ...alt, vorlagen, zusatz, vorgaben };
+        return { ...alt, vorlagen, zusatz, vorgaben, eigene };
       });
       return erster;
     },

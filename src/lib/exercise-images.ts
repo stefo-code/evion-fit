@@ -67,3 +67,17 @@ export const uebungsBilder: Record<string, BildPaar> = (() => {
   return alle;
 })();
 
+
+/**
+ * Hat diese Übung ein eigenes (fotografiertes) Bild für das angegebene Geschlecht,
+ * statt auf das generische „neutral“-Foto oder die Muskelgruppen-Illustration
+ * zurückzufallen? Wird u. a. genutzt, um KI-generierte neue Übungen ohne Foto
+ * als „Bild fehlt“ zu kennzeichnen.
+ */
+export function hatEigenesBild(id: string, geschlecht?: string | null): boolean {
+  if (!id || id === "neutral") return false;
+  const paar = uebungsBilder[id];
+  if (!paar) return false;
+  const bild = geschlecht === "weiblich" ? paar.w : paar.m;
+  return Boolean(bild);
+}

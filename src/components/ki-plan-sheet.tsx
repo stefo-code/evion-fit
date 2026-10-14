@@ -6,9 +6,10 @@ import { Chip } from "@/components/ui-kit";
 import { uebungsBibliothek, type LibUebung } from "@/lib/exercise-library";
 import { effektivesProfil, type OnboardingProfil } from "@/lib/onboarding-store";
 import { kiPlanErstellen } from "@/lib/ki-plan.functions";
+import type { KiNeueUebungEingabe } from "@/lib/training-plan";
 import { altersgruppe, fordereKi, rund, useKiStatus } from "@/lib/privatsphaere";
 import { KiGesperrt } from "@/components/ki-einwilligung";
-type KiPlanTemplate = { titel: string; uebungen: { id: string; saetze: number; wdhVon: number; wdhBis: number; begruendung: string }[] };
+type KiPlanTemplate = { titel: string; uebungen: { id: string; saetze: number; wdhVon: number; wdhBis: number; begruendung: string; neu?: KiNeueUebungEingabe | undefined }[] };
 
 const EQUIPMENT = ["Körpergewicht", "Kurzhantel", "Langhantel", "Maschine", "Kabel", "Band"];
 
@@ -125,7 +126,7 @@ export function KiPlanSheet({
                 <ul className="mt-2 space-y-2">
                   {t.uebungen.map((u) => (
                     <li key={u.id} className="text-sm">
-                      <p className="font-semibold">{nameVon(u.id)} <span className="num font-normal text-muted-foreground">· {u.saetze} × {u.wdhVon}–{u.wdhBis}</span></p>
+                      <p className="font-semibold">{u.neu?.name ?? nameVon(u.id)} <span className="num font-normal text-muted-foreground">· {u.saetze} × {u.wdhVon}–{u.wdhBis}</span>{u.neu && <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">Neu · Bild fehlt</span>}</p>
                       {u.begruendung && <p className="text-xs text-muted-foreground">{u.begruendung}</p>}
                     </li>
                   ))}

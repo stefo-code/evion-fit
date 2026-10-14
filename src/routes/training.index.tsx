@@ -1,3 +1,4 @@
+import { TrainingAnalyseExtra } from "@/components/training-analyse-extra";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { SuppCheckliste, nachDrei } from "@/components/supp-checkliste";
 import { KOFFEIN_IDS, useSuppLog } from "@/lib/supplement-log";
@@ -783,6 +784,7 @@ function TrainingPage() {
       )}
       {segment === "analyse" && (
         <>
+      <TrainingAnalyseExtra />
       <Section titel="Muskelstatus">
         <Card>
           <MuscleMap />

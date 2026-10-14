@@ -72,7 +72,10 @@ function ErnaehrungPage() {
     wasserHinzufuegen,
     vorratHinzufuegen,
     vorratEntfernen,
+    favoriten,
+    favoritUmschalten,
   } = useErnaehrung();
+  const { aktivitaet } = useAktivitaet();
 
   const [bild, setBild] = useState<string | null>(null);
   const [analyse, setAnalyse] = useState<FotoAnalyse | null>(null);
@@ -88,6 +91,11 @@ function ErnaehrungPage() {
   const [produkt, setProdukt] = useState<BarcodeProdukt | null>(null);
   const [produktMenge, setProduktMenge] = useState(100);
   const [suchtCode, setSuchtCode] = useState(false);
+  const [mahlzeitFilter, setMahlzeitFilter] = useState<MahlzeitTyp | null>(null);
+  const [zeitFilter, setZeitFilter] = useState<number | null>(null);
+  const [kuecheFilter, setKuecheFilter] = useState<Kueche | null>(null);
+  const [alleAnzeigen, setAlleAnzeigen] = useState(false);
+  const [vorschlagNonce, setVorschlagNonce] = useState(0);
   const kamera = useRef<HTMLInputElement>(null);
   const analysiere = useServerFn(analysiereFoto);
   const barcodeSuche = useServerFn(produktPerBarcode);
@@ -117,6 +125,16 @@ function ErnaehrungPage() {
   const offenKcal = Math.max(0, plan.kalorien - heuteSumme.kcal);
   const offenProtein = Math.max(0, plan.protein - heuteSumme.protein);
   const wasserZiel = 2500;
+  const verbleibendeMahlzeiten = Math.max(1, profil.mahlzeiten - heutigeMahlzeiten.length);
+
+  const kuerzlichTrainiert = useMemo(() => {
+    const dreiStundenMs = 3 * 60 * 60 * 1000;
+    const jetzt = Date.now();
+    return aktivitaet.einheiten.some((e) => {
+      const zeit = new Date(e.datum).getTime();
+      return jetzt - zeit <= dreiStundenMs && jetzt - zeit >= 0;
+    });
+  }, [aktivitaet.einheiten]);
 
   const treffer = useMemo(
     () =>
@@ -124,13 +142,38 @@ function ErnaehrungPage() {
         vorrat: daten.vorrat,
         offenKcal,
         offenProtein,
+        verbleibendeMahlzeiten,
         ernaehrungsform: profil.ernaehrungsform,
         allergien: profil.allergien,
+        abneigungen: profil.vermiedeneLebensmittel,
+        lieblingsgerichte: profil.lieblingsgerichte,
+        favoritenIds: favoriten,
+        kuerzlichTrainiert,
+        mahlzeitFilter,
+        kuecheFilter,
+        zeitFilter,
       }),
-    [daten.vorrat, offenKcal, offenProtein, profil.ernaehrungsform, profil.allergien],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      daten.vorrat,
+      offenKcal,
+      offenProtein,
+      verbleibendeMahlzeiten,
+      profil.ernaehrungsform,
+      profil.allergien,
+      profil.vermiedeneLebensmittel,
+      profil.lieblingsgerichte,
+      favoriten,
+      kuerzlichTrainiert,
+      mahlzeitFilter,
+      kuecheFilter,
+      zeitFilter,
+      vorschlagNonce,
+    ],
   );
 
-  const sichtbareRezepte = (nurVorrat ? treffer.filter((t) => t.abdeckung >= 0.75) : treffer).slice(0, 8);
+  const gefilterteTreffer = nurVorrat ? treffer.filter((t) => t.abdeckung >= 0.75) : treffer;
+  const sichtbareRezepte = alleAnzeigen ? gefilterteTreffer.slice(0, 8) : gefilterteTreffer.slice(0, 3);
 
   const gefiltert = suche
     ? lebensmittel.filter((l) => l.name.toLowerCase().includes(suche.toLowerCase())).slice(0, 8)
@@ -177,13 +220,13 @@ function ErnaehrungPage() {
           />
           <div className="min-w-0 space-y-3">
             <Makro label="Protein" ist={heuteSumme.protein} ziel={plan.protein} unit="g" tone="primary" />
-            <Makro label="Kohlenhydrate" ist={heuteSumme.kh} ziel={plan.kohlenhydrate} unit="g" tone="info" />
+            <Makro label="KH" ist={heuteSumme.kh} ziel={plan.kohlenhydrate} unit="g" tone="info" />
             <Makro label="Fett" ist={heuteSumme.fett} ziel={plan.fett} unit="g" tone="accent" />
           </div>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl bg-secondary/40 p-3 text-sm">
           <Droplets className="h-4 w-4 shrink-0 text-info" />
-          Wasser {(wasserHeute / 1000).toFixed(2).replace(".", ",")} / 2,5 l
+          Wasser {(wasserHeute / 1000).toLocaleString("de-DE", { maximumFractionDigits: 1 })} / 2,5 l
           <span className="ml-auto flex gap-2">
             <button
               onClick={() => wasserHinzufuegen(250)}
@@ -606,6 +649,52 @@ function ErnaehrungPage() {
               Nur mit meinem Vorrat
             </Chip>
           </div>
+
+          <p className="label-xs mt-4">Mahlzeit</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Chip active={!mahlzeitFilter} onClick={() => setMahlzeitFilter(null)}>
+              Alle
+            </Chip>
+            {mahlzeitListe.map((m) => (
+              <Chip key={m} active={mahlzeitFilter === m} onClick={() => setMahlzeitFilter(mahlzeitFilter === m ? null : m)}>
+                {m}
+              </Chip>
+            ))}
+          </div>
+
+          <p className="label-xs mt-4">Zeit</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Chip active={!zeitFilter} onClick={() => setZeitFilter(null)}>
+              Egal
+            </Chip>
+            {[10, 20, 40].map((z) => (
+              <Chip key={z} active={zeitFilter === z} onClick={() => setZeitFilter(zeitFilter === z ? null : z)}>
+                ≤ {z} Min.
+              </Chip>
+            ))}
+          </div>
+
+          <p className="label-xs mt-4">Küche</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Chip active={!kuecheFilter} onClick={() => setKuecheFilter(null)}>
+              Alle
+            </Chip>
+            {kuechenListe.map((k) => (
+              <Chip key={k} active={kuecheFilter === k} onClick={() => setKuecheFilter(kuecheFilter === k ? null : k)}>
+                {k}
+              </Chip>
+            ))}
+          </div>
+
+          <button
+            onClick={() => {
+              sichtbareRezepte.forEach((t) => vermerkeAngesehen(t.rezept.id));
+              setVorschlagNonce((n) => n + 1);
+            }}
+            className="mt-4 flex items-center gap-1.5 rounded-xl bg-secondary px-3 py-1.5 text-xs font-bold"
+          >
+            <RefreshCcw className="h-3.5 w-3.5" /> Neue Vorschläge
+          </button>
         </Card>
 
         <div className="mt-3 space-y-3">
@@ -614,16 +703,23 @@ function ErnaehrungPage() {
               key={t.rezept.id}
               treffer={t}
               offen={offenesRezept === t.rezept.id}
-              onToggle={() => setOffenesRezept(offenesRezept === t.rezept.id ? null : t.rezept.id)}
+              istFavorit={favoriten.includes(t.rezept.id)}
+              onFavorit={() => favoritUmschalten(t.rezept.id)}
+              onToggle={() => {
+                const wirdGeoeffnet = offenesRezept !== t.rezept.id;
+                setOffenesRezept(wirdGeoeffnet ? t.rezept.id : null);
+                if (wirdGeoeffnet) vermerkeAngesehen(t.rezept.id);
+              }}
               onGegessen={() => {
                 mahlzeitHinzufuegen({
                   name: t.rezept.name,
-                  kcal: t.rezept.kcal,
-                  protein: t.rezept.protein,
-                  kh: t.rezept.kh,
-                  fett: t.rezept.fett,
+                  kcal: t.kcalAngepasst,
+                  protein: t.proteinAngepasst,
+                  kh: Math.round(t.rezept.kh * t.portionsfaktor),
+                  fett: Math.round(t.rezept.fett * t.portionsfaktor),
                   quelle: "rezept",
                 });
+                vermerkeGekocht(t.rezept.id);
                 toast.success(`${t.rezept.name} erfasst`);
               }}
               onEinkauf={() => {
@@ -636,6 +732,14 @@ function ErnaehrungPage() {
             <Card className="text-sm text-muted-foreground">
               Keine Treffer – füge weitere Zutaten hinzu oder zeige alle Rezepte an.
             </Card>
+          )}
+          {!alleAnzeigen && gefilterteTreffer.length > 3 && (
+            <button
+              onClick={() => setAlleAnzeigen(true)}
+              className="w-full rounded-xl bg-secondary px-3 py-2 text-xs font-bold"
+            >
+              Alle anzeigen ({gefilterteTreffer.length})
+            </button>
           )}
         </div>
       </Section>
@@ -651,12 +755,16 @@ function ErnaehrungPage() {
 function RezeptKarte({
   treffer,
   offen,
+  istFavorit,
+  onFavorit,
   onToggle,
   onGegessen,
   onEinkauf,
 }: {
   treffer: RezeptTreffer;
   offen: boolean;
+  istFavorit: boolean;
+  onFavorit: () => void;
   onToggle: () => void;
   onGegessen: () => void;
   onEinkauf: () => void;
@@ -664,17 +772,19 @@ function RezeptKarte({
   const r = treffer.rezept;
   return (
     <Card className="p-0">
-      <button onClick={onToggle} className="w-full p-5 text-left">
+      <div className="flex items-start">
+        <button onClick={onToggle} className="w-full p-5 text-left">
         <div className="flex flex-col gap-2 sm:grid sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-3">
           <div className="min-w-0">
             <p className="font-display text-lg font-bold">{r.name}</p>
             <p className="text-xs text-muted-foreground">
               {r.zeit} Min. · {r.portionen} Portion{r.portionen > 1 ? "en" : ""} · {r.tags.join(" · ")}
+              {treffer.portionsfaktor !== 1 ? ` · Portion ×${treffer.portionsfaktor.toLocaleString("de-DE")}` : ""}
             </p>
           </div>
           <span className="flex shrink-0 items-center gap-2">
             <span className="num text-sm font-bold">
-              {r.kcal} kcal · {r.protein} g
+              {treffer.kcalAngepasst} kcal · {treffer.proteinAngepasst} g
             </span>
             <ChevronDown className={cn("h-4 w-4 transition-transform", offen && "rotate-180")} />
           </span>
@@ -691,7 +801,15 @@ function RezeptKarte({
         >
           {treffer.passung}
         </p>
-      </button>
+        </button>
+        <button
+          onClick={onFavorit}
+          aria-label={istFavorit ? `${r.name} aus Favoriten entfernen` : `${r.name} als Favorit speichern`}
+          className="shrink-0 p-5"
+        >
+          <Heart className={cn("h-5 w-5", istFavorit ? "fill-primary text-primary" : "text-muted-foreground")} />
+        </button>
+      </div>
 
       {offen && (
         <div className="border-t border-border p-5 text-sm">
@@ -716,7 +834,14 @@ function RezeptKarte({
           </ol>
 
           <p className="mt-4 rounded-xl bg-secondary/50 p-3 text-xs text-muted-foreground">
-            Je Portion: {r.kcal} kcal · {r.protein} g Protein · {r.kh} g KH · {r.fett} g Fett
+            Je Portion (Rezept): {r.kcal} kcal · {r.protein} g Protein · {r.kh} g KH · {r.fett} g Fett
+            {treffer.portionsfaktor !== 1 && (
+              <>
+                <br />
+                Angepasst (×{treffer.portionsfaktor.toLocaleString("de-DE")}): {treffer.kcalAngepasst} kcal ·{" "}
+                {treffer.proteinAngepasst} g Protein
+              </>
+            )}
           </p>
 
           <div className="mt-4 flex flex-wrap gap-2">
