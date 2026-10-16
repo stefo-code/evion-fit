@@ -614,6 +614,8 @@ export type PlanEinstellungen = {
   ohneBooster?: number[];
   /** Persönlicher 4er-Plan wurde einmalig angelegt. */
   persoenlichV1?: boolean;
+  /** Persönlicher Plan auf Push/Pull-Rotation (Okt. 2026) umgestellt. */
+  persoenlichV2?: boolean;
   /** Pause Grundübungen in Sekunden (Standard 150). */
   pauseGrundSek?: number;
   /** Pause Isolationsübungen in Sekunden (Standard 75). */
@@ -719,63 +721,134 @@ const PERSOENLICH_EIGENE: LibUebung[] = [
   eigeneP("eigen-p-schraeg-presse", "Schrägbank-Brustpresse (Maschine)", "Brust", "druecken", ["maschine"], 35, "Griffe auf Höhe der oberen Brust, Schultern unten halten."),
   eigeneP("eigen-p-pullover", "Lat-Pullover (Kabel)", "Rücken", "ziehen", ["kabel"], 20, "Arme fast gestreckt, Stange im Bogen zu den Oberschenkeln führen."),
   eigeneP("eigen-p-reverse-flys", "Reverse Flys", "Schultern", "schulter", ["maschine", "kabel"], 15, "Hintere Schulter arbeitet, Schulterblätter nicht hochziehen."),
+  eigeneP("eigen-p-waden-beinpresse", "Wadendrücken an der Beinpresse", "Waden", "kniebeuge", ["maschine"], 60, "Nur Fussballen auf der Platte, unten 2 s Dehnung halten, oben 1 s anspannen."),
 ];
 
 type Zeile = [id: string, saetze: number, von: number, bis: number, grund: boolean, hinweis?: string];
 
-const PERSOENLICH_TEMPLATES: { titel: string; booster: boolean; uebungen: Zeile[] }[] = [
+const WADEN_HINWEIS = "Unten 2 s Dehnung halten, oben 1 s anspannen.";
+const PERSOENLICH_TEMPLATES: { titel: string; booster: boolean; aufwaermen: string[]; uebungen: Zeile[] }[] = [
   {
-    titel: "Oberkörper A",
+    titel: "Push A",
     booster: true,
+    aufwaermen: ["Face Pulls 2 × 15 leicht – am Ende die Hände nach aussen drehen", "Aufwärmsätze Schrägbankdrücken: 2 Sätze mit ca. 50 % und 75 % des Arbeitsgewichts"],
     uebungen: [
       ["eigen-p-schraegbank-kh", 3, 6, 8, true],
-      ["eigen-p-rudern-brust", 3, 6, 8, true],
-      ["eigen-p-latzug-eng", 3, 8, 10, true],
-      ["brustpresse", 2, 8, 10, true],
-      ["eigen-p-seitheben-ma", 3, 12, 15, false],
-      ["eigen-p-bayesian", 2, 10, 12, false],
-      ["eigen-p-overhead-trizeps", 2, 10, 12, false],
-      ["beinpresse", 3, 10, 12, true],
-    ],
-  },
-  {
-    titel: "Push",
-    booster: true,
-    uebungen: [
-      ["bank-kh", 3, 8, 10, true, "Neutraler Griff – Handflächen zeigen zueinander."],
-      ["eigen-p-schraeg-presse", 3, 8, 12, true],
+      ["brustpresse", 3, 8, 10, true],
       ["fliegende", 2, 12, 15, false],
-      ["seitheben", 4, 12, 20, false],
+      ["eigen-p-seitheben-ma", 4, 12, 15, false],
       ["eigen-p-overhead-trizeps", 3, 10, 12, false],
-      ["trizeps-kabel", 2, 12, 15, false, "Mit Seil – unten die Enden auseinanderziehen."],
+      ["beinpresse", 3, 10, 12, true],
+      ["eigen-p-waden-beinpresse", 3, 10, 15, false, WADEN_HINWEIS],
     ],
   },
   {
-    titel: "Pull",
+    titel: "Pull A",
     booster: true,
+    aufwaermen: ["Face Pulls 2 × 15 leicht – am Ende die Hände nach aussen drehen", "Aufwärmsätze Rumänisches Kreuzheben: 2 Sätze mit ca. 50 % und 75 % des Arbeitsgewichts"],
     uebungen: [
-      ["latzug", 3, 8, 10, true, "Breiter Griff, Brust heben, Ellbogen nach unten-hinten."],
-      ["rudern-kabel", 3, 8, 10, true],
+      ["rdl-kh", 3, 8, 10, true, "Zuerst, solange der Rücken frisch ist. Rücken neutral, Bewegung aus der Hüfte."],
+      ["eigen-p-latzug-eng", 3, 8, 10, true],
+      ["eigen-p-rudern-brust", 3, 8, 10, true],
       ["eigen-p-pullover", 2, 12, 15, false],
       ["eigen-p-reverse-flys", 3, 12, 15, false],
       ["eigen-p-bayesian", 3, 10, 12, false],
-      ["hammer", 2, 10, 12, false],
-      ["rdl-kh", 3, 8, 10, true],
     ],
   },
   {
-    titel: "Oberkörper B",
-    booster: false,
+    titel: "Push B",
+    booster: true,
+    aufwaermen: ["Face Pulls 2 × 15 leicht – am Ende die Hände nach aussen drehen", "Aufwärmsätze Schrägbank-Brustpresse: 2 Sätze mit ca. 50 % und 75 % des Arbeitsgewichts"],
     uebungen: [
-      ["brustpresse", 3, 8, 10, true],
-      ["eigen-p-latzug-eng", 3, 8, 10, true],
-      ["eigen-p-seitheben-ma", 4, 12, 15, false],
+      ["eigen-p-schraeg-presse", 3, 8, 10, true],
+      ["bank-kh", 3, 8, 10, true, "Neutraler Griff – Handflächen zeigen zueinander."],
+      ["butterfly", 2, 12, 15, false],
+      ["seitheben", 4, 12, 20, false],
+      ["trizeps-kabel", 3, 12, 15, false, "Mit Seil – unten die Enden auseinanderziehen."],
+      ["eigen-p-overhead-trizeps", 2, 10, 12, false],
+    ],
+  },
+  {
+    titel: "Pull B",
+    booster: false,
+    aufwaermen: ["Aufwärmsätze Kabelrudern: 2 Sätze mit ca. 50 % und 75 % des Arbeitsgewichts (Face Pulls folgen im Training)"],
+    uebungen: [
+      ["rudern-kabel", 3, 8, 10, true],
+      ["latzug", 3, 8, 10, true, "Breiter Griff, vor dem Kopf ziehen, nie in den Nacken."],
+      ["seitheben-kabel", 3, 12, 15, false],
       ["facepull", 3, 15, 15, false],
       ["eigen-p-bayesian", 3, 10, 12, false],
-      ["trizeps-kabel", 3, 12, 15, false, "Mit Seil – unten die Enden auseinanderziehen."],
+      ["hammer", 2, 10, 12, false],
+      ["wadenheben", 3, 10, 15, false, WADEN_HINWEIS],
     ],
   },
 ];
+
+/** Schreibt die Push/Pull-Templates in die angegebenen Indizes (gleiche Reihenfolge wie PERSOENLICH_TEMPLATES). */
+function schreibePersoenlicheTemplates(alt: PlanEinstellungen, indizes: number[]): PlanEinstellungen {
+  const vorlagen = [...(alt.vorlagen ?? [])];
+  const zusatz = { ...alt.zusatz };
+  const vorgaben = { ...(alt.vorgaben ?? {}) };
+  const titel = { ...(alt.titel ?? {}) };
+  const tausch = { ...(alt.tausch ?? {}) };
+  const entfernt = { ...(alt.entfernt ?? {}) };
+  const reihenfolge = { ...(alt.reihenfolge ?? {}) };
+  const aufwaermen = { ...(alt.aufwaermen ?? {}) };
+  const ohneBooster = (alt.ohneBooster ?? []).filter((i) => !indizes.includes(i));
+  PERSOENLICH_TEMPLATES.forEach((t, i) => {
+    const index = indizes[i]!;
+    const k = String(index);
+    const pos = vorlagen.findIndex((v) => v.index === index);
+    if (pos >= 0) vorlagen[pos] = { ...vorlagen[pos]!, titel: t.titel };
+    else vorlagen.push({ index, titel: t.titel });
+    delete titel[k];
+    delete tausch[k];
+    delete entfernt[k];
+    delete reihenfolge[k];
+    zusatz[k] = t.uebungen.map((z) => z[0]);
+    vorgaben[k] = Object.fromEntries(
+      t.uebungen.map(([id, saetze, wdhVon, wdhBis, grunduebung, hinweis]) => [
+        id,
+        { saetze, wdhVon, wdhBis, grunduebung, steigerungKg: steigerungFuer(id), ...(hinweis ? { hinweis } : {}) },
+      ]),
+    );
+    aufwaermen[k] = t.aufwaermen;
+    if (!t.booster) ohneBooster.push(index);
+  });
+  const vorhanden = new Set((alt.eigene ?? []).map((u) => u.id));
+  return {
+    ...alt,
+    vorlagen,
+    zusatz,
+    vorgaben,
+    titel,
+    tausch,
+    entfernt,
+    reihenfolge,
+    aufwaermen,
+    ohneBooster,
+    rotation: indizes,
+    naechster: { index: indizes[0]!, seit: Date.now() },
+    eigene: [...(alt.eigene ?? []), ...PERSOENLICH_EIGENE.filter((u) => !vorhanden.has(u.id))],
+    persoenlichV1: true,
+    persoenlichV2: true,
+  };
+}
+
+/** Stellt einen früher übernommenen 4er-Plan (Oberkörper A / Push / Pull / Oberkörper B) auf Push/Pull um. */
+export function migrierePersoenlichenPlan(alt: PlanEinstellungen): PlanEinstellungen {
+  if (!alt.persoenlichV1 || alt.persoenlichV2) return alt;
+  const alteTitel = ["Oberkörper A", "Push", "Pull", "Oberkörper B"];
+  const vorlagen = alt.vorlagen ?? [];
+  const nachTitel = alteTitel.map((t) => vorlagen.find((v) => v.titel === t)?.index);
+  let indizes: number[] | null = nachTitel.every((x) => x !== undefined) ? (nachTitel as number[]) : null;
+  if (!indizes) {
+    const rot = (alt.rotation ?? []).filter((i) => i >= 100 && vorlagen.some((v) => v.index === i));
+    if (rot.length === 4) indizes = rot;
+  }
+  if (!indizes) return { ...alt, persoenlichV2: true };
+  return schreibePersoenlicheTemplates(alt, indizes);
+}
 
 /** Normalisiert Übungsnamen für den Dedupe-Vergleich (Groß-/Kleinschreibung, Leerzeichen). */
 function normalisierterName(s: string): string {
@@ -845,38 +918,9 @@ function steigerungFuer(id: string): number {
 
 /** Legt den persönlichen Plan als 4 Templates mit Rotation an (einmalig). */
 export function legePersoenlichenPlanAn(alt: PlanEinstellungen): PlanEinstellungen {
-  if (alt.persoenlichV1) return alt;
+  if (alt.persoenlichV1) return migrierePersoenlichenPlan(alt);
   const start = Math.max(99, ...(alt.vorlagen ?? []).map((v) => v.index)) + 1;
-  const vorlagen = [...(alt.vorlagen ?? [])];
-  const zusatz = { ...alt.zusatz };
-  const vorgaben = { ...(alt.vorgaben ?? {}) };
-  const rotation: number[] = [];
-  const ohneBooster = [...(alt.ohneBooster ?? [])];
-  PERSOENLICH_TEMPLATES.forEach((t, i) => {
-    const index = start + i;
-    vorlagen.push({ index, titel: t.titel });
-    zusatz[String(index)] = t.uebungen.map((z) => z[0]);
-    vorgaben[String(index)] = Object.fromEntries(
-      t.uebungen.map(([id, saetze, wdhVon, wdhBis, grunduebung, hinweis]) => [
-        id,
-        { saetze, wdhVon, wdhBis, grunduebung, steigerungKg: steigerungFuer(id), ...(hinweis ? { hinweis } : {}) },
-      ]),
-    );
-    rotation.push(index);
-    if (!t.booster) ohneBooster.push(index);
-  });
-  const vorhanden = new Set((alt.eigene ?? []).map((u) => u.id));
-  return {
-    ...alt,
-    vorlagen,
-    zusatz,
-    vorgaben,
-    rotation,
-    ohneBooster,
-    naechster: null,
-    eigene: [...(alt.eigene ?? []), ...PERSOENLICH_EIGENE.filter((u) => !vorhanden.has(u.id))],
-    persoenlichV1: true,
-  };
+  return schreibePersoenlicheTemplates(alt, PERSOENLICH_TEMPLATES.map((_, i) => start + i));
 }
 
 /** Template, das einem Wochentag zugeordnet ist (Standard: Vorschläge der Reihe nach). */
@@ -924,7 +968,11 @@ export function ladePlanEinstellungen(): PlanEinstellungen {
   if (typeof window === "undefined") return leer;
   try {
     const roh = window.localStorage.getItem(KEY);
-    return roh ? { ...leer, ...(JSON.parse(roh) as Partial<PlanEinstellungen>) } : leer;
+    if (!roh) return leer;
+    const geladen: PlanEinstellungen = { ...leer, ...(JSON.parse(roh) as Partial<PlanEinstellungen>) };
+    const migriert = migrierePersoenlichenPlan(geladen);
+    if (migriert !== geladen) window.localStorage.setItem(KEY, JSON.stringify(migriert));
+    return migriert;
   } catch {
     return leer;
   }

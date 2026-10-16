@@ -122,7 +122,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       )}
 
       {/* Globaler „+ Eintragen“-Einstieg */}
-      {pathname !== "/training/workout" && <Button
+      {!pathname.startsWith("/training") && <Button
         onClick={() => setEintragenOffen(true)}
         aria-label="Werte eintragen"
         className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-40 h-12 rounded-full px-4 text-sm font-extrabold shadow-lg lg:bottom-6 lg:right-6 [&_svg]:size-5"

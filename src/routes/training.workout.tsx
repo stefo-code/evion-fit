@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, Disclaimer } from "@/components/ui-kit";
 import { bildFuer, type LibUebung } from "@/lib/exercise-library";
 import { useOnboardingProfil } from "@/lib/onboarding-store";
-import { baueVorlagen, mappeEquipment, aktiveTrainingstage, usePlanEinstellungen, type PlanKontext, type PlanUebung, type PlanEinstellungen, type Trainingstag } from "@/lib/training-plan";
+import { baueVorlagen, mappeEquipment, aktiveTrainingstage, usePlanEinstellungen, type PlanKontext, type PlanUebung, type PlanEinstellungen, type Trainingstag, einschraenkungTags } from "@/lib/training-plan";
 import { pauseFuer, standardAufwaermen } from "@/lib/training-dauer";
 import {
   speichereEinheit,
@@ -165,6 +165,7 @@ function WorkoutPage() {
       tage: aktiveTrainingstage(einstellungen, profil.tage || 4).length,
       dauer: dauerParam || profil.dauer || 45,
       fokus: einstellungen.fokus,
+      einschraenkungen: einschraenkungTags(profil.einschraenkungen),
     }),
     [profil, einstellungen, dauerParam],
   );
@@ -694,7 +695,7 @@ function UebungSchritt({
           ) : i === aktuell ? (
             <li key={i} className="rounded-2xl border-2 border-primary bg-card p-4">
               <p className="label-xs">Satz {i + 1}</p>
-              <div className="mt-3 grid grid-cols-2 gap-3">
+              <div className="mt-3 grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
                 <Stepper label="Gewicht" unit="kg" value={z.gewicht} step={schrittG} onChange={(v) => setze(i, { gewicht: v })} />
                 <Stepper label="Wdh." value={z.wdh} step={1} onChange={(v) => setze(i, { wdh: v })} />
               </div>

@@ -24,8 +24,7 @@ import {
   mappeEquipment,
   usePlanEinstellungen,
   vorlageFuerTag,
-  type PlanKontext,
-} from "@/lib/training-plan";
+  type PlanKontext, einschraenkungTags } from "@/lib/training-plan";
 import { berechneDauerMin } from "@/lib/training-dauer";
 
 export const Route = createFileRoute("/")({
@@ -79,6 +78,7 @@ function Cockpit() {
       tage: gewaehlteTage.length,
       dauer: profil.dauer || 45,
       fokus: einstellungen.fokus,
+      einschraenkungen: einschraenkungTags(profil.einschraenkungen),
     }),
     [profil, einstellungen.fokus, gewaehlteTage],
   );

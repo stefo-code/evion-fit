@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { erzeugePlan, standardKontext, type PlanKontext } from "@/lib/training-plan";
+import { erzeugePlan, standardKontext, migrierePersoenlichenPlan, legePersoenlichenPlanAn, type PlanKontext, type PlanEinstellungen } from "@/lib/training-plan";
 import { uebungById, type Einschraenkung } from "@/lib/exercise-library";
 
 const SPLIT_TITEL: Record<number, string[]> = {
@@ -91,5 +91,42 @@ describe("erzeugePlan – Oberkörper-Fokus begrenzt Beinübungen", () => {
       t.uebungen.filter((u) => u.muster === "kniebeuge" || u.muster === "huefte"),
     );
     expect(beinUebungen.length).toBeLessThanOrEqual(2);
+  });
+});
+
+describe("persönlicher Plan – Push/Pull-Umstellung", () => {
+  const basis = {
+    fokus: "ausgewogen", tausch: {}, entfernt: {}, zusatz: { "100": ["brustpresse"] }, reihenfolge: {}, eigene: [],
+    trainingstage: null, titel: {}, zuordnung: {}, pauseSek: 60,
+    vorlagen: [
+      { index: 100, titel: "Oberkörper A" }, { index: 101, titel: "Push" },
+      { index: 102, titel: "Pull" }, { index: 103, titel: "Oberkörper B" },
+    ],
+    rotation: [100, 101, 102, 103], ohneBooster: [103], persoenlichV1: true,
+  } as unknown as PlanEinstellungen;
+
+  it("stellt einen bestehenden 4er-Plan auf Push A / Pull A / Push B / Pull B um", () => {
+    const m = migrierePersoenlichenPlan(basis);
+    expect(m.persoenlichV2).toBe(true);
+    expect(m.vorlagen.map((v) => v.titel)).toEqual(["Push A", "Pull A", "Push B", "Pull B"]);
+    expect(m.rotation).toEqual([100, 101, 102, 103]);
+    expect(m.naechster?.index).toBe(100);
+    expect(m.zusatz["100"]).toContain("eigen-p-waden-beinpresse");
+    expect(m.zusatz["101"]![0]).toBe("rdl-kh");
+    expect(m.zusatz["103"]).toContain("wadenheben");
+    expect(m.ohneBooster).toEqual([103]);
+    expect(m.aufwaermen?.["103"]?.some((t) => t.includes("Face Pulls"))).toBe(true);
+    expect(m.aufwaermen?.["100"]?.[0]).toContain("Face Pulls");
+  });
+
+  it("lässt Nutzer ohne persönlichen Plan unverändert", () => {
+    const ohne = { ...basis, persoenlichV1: false } as PlanEinstellungen;
+    expect(migrierePersoenlichenPlan(ohne)).toBe(ohne);
+  });
+
+  it("legt den Plan für neue Nutzer direkt als Push/Pull an", () => {
+    const neu = legePersoenlichenPlanAn({ ...basis, vorlagen: [], rotation: [], persoenlichV1: false } as PlanEinstellungen);
+    expect(neu.vorlagen.map((v) => v.titel)).toEqual(["Push A", "Pull A", "Push B", "Pull B"]);
+    expect(neu.persoenlichV2).toBe(true);
   });
 });

@@ -26,8 +26,7 @@ import {
   type Fokus,
   type PlanEinstellungen,
   type PlanKontext,
-  type Trainingstag,
-} from "@/lib/training-plan";
+  type Trainingstag, einschraenkungTags } from "@/lib/training-plan";
 import { berechneDauerMin, standardAufwaermen } from "@/lib/training-dauer";
 
 
@@ -94,7 +93,7 @@ function TrainingPage() {
   } = usePlanEinstellungen();
   const { aktivitaet } = useAktivitaet();
   const rekorde = ermittleRekorde(aktivitaet);
-  const [zeit, setZeit] = useState(45);
+  const zeit = profil.dauer || 45;
   const [tagIndex, setTagIndex] = useState(0);
   const [tauschFuer, setTauschFuer] = useState<string | null>(null);
   const [pickerOffen, setPickerOffen] = useState(false);
@@ -123,6 +122,7 @@ function TrainingPage() {
       tage: gewaehlteTage.length,
       dauer: zeit,
       fokus: einstellungen.fokus,
+      einschraenkungen: einschraenkungTags(profil.einschraenkungen),
     }),
     [profil, zeit, einstellungen.fokus, gewaehlteTage],
   );
