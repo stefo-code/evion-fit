@@ -24,6 +24,7 @@ import {
   mappeEquipment,
   usePlanEinstellungen,
   vorlageFuerTag,
+  naechstesTraining,
   type PlanKontext, einschraenkungTags } from "@/lib/training-plan";
 import { berechneDauerMin } from "@/lib/training-dauer";
 
@@ -83,8 +84,7 @@ function Cockpit() {
     [profil, einstellungen.fokus, gewaehlteTage],
   );
   const plan = useMemo(() => baueVorlagen(kontext, einstellungen), [kontext, einstellungen]);
-  const naechsterTag =
-    vorlageFuerTag(plan, einstellungen, gewaehlteTage, (new Date().getDay() + 6) % 7) ?? plan[0];
+  const naechsterTag = naechstesTraining(plan, einstellungen, aktivitaet.einheiten, gewaehlteTage);
   const naechsterTagIndex = naechsterTag?.index ?? 0;
   const naechsterDauerMin = naechsterTag ? berechneDauerMin(naechsterTag, einstellungen) : profil.dauer || 45;
 
@@ -100,6 +100,8 @@ function Cockpit() {
   const fettStart = ersterWert(aktivitaet, "koerperfett")?.wert ?? null;
   const fettJetzt = letzterWert(aktivitaet, "koerperfett")?.wert ?? null;
   const fettDelta = fettStart !== null && fettJetzt !== null ? +(fettJetzt - fettStart).toFixed(1) : null;
+  const gewichtVerlauf = (ersterWert(aktivitaet, "gewicht")?.datum ?? "") !== (letzterWert(aktivitaet, "gewicht")?.datum ?? "");
+  const fettVerlauf = (ersterWert(aktivitaet, "koerperfett")?.datum ?? "") !== (letzterWert(aktivitaet, "koerperfett")?.datum ?? "");
 
   const volumen7 = einheitenSeit(aktivitaet, 7).reduce((s, e) => s + satzVolumen(e.saetze), 0);
   const volumen14 = einheitenSeit(aktivitaet, 14).reduce((s, e) => s + satzVolumen(e.saetze), 0);
@@ -237,8 +239,8 @@ function Cockpit() {
             <Sparkline werte={gewichtsKurve.map((p) => p.wert)} />
           )}
           <div className={cn("grid grid-cols-2 gap-x-4 gap-y-4", !leer && gewichtsKurve.length > 1 && "mt-3")}>
-            <Delta label="Gewicht" wert={leer ? null : gewichtDelta} einheit="kg" gutWennNegativ />
-            <Delta label="Körperfett" wert={leer ? null : fettDelta} einheit="%" gutWennNegativ />
+            <Delta label="Gewicht" wert={gewichtVerlauf ? gewichtDelta : null} aktuell={gewichtJetzt} einheit="kg" gutWennNegativ />
+            <Delta label="Körperfett" wert={fettVerlauf ? fettDelta : null} aktuell={fettJetzt} einheit="%" gutWennNegativ />
             <Delta label="Volumen" wert={leer ? null : Math.round(volumenDelta)} einheit="kg" ohneSuffix />
             <Delta label="Rekorde" wert={leer ? null : anzahlRekorde} einheit="" ohneVorzeichen ohneSuffix />
           </div>
@@ -297,11 +299,11 @@ function Cockpit() {
       />
 
       {/* ZONE 2 — HEUTE */}
-      {naechsterTag && gewaehlteTage.includes(heuteIdx) && (
+      {naechsterTag && (!einstellungen.festeTage || gewaehlteTage.includes(heuteIdx)) && (
         <div className="border-y border-border py-3 text-sm">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="text-muted-foreground break-words">
-              Heute geplant: {naechsterTag.titel}, {naechsterDauerMin} Min
+              {einstellungen.festeTage ? "Heute geplant" : "Nächstes Training"}: {naechsterTag.titel}, {naechsterDauerMin} Min
             </span>
             <Link to="/training/workout" search={{ tag: naechsterTagIndex }} className="font-semibold text-primary">
               Starten
@@ -470,6 +472,7 @@ function TabSheet({
 function Delta({
   label,
   wert,
+  aktuell,
   einheit,
   gutWennNegativ,
   ohneVorzeichen,
@@ -477,12 +480,26 @@ function Delta({
 }: {
   label: string;
   wert: number | null;
+  /** Aktueller Wert, angezeigt solange noch kein Verlauf (Delta) existiert. */
+  aktuell?: number | null;
   einheit: string;
   gutWennNegativ?: boolean;
   ohneVorzeichen?: boolean;
   ohneSuffix?: boolean;
 }) {
   const positivGut = wert === null ? false : gutWennNegativ ? wert < 0 : wert > 0;
+  if (wert === null && aktuell !== null && aktuell !== undefined) {
+    return (
+      <div className="min-w-0">
+        <p className="label-xs truncate">{label}</p>
+        <p className="num mt-1 text-lg font-bold text-foreground">
+          {aktuell.toLocaleString("de-DE")}
+          {einheit && <span className="ml-1 text-xs font-semibold text-muted-foreground">{einheit}</span>}
+        </p>
+        <p className="text-[11px] text-muted-foreground">aktuell</p>
+      </div>
+    );
+  }
   return (
     <div className="min-w-0">
       <p className="label-xs truncate">{label}</p>

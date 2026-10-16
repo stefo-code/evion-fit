@@ -130,3 +130,21 @@ describe("persönlicher Plan – Push/Pull-Umstellung", () => {
     expect(neu.persoenlichV2).toBe(true);
   });
 });
+
+describe("persönlicher Plan – robuste Erkennung", () => {
+  it("erkennt alte Templates auch ohne Flag (über Titel) und setzt Push A als nächstes", () => {
+    const alt = {
+      fokus: "ausgewogen", tausch: {}, entfernt: {}, reihenfolge: {}, eigene: [], trainingstage: null, titel: {}, zuordnung: {}, pauseSek: 60,
+      zusatz: { "120": ["eigen-p-schraegbank-kh"], "121": ["bank-kh"], "122": ["latzug"], "123": ["facepull"] },
+      vorlagen: [
+        { index: 120, titel: "Oberkörper A" }, { index: 121, titel: "Push" },
+        { index: 122, titel: "Pull" }, { index: 123, titel: "Oberkörper B" },
+      ],
+      rotation: [120, 121, 122, 123],
+    } as unknown as PlanEinstellungen;
+    const m = migrierePersoenlichenPlan(alt);
+    expect(m.vorlagen.map((v) => v.titel)).toEqual(["Push A", "Pull A", "Push B", "Pull B"]);
+    expect(m.naechster?.index).toBe(120);
+    expect(migrierePersoenlichenPlan(m)).toBe(m);
+  });
+});

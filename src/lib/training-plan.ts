@@ -616,6 +616,8 @@ export type PlanEinstellungen = {
   persoenlichV1?: boolean;
   /** Persönlicher Plan auf Push/Pull-Rotation (Okt. 2026) umgestellt. */
   persoenlichV2?: boolean;
+  /** Robuste Umstellung (erkennt alte persönliche Templates auch ohne Flag). */
+  persoenlichV3?: boolean;
   /** Pause Grundübungen in Sekunden (Standard 150). */
   pauseGrundSek?: number;
   /** Pause Isolationsübungen in Sekunden (Standard 75). */
@@ -832,22 +834,62 @@ function schreibePersoenlicheTemplates(alt: PlanEinstellungen, indizes: number[]
     eigene: [...(alt.eigene ?? []), ...PERSOENLICH_EIGENE.filter((u) => !vorhanden.has(u.id))],
     persoenlichV1: true,
     persoenlichV2: true,
+    persoenlichV3: true,
   };
 }
 
-/** Stellt einen früher übernommenen 4er-Plan (Oberkörper A / Push / Pull / Oberkörper B) auf Push/Pull um. */
+/** Stellt einen früher übernommenen 4er-Plan (Oberkörper A / Push / Pull / Oberkörper B) auf Push/Pull um.
+ *  Erkennt die alten Templates über Titel oder über die persönlichen Übungen (eigen-p-…), auch ohne Flag. */
 export function migrierePersoenlichenPlan(alt: PlanEinstellungen): PlanEinstellungen {
-  if (!alt.persoenlichV1 || alt.persoenlichV2) return alt;
-  const alteTitel = ["Oberkörper A", "Push", "Pull", "Oberkörper B"];
+  if (alt.persoenlichV3) return alt;
   const vorlagen = alt.vorlagen ?? [];
-  const nachTitel = alteTitel.map((t) => vorlagen.find((v) => v.titel === t)?.index);
-  let indizes: number[] | null = nachTitel.every((x) => x !== undefined) ? (nachTitel as number[]) : null;
-  if (!indizes) {
-    const rot = (alt.rotation ?? []).filter((i) => i >= 100 && vorlagen.some((v) => v.index === i));
-    if (rot.length === 4) indizes = rot;
+  const schonNeu = vorlagen.some(
+    (v) => v.titel === "Push A" && (alt.zusatz?.[String(v.index)] ?? []).includes("eigen-p-waden-beinpresse"),
+  );
+  if (schonNeu) return { ...alt, persoenlichV1: true, persoenlichV2: true, persoenlichV3: true };
+  const alteTitel = ["oberkörper a", "push", "pull", "oberkörper b"];
+  const hatEigenP = (index: number) => (alt.zusatz?.[String(index)] ?? []).some((id) => id.startsWith("eigen-p-"));
+  // Titel allein reichen nur, wenn der persönliche Plan nachweislich übernommen wurde (Flag oder eigen-p-Übungen),
+  // damit selbst angelegte Templates wie „Push“ anderer Nutzer nie überschrieben werden.
+  const persoenlichErkannt = !!alt.persoenlichV1 || vorlagen.some((v) => v.index >= 100 && hatEigenP(v.index));
+  const istPersoenlich = (index: number, titel: string) =>
+    index >= 100 && (hatEigenP(index) || (persoenlichErkannt && alteTitel.includes(titel.trim().toLowerCase())));
+  const kandidaten = vorlagen.filter((v) => istPersoenlich(v.index, v.titel)).map((v) => v.index);
+  if (kandidaten.length === 0) return alt;
+  // Reihenfolge: zuerst nach alten Titeln, sonst nach Rotation, sonst nach Index.
+  const nachTitel = alteTitel
+    .map((t) => vorlagen.find((v) => v.titel.trim().toLowerCase() === t && v.index >= 100)?.index)
+    .filter((x): x is number => x !== undefined);
+  const rot = (alt.rotation ?? []).filter((i) => kandidaten.includes(i));
+  const geordnet = [...new Set([...(nachTitel.length === 4 ? nachTitel : []), ...rot, ...kandidaten.sort((x, y) => x - y)])];
+  let indizes = geordnet.slice(0, 4);
+  if (indizes.length < 4) {
+    let naechsterFrei = Math.max(99, ...vorlagen.map((v) => v.index)) + 1;
+    while (indizes.length < 4) indizes = [...indizes, naechsterFrei++];
   }
-  if (!indizes) return { ...alt, persoenlichV2: true };
-  return schreibePersoenlicheTemplates(alt, indizes);
+  return { ...schreibePersoenlicheTemplates(alt, indizes), persoenlichV3: true };
+}
+
+/** Das nächste Training – identisch für Home und Training. */
+export function naechstesTraining(
+  plan: Trainingstag[],
+  e: PlanEinstellungen,
+  einheiten: EinheitRef[],
+  tage: number[],
+  heute: Date = new Date(),
+): Trainingstag | undefined {
+  if (plan.length === 0) return undefined;
+  const fest = festgelegtesTraining(plan, e, einheiten);
+  if (fest) return fest;
+  if (e.festeTage) {
+    const t = vorlageFuerTag(plan, e, tage, (heute.getDay() + 6) % 7);
+    if (t) return t;
+  }
+  const rot = naechstesAusRotation(plan, e, einheiten);
+  if (rot) return rot;
+  const letzte = einheiten[einheiten.length - 1];
+  const i = letzte ? plan.findIndex((t) => t.index === letzte.tagIndex) : -1;
+  return plan[(i + 1) % plan.length] ?? plan[0];
 }
 
 /** Normalisiert Übungsnamen für den Dedupe-Vergleich (Groß-/Kleinschreibung, Leerzeichen). */

@@ -14,6 +14,7 @@ import {
   aktiveTrainingstage,
   baueVorlagen,
   festgelegtesTraining,
+  naechstesTraining,
   naechstesAusRotation,
   fokusFuerGeschlecht,
   fokusOptionen,
@@ -171,18 +172,7 @@ function TrainingPage() {
     if (plan.length === 0) return tagDummy;
     const gewaehlt = plan.find((t) => t.index === auswahl);
     if (gewaehlt) return gewaehlt;
-    const fest = festgelegtesTraining(plan, einstellungen, aktivitaet.einheiten);
-    if (fest) return fest;
-    if (einstellungen.festeTage) {
-      const wt = (new Date().getDay() + 6) % 7;
-      const fest = vorlageFuerTag(plan, einstellungen, gewaehlteTage, wt);
-      if (fest) return fest;
-    }
-    const rot = naechstesAusRotation(plan, einstellungen, aktivitaet.einheiten);
-    if (rot) return rot;
-    const letzte = aktivitaet.einheiten[aktivitaet.einheiten.length - 1];
-    const i = letzte ? plan.findIndex((t) => t.index === letzte.tagIndex) : -1;
-    return plan[(i + 1) % Math.max(plan.length, 1)] ?? plan[0] ?? tagDummy;
+    return naechstesTraining(plan, einstellungen, aktivitaet.einheiten, gewaehlteTage) ?? tagDummy;
   }, [plan, auswahl, einstellungen, gewaehlteTage, aktivitaet]);
   const starteWorkout = () => {
     setBooster(null);
