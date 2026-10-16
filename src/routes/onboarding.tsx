@@ -395,12 +395,33 @@ function toggle(liste: string[], wert: string) {
 
 /* ------------------------------------------------------------------ Screens */
 
+const VORTEILE = [
+  { icon: Dumbbell, titel: "Trainingsplan, der zu dir passt", text: "Nach Ziel, Zeit, Equipment und Einschränkungen – oder selbst erstellt." },
+  { icon: Timer, titel: "Geführtes Training", text: "Satz für Satz, mit Pausen-Timer und Steigerungsvorschlägen." },
+  { icon: Apple, titel: "Ernährung & Rezepte", text: "Kalorien- und Proteinziel, passende Rezepte, Supplements abhaken." },
+  { icon: Scale, titel: "Fortschritt sichtbar", text: "Gewicht, Körperfett, Kraft und Erholung im Verlauf." },
+];
+
 function Welcome({ onStart }: { onStart: () => void }) {
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 pb-8 pt-8">
       <EvionLogo className="h-8" />
-      <h1 className="mt-8 font-display text-3xl font-extrabold leading-tight">Dein Training. Deine Ernährung. Dein Fortschritt.</h1>
-      <img src={heroBild} alt="Sportliche Frau und sportlicher Mann" width={912} height={1104} className="mx-auto mt-6 h-64 w-full object-contain sm:h-80" />
+      <h1 className="mt-6 font-display text-3xl font-extrabold leading-tight">Dein Training. Deine Ernährung. Dein Fortschritt.</h1>
+      <p className="mt-2 text-sm text-muted-foreground">Dein persönlicher Fitness-Coach in einer App – in 2 Minuten eingerichtet.</p>
+      <img src={heroBild} alt="Sportliche Frau und sportlicher Mann" width={912} height={1104} className="mx-auto mt-4 h-48 w-full object-contain sm:h-64" />
+      <ul className="mt-5 space-y-3">
+        {VORTEILE.map(({ icon: Icon, titel, text }) => (
+          <li key={titel} className="flex items-start gap-3 rounded-2xl border border-border bg-card p-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+              <Icon className="h-5 w-5" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-bold">{titel}</span>
+              <span className="block text-xs text-muted-foreground">{text}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
       <div className="mt-auto pt-6">
         <PrimaryButton onClick={onStart}>Los geht’s <ArrowRight /></PrimaryButton>
         <p className="mt-4 text-center text-sm text-muted-foreground">Kein Konto nötig. Sync ist am Ende optional.</p>
