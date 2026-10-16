@@ -47,9 +47,6 @@ const basisBilder: Record<string, BildPaar> = {
 /** Übungen, die sich ein Motiv teilen (gleiche Bewegung, kein eigenes Foto). */
 const aliase: Record<string, string> = {
   "fahrrad-ergometer": "rudergeraet",
-  burpee: "seilspringen",
-  bergsteiger: "seilspringen",
-  laufband: "seilspringen",
 };
 
 export const uebungsBilder: Record<string, BildPaar> = (() => {
