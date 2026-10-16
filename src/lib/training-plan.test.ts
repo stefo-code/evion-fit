@@ -148,3 +148,30 @@ describe("persönlicher Plan – robuste Erkennung", () => {
     expect(migrierePersoenlichenPlan(m)).toBe(m);
   });
 });
+
+describe("erzeugePlan – ausgewogene Einheiten", () => {
+  const studio = { equipment: ["langhantel", "kurzhantel", "kabel", "maschine", "körpergewicht"] } as Partial<PlanKontext>;
+  it("Oberkörper-Tage (4×60) enthalten vertikales + horizontales Ziehen, Bizeps und Trizeps", () => {
+    const plan = erzeugePlan(kontext({ ...studio, tage: 4, dauer: 60 }));
+    for (const t of plan.filter((x) => x.titel.startsWith("Oberkörper"))) {
+      const n = t.uebungen.map((u) => u.name).join(" | ");
+      expect(/latzug|klimmzug/i.test(n)).toBe(true);
+      expect(/rudern/i.test(n)).toBe(true);
+      expect(t.uebungen.some((u) => u.muskel === "Bizeps")).toBe(true);
+      expect(t.uebungen.some((u) => u.muskel === "Trizeps")).toBe(true);
+    }
+  });
+  it("Oberkörper A und B nutzen unterschiedliche Übungen", () => {
+    const plan = erzeugePlan(kontext({ ...studio, tage: 4, dauer: 60 }));
+    const a = plan.find((t) => t.titel === "Oberkörper A")!.uebungen.map((u) => u.id);
+    const b = plan.find((t) => t.titel === "Oberkörper B")!.uebungen.map((u) => u.id);
+    expect(a.filter((id) => b.includes(id)).length).toBeLessThanOrEqual(2);
+  });
+  it("Waden stehen nie an erster Stelle", () => {
+    for (const tage of [2, 3, 4, 5, 6]) {
+      for (const t of erzeugePlan(kontext({ tage, dauer: 45, equipment: ["kurzhantel", "körpergewicht"] as PlanKontext["equipment"] }))) {
+        expect(t.uebungen[0]?.muskel).not.toBe("Waden");
+      }
+    }
+  });
+});

@@ -395,37 +395,61 @@ function toggle(liste: string[], wert: string) {
 
 /* ------------------------------------------------------------------ Screens */
 
-const VORTEILE = [
-  { icon: Dumbbell, titel: "Trainingsplan, der zu dir passt", text: "Nach Ziel, Zeit, Equipment und Einschränkungen – oder selbst erstellt." },
-  { icon: Timer, titel: "Geführtes Training", text: "Satz für Satz, mit Pausen-Timer und Steigerungsvorschlägen." },
-  { icon: Apple, titel: "Ernährung & Rezepte", text: "Kalorien- und Proteinziel, passende Rezepte, Supplements abhaken." },
-  { icon: Scale, titel: "Fortschritt sichtbar", text: "Gewicht, Körperfett, Kraft und Erholung im Verlauf." },
-];
-
 function Welcome({ onStart }: { onStart: () => void }) {
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 pb-8 pt-8">
-      <EvionLogo className="h-8" />
-      <h1 className="mt-6 font-display text-3xl font-extrabold leading-tight">Dein Training. Deine Ernährung. Dein Fortschritt.</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Dein persönlicher Fitness-Coach in einer App – in 2 Minuten eingerichtet.</p>
-      <img src={heroBild} alt="Sportliche Frau und sportlicher Mann" width={912} height={1104} className="mx-auto mt-4 h-48 w-full object-contain sm:h-64" />
-      <ul className="mt-5 space-y-3">
-        {VORTEILE.map(({ icon: Icon, titel, text }) => (
-          <li key={titel} className="flex items-start gap-3 rounded-2xl border border-border bg-card p-3">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
-              <Icon className="h-5 w-5" />
-            </span>
-            <span className="min-w-0">
-              <span className="block text-sm font-bold">{titel}</span>
-              <span className="block text-xs text-muted-foreground">{text}</span>
-            </span>
-          </li>
-        ))}
-      </ul>
-      <div className="mt-auto pt-6">
-        <PrimaryButton onClick={onStart}>Los geht’s <ArrowRight /></PrimaryButton>
-        <p className="mt-4 text-center text-sm text-muted-foreground">Kein Konto nötig. Sync ist am Ende optional.</p>
+    <div className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-6 pb-8 pt-10">
+      <EvionLogo className="h-8 self-center" />
+      <p className="mt-2 self-center text-center text-sm font-semibold text-primary">Evolve. Every day.</p>
+
+      <div className="relative mt-8 flex-1">
+        <h1 className="font-display text-4xl font-extrabold leading-[1.1]">
+          Deine Reise.
+          <br />
+          Deine Ziele.
+          <br />
+          Wir machen den Rest.
+        </h1>
+        <p className="mt-4 max-w-[16rem] text-sm leading-relaxed text-muted-foreground">
+          Personalisiertes Training, smarte Ernährung und echter Fortschritt – alles in einer App.
+        </p>
+
+        <div className="pointer-events-none absolute -right-6 bottom-0 w-[62%] max-w-[280px]">
+          <div className="absolute inset-x-2 bottom-6 top-10 rounded-full bg-primary/10 blur-2xl" />
+          <img
+            src={heroBild}
+            alt="Sportliche Frau und sportlicher Mann"
+            width={912}
+            height={1104}
+            className="relative w-full object-contain"
+          />
+        </div>
+
+        <div className="relative mt-8 w-[58%] min-w-[190px] space-y-3">
+          <MiniKarte icon={Dumbbell} titel="Trainingsplan" text="Geführt, mit Timer" />
+          <MiniKarte icon={Apple} titel="Ernährung" text="Rezepte für dein Ziel" />
+          <MiniKarte icon={Scale} titel="Fortschritt" text="Gewicht, Fett, Kraft" />
+        </div>
       </div>
+
+      <div className="mt-10 space-y-4">
+        <PrimaryButton onClick={onStart}>Los geht’s <ArrowRight /></PrimaryButton>
+        <p className="text-center text-sm text-muted-foreground">Kein Konto nötig. Sync ist am Ende optional.</p>
+      </div>
+    </div>
+  );
+}
+
+/** Info-Karte auf dem Startbildschirm – beschreibt Funktionen, keine erfundenen Ergebnisse. */
+function MiniKarte({ icon: Icon, titel, text }: { icon: typeof Scale; titel: string; text: string }) {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-border bg-card/90 p-3 shadow-sm backdrop-blur">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/12 text-primary">
+        <Icon className="h-4.5 w-4.5" />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-extrabold leading-tight">{titel}</span>
+        <span className="block text-[11px] leading-snug text-muted-foreground">{text}</span>
+      </span>
     </div>
   );
 }

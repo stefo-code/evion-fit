@@ -177,51 +177,133 @@ function fokusMuskelBetonung(fokus: Fokus): Muster[] {
   }
 }
 
+/** Ein „Platz“ in einer Einheit: Bewegungsmuster plus optionaler Filter (z. B. vertikales Ziehen, Bizeps). */
+type Slot = { muster: Muster; filter?: (u: LibUebung) => boolean; komplementaer?: boolean };
+type SlotSession = { titel: string; slots: Slot[] };
+
+const istWaden = (u: LibUebung) => u.muskel === "Waden";
+const vertikalZiehen = (u: LibUebung) => /latzug|klimmzug|pull-?down/i.test(u.name);
+const horizontalZiehen = (u: LibUebung) => /rudern|row/i.test(u.name);
+const schraegDruecken = (u: LibUebung) => /schräg|landmine|von unten/i.test(u.name);
+const flachDruecken = (u: LibUebung) => !schraegDruecken(u) && u.muskel === "Brust";
+const seitheben = (u: LibUebung) => /seitheben/i.test(u.name);
+const hintereSchulter = (u: LibUebung) => /face ?pull|reverse|hintere/i.test(u.name);
+const bizeps = (u: LibUebung) => u.muskel === "Bizeps";
+const trizeps = (u: LibUebung) => u.muskel === "Trizeps";
+const quadGrund = (u: LibUebung) => !istWaden(u) && u.grund;
+const quadErgaenzung = (u: LibUebung) => !istWaden(u);
+const huefteHinge = (u: LibUebung) => /kreuzheben|rdl|rumänisch|pull-?through|good ?morning|swing/i.test(u.name);
+const beinbeugerOderGesaess = (u: LibUebung) => !huefteHinge(u);
+
+/** Bausteine je Einheitstyp – wichtigste Plätze zuerst; bei wenig Zeit fallen die letzten weg. */
+const OBERKOERPER_A: Slot[] = [
+  { muster: "druecken", filter: flachDruecken },
+  { muster: "ziehen", filter: vertikalZiehen },
+  { muster: "ziehen", filter: horizontalZiehen },
+  { muster: "druecken", filter: schraegDruecken, komplementaer: true },
+  { muster: "schulter", filter: seitheben, komplementaer: true },
+  { muster: "arme", filter: trizeps, komplementaer: true },
+  { muster: "arme", filter: bizeps, komplementaer: true },
+];
+const OBERKOERPER_B: Slot[] = [
+  { muster: "ziehen", filter: horizontalZiehen },
+  { muster: "druecken", filter: schraegDruecken },
+  { muster: "ziehen", filter: vertikalZiehen, komplementaer: true },
+  { muster: "druecken", filter: flachDruecken, komplementaer: true },
+  { muster: "schulter", filter: seitheben, komplementaer: true },
+  { muster: "arme", filter: bizeps, komplementaer: true },
+  { muster: "arme", filter: trizeps, komplementaer: true },
+  { muster: "schulter", filter: hintereSchulter, komplementaer: true },
+];
+const UNTERKOERPER_A: Slot[] = [
+  { muster: "kniebeuge", filter: quadGrund },
+  { muster: "huefte", filter: huefteHinge },
+  { muster: "kniebeuge", filter: quadErgaenzung, komplementaer: true },
+  { muster: "huefte", filter: beinbeugerOderGesaess, komplementaer: true },
+  { muster: "kniebeuge", filter: istWaden, komplementaer: true },
+];
+const UNTERKOERPER_B: Slot[] = [
+  { muster: "huefte", filter: beinbeugerOderGesaess },
+  { muster: "kniebeuge", filter: quadGrund },
+  { muster: "huefte", filter: huefteHinge, komplementaer: true },
+  { muster: "kniebeuge", filter: quadErgaenzung, komplementaer: true },
+  { muster: "kniebeuge", filter: istWaden, komplementaer: true },
+];
+const PUSH: Slot[] = [
+  { muster: "druecken", filter: flachDruecken },
+  { muster: "druecken", filter: schraegDruecken },
+  { muster: "schulter", filter: seitheben, komplementaer: true },
+  { muster: "druecken", komplementaer: true },
+  { muster: "arme", filter: trizeps, komplementaer: true },
+  { muster: "schulter", filter: seitheben, komplementaer: true },
+  { muster: "arme", filter: trizeps, komplementaer: true },
+];
+const PULL: Slot[] = [
+  { muster: "ziehen", filter: vertikalZiehen },
+  { muster: "ziehen", filter: horizontalZiehen },
+  { muster: "ziehen", komplementaer: true },
+  { muster: "schulter", filter: hintereSchulter, komplementaer: true },
+  { muster: "arme", filter: bizeps, komplementaer: true },
+  { muster: "arme", filter: bizeps, komplementaer: true },
+  { muster: "kniebeuge", filter: istWaden, komplementaer: true },
+];
+const GANZ_A: Slot[] = [
+  { muster: "kniebeuge", filter: quadGrund },
+  { muster: "druecken", filter: flachDruecken },
+  { muster: "ziehen", filter: vertikalZiehen },
+  { muster: "huefte", filter: huefteHinge },
+  { muster: "schulter", filter: seitheben, komplementaer: true },
+  { muster: "arme", filter: bizeps, komplementaer: true },
+  { muster: "arme", filter: trizeps, komplementaer: true },
+];
+const GANZ_B: Slot[] = [
+  { muster: "huefte", filter: beinbeugerOderGesaess },
+  { muster: "ziehen", filter: horizontalZiehen },
+  { muster: "druecken", filter: schraegDruecken },
+  { muster: "kniebeuge", filter: quadErgaenzung },
+  { muster: "schulter", filter: hintereSchulter, komplementaer: true },
+  { muster: "arme", filter: trizeps, komplementaer: true },
+  { muster: "kniebeuge", filter: istWaden, komplementaer: true },
+];
+
 /**
  * Wochensplit nach Trainingstagen (TEIL 4):
  * 2–3 Tage → Ganzkörper, 4 Tage → Oberkörper/Unterkörper, 5 Tage → OK/UK + Push/Pull/Beine,
- * 6 Tage → Push/Pull/Beine ×2. Der Fokus bestimmt nicht den Split, sondern Betonung & Reihenfolge
- * innerhalb der Einheiten (siehe `ordnePattern`).
+ * 6 Tage → Push/Pull/Beine ×2. Jede Muskelgruppe ~2× pro Woche, A/B-Einheiten mit unterschiedlichen
+ * Varianten (z. B. vertikales vs. horizontales Ziehen zuerst).
  */
-function sessionsFuerTage(tage: number): Session[] {
-  const ganzkoerper = (n: number): Session[] =>
-    Array.from({ length: n }, (_, i) => ({
+function sessionsFuerTage(tage: number): SlotSession[] {
+  if (tage <= 3) {
+    const n = Math.max(2, tage);
+    return Array.from({ length: n }, (_, i) => ({
       titel: `Ganzkörper ${String.fromCharCode(65 + i)}`,
-      muster:
-        i % 2 === 0
-          ? (["kniebeuge", "druecken", "ziehen", "huefte", "schulter", "arme"] as Muster[])
-          : (["huefte", "ziehen", "druecken", "kniebeuge", "schulter", "arme"] as Muster[]),
+      slots: i % 2 === 0 ? GANZ_A : GANZ_B,
     }));
-
-  if (tage <= 3) return ganzkoerper(Math.max(2, tage));
-
+  }
   if (tage === 4) {
     return [
-      { titel: "Oberkörper A", muster: ["druecken", "ziehen", "schulter", "arme"] },
-      { titel: "Unterkörper A", muster: ["kniebeuge", "huefte"] },
-      { titel: "Oberkörper B", muster: ["ziehen", "druecken", "schulter", "arme"] },
-      { titel: "Unterkörper B", muster: ["huefte", "kniebeuge"] },
+      { titel: "Oberkörper A", slots: OBERKOERPER_A },
+      { titel: "Unterkörper A", slots: UNTERKOERPER_A },
+      { titel: "Oberkörper B", slots: OBERKOERPER_B },
+      { titel: "Unterkörper B", slots: UNTERKOERPER_B },
     ];
   }
-
   if (tage === 5) {
     return [
-      { titel: "Oberkörper", muster: ["druecken", "ziehen", "schulter", "arme"] },
-      { titel: "Unterkörper", muster: ["kniebeuge", "huefte"] },
-      { titel: "Push", muster: ["druecken", "schulter", "arme"] },
-      { titel: "Pull", muster: ["ziehen", "arme"] },
-      { titel: "Beine", muster: ["kniebeuge", "huefte"] },
+      { titel: "Oberkörper", slots: OBERKOERPER_A },
+      { titel: "Unterkörper", slots: UNTERKOERPER_A },
+      { titel: "Push", slots: PUSH },
+      { titel: "Pull", slots: PULL },
+      { titel: "Beine", slots: UNTERKOERPER_B },
     ];
   }
-
-  // 6 Tage: Push/Pull/Beine im Doppellauf.
   return [
-    { titel: "Push A", muster: ["druecken", "schulter", "arme"] },
-    { titel: "Pull A", muster: ["ziehen", "arme"] },
-    { titel: "Beine A", muster: ["kniebeuge", "huefte"] },
-    { titel: "Push B", muster: ["druecken", "schulter", "arme"] },
-    { titel: "Pull B", muster: ["ziehen", "arme"] },
-    { titel: "Beine B", muster: ["kniebeuge", "huefte"] },
+    { titel: "Push A", slots: PUSH },
+    { titel: "Pull A", slots: PULL },
+    { titel: "Beine A", slots: UNTERKOERPER_A },
+    { titel: "Push B", slots: PUSH },
+    { titel: "Pull B", slots: PULL },
+    { titel: "Beine B", slots: UNTERKOERPER_B },
   ];
 }
 
@@ -418,6 +500,37 @@ function waehleKomplementaer(
   return kandidaten[0]?.u ?? null;
 }
 
+/** Beste Übung für einen Platz. Bereits in anderen Einheiten der Woche genutzte Übungen werden leicht
+ *  abgewertet, damit A- und B-Einheiten unterschiedliche Varianten bekommen. */
+function waehleFuerSlot(
+  slot: Slot,
+  k: PlanKontext,
+  benutzt: Set<string>,
+  wocheGenutzt: Map<string, number>,
+): LibUebung | null {
+  const passend = (mitFilter: boolean) =>
+    uebungsBibliothek
+      .filter((u) => u.muster === slot.muster && !benutzt.has(u.id) && (!mitFilter || !slot.filter || slot.filter(u)))
+      // Waden nur in ausdrücklichen Waden-Plätzen.
+      .filter((u) => !istWaden(u) || (slot.filter === istWaden))
+      .map((u) => {
+        let s = bewerte(u, k);
+        if (s < 0) return { u, s };
+        if (slot.komplementaer) {
+          if (!u.grund) s += 3;
+          if (u.equipment.includes("maschine") || u.equipment.includes("kabel")) s += 2;
+          if (/dehnung|gestreckt/i.test(u.hinweis)) s += 3;
+        } else if (u.grund) {
+          s += 3;
+        }
+        s -= 4 * (wocheGenutzt.get(u.id) ?? 0);
+        return { u, s };
+      })
+      .filter((x) => x.s >= 0)
+      .sort((x, y) => y.s - x.s);
+  return passend(true)[0]?.u ?? (slot.filter === istWaden ? null : passend(false)[0]?.u ?? null);
+}
+
 /** Zielsätze je Satztyp (Compound/Isolation) und Ziel (TEIL 4: Wiederholungsbereiche nach Ziel). */
 function wdhBereichFuer(k: PlanKontext, compound: boolean): string {
   switch (k.ziel) {
@@ -462,50 +575,33 @@ export function erzeugePlan(kontext: PlanKontext): Trainingstag[] {
   const beinLimitProWoche = k.fokus === "arme-straffen" ? 2 : Infinity;
   let beinUebungenGenutzt = 0;
 
+  const wocheGenutzt = new Map<string, number>();
+  const betont = new Set(fokusMuskelBetonung(k.fokus));
+
   return sessions.map((s, i) => {
     const benutzt = new Set<string>();
-    const musterListe = ordnePattern(s.muster, k.fokus);
-    const titelLower = s.titel.toLowerCase();
-    // Arme folgen dem Tag: Push → Trizeps, Pull/Ziehen-lastig → Bizeps.
-    const armMuskelFuerTag = titelLower.includes("pull")
-      ? "Bizeps"
-      : titelLower.includes("push")
-        ? "Trizeps"
-        : undefined;
+    // Fokus-Muskeln früher in der Einheit (die erste Grundübung bleibt vorne).
+    const [erster, ...rest] = s.slots;
+    const slots = [erster!, ...rest.map((x, j) => ({ x, j })).sort((p, q) => (betont.has(q.x.muster) ? 1 : 0) - (betont.has(p.x.muster) ? 1 : 0) || p.j - q.j).map((p) => p.x)];
 
     const uebungen: PlanUebung[] = [];
-    const push = (u: LibUebung) => {
+    for (const slot of slots) {
+      if (uebungen.length >= budget.uebungen) break;
+      const istBein = slot.muster === "kniebeuge" || slot.muster === "huefte";
+      if (istBein && beinUebungenGenutzt >= beinLimitProWoche) continue;
+      const u = waehleFuerSlot(slot, k, benutzt, wocheGenutzt);
+      if (!u) continue;
       benutzt.add(u.id);
+      wocheGenutzt.set(u.id, (wocheGenutzt.get(u.id) ?? 0) + 1);
       uebungen.push({ ...u, begruendung: begruendung(u, k) });
-    };
-
-    // Durchlauf 1: je Hauptmuster eine Compound-Übung (Grundübungen zuerst, Fokus-Muskeln früh).
-    for (const m of musterListe) {
-      if (uebungen.length >= budget.uebungen) break;
-      if ((m === "kniebeuge" || m === "huefte") && beinUebungenGenutzt >= beinLimitProWoche) continue;
-      const bevorzugt = m === "arme" ? armMuskelFuerTag : undefined;
-      const u = waehle(m, k, benutzt, bevorzugt);
-      if (!u) continue;
-      push(u);
-      if (m === "kniebeuge" || m === "huefte") beinUebungenGenutzt++;
-    }
-
-    // Durchlauf 2: je Hauptmuskel (Drücken/Ziehen/Kniebeuge/Hüfte/Schulter) eine komplementäre Übung.
-    for (const m of musterListe) {
-      if (uebungen.length >= budget.uebungen) break;
-      if (!hauptMuskelVonMuster[m]) continue;
-      if ((m === "kniebeuge" || m === "huefte") && beinUebungenGenutzt >= beinLimitProWoche) continue;
-      const u = waehleKomplementaer(m, k, benutzt);
-      if (!u) continue;
-      push(u);
-      if (m === "kniebeuge" || m === "huefte") beinUebungenGenutzt++;
+      if (istBein) beinUebungenGenutzt++;
     }
 
     // Satzbudget: Zielsätze je Übung setzen (Compound mehr Sätze als Isolation) und an das Dauer-Budget anpassen.
     const mitSaetzen = uebungen.map((u) => ({
       ...u,
-      zielSaetze: u.grund ? (k.ziel === "kraft" ? 5 : 4) : 3,
-      wdhBereich: wdhBereichFuer(k, u.grund),
+      zielSaetze: u.grund ? (k.ziel === "kraft" ? 4 : 3) : 3,
+      wdhBereich: wdhBereichFuer(k, u.grund && !istWaden(u)),
     }));
     let summe = mitSaetzen.reduce((a, u) => a + u.zielSaetze, 0);
     let idx = 0;

@@ -335,19 +335,17 @@ function Cockpit() {
             {meilenstein && (
               <HinweisZeile
                 icon={<Trophy className="h-4 w-4" />}
-                titel={meilenstein.titel}
+                titel={`Nächster Meilenstein: ${meilenstein.titel}`}
                 unterzeile={
-                  leer
-                    ? meilenstein.beschreibung
+                  leer && meilenstein.titel === "Erster Durchgang"
+                    ? "Schliesse dein erstes Training ab, um ihn zu erreichen."
                     : `noch ${Math.max(0, meilenstein.ziel - meilenstein.aktuell).toLocaleString("de-DE")} bis zum Ziel`
                 }
                 fortschritt={(meilenstein.aktuell / meilenstein.ziel) * 100}
                 onClick={() => navigate({ to: "/erfolge" })}
               />
             )}
-            <div className="px-5 py-4">
-              <BackupHinweis />
-            </div>
+            <BackupHinweis />
           </div>
         </Card>
       </Section>
