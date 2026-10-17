@@ -7,7 +7,8 @@
  */
 
 import {
-  rezepteGeneriert,
+  rezepteDatenbank,
+  zielEignungAusMakros,
   type Allergen,
   type Kueche,
   type MahlzeitTyp,
@@ -408,8 +409,8 @@ const alteRezepteRoh: AltRezept[] = [
 
 const allergenWoerter: [RegExp, Allergen][] = [
   [/milch|käse|quark|skyr|feta|joghurt|butter|hüttenkäse/i, "laktose"],
-  [/brot|wrap|nudeln|couscous|fladenbrot|naan|bulgur/i, "gluten"],
-  [/nüsse|mandel|cashew/i, "nuesse"],
+  [/brot|wrap|nudeln|couscous|fladenbrot|naan|bulgur|hafer/i, "gluten"],
+  [/nüsse|mandel|cashew|erdnuss/i, "nuesse"],
   [/soja|tofu|edamame|sojasauce/i, "soja"],
   [/\bei\b|eier/i, "ei"],
   [/lachs|thunfisch|kabeljau|forelle/i, "fisch"],
@@ -423,14 +424,6 @@ function mahlzeitAusTags(tags: string[], name: string): MahlzeitTyp {
   if (t.includes("snack") || t.includes("to go")) return "Snack";
   if (/wrap|salat|bowl/i.test(name) && !t.includes("meal prep")) return "Mittag";
   return "Abend";
-}
-
-function zielAusMakros(kcal: number, protein: number): ZielEignung[] {
-  const out: ZielEignung[] = [];
-  if (kcal <= 550 && protein >= 30) out.push("fettabbau");
-  if (kcal >= 450 && kcal <= 700 && protein >= 35) out.push("recomp");
-  if (kcal >= 600 && protein >= 40) out.push("muskelaufbau");
-  return out.length ? out : ["recomp"];
 }
 
 const alteRezepte: Rezept[] = alteRezepteRoh.map((r) => {
@@ -447,12 +440,12 @@ const alteRezepte: Rezept[] = alteRezepteRoh.map((r) => {
     pescetarisch,
     mealPrep: r.tags.includes("Meal Prep"),
     budget: r.tags.includes("Günstig"),
-    zielEignung: zielAusMakros(r.kcal, r.protein),
+    zielEignung: zielEignungAusMakros(r.kcal, r.protein),
   } satisfies Rezept;
 });
 
-/** Gesamte Rezeptdatenbank: handgeschriebene Klassiker + generierte Vielfalt. */
-export const rezepte: Rezept[] = [...alteRezepte, ...rezepteGeneriert];
+/** Gesamte Rezeptdatenbank: handgeschriebene Klassiker + ausformulierte Rezepte aus recipes-data.ts. */
+export const rezepte: Rezept[] = [...alteRezepte, ...rezepteDatenbank];
 
 export type RezeptTreffer = {
   rezept: Rezept;

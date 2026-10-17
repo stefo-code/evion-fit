@@ -54,6 +54,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   if (pathname.startsWith("/onboarding")) return <>{children}</>;
 
+  // „Eintragen“ sitzt in Kopfzeile bzw. Seitenleiste statt schwebend über dem Inhalt,
+  // damit er beim Scrollen nichts verdeckt. Im Training bleibt er wie bisher ausgeblendet.
+  const eintragenSichtbar = !pathname.startsWith("/training");
+
   return (
     <div className="min-h-screen w-full">
       {/* Desktop-Seitennavigation */}
@@ -61,6 +65,16 @@ export function AppShell({ children }: { children: ReactNode }) {
         <Link to="/" className="mb-8 flex items-center px-2">
           <EvionLogo />
         </Link>
+        {eintragenSichtbar && (
+          <Button
+            onClick={() => setEintragenOffen(true)}
+            aria-label="Werte eintragen"
+            className="mb-6 h-11 w-full rounded-full text-sm font-extrabold [&_svg]:size-5"
+          >
+            <Plus className="h-5 w-5" />
+            <span>Eintragen</span>
+          </Button>
+        )}
         <nav className="space-y-1">
           {main.map((i) => (
             <NavItem key={i.to} to={i.to} label={i.label} icon={i.icon} active={isActive(pathname, i.to)} />
@@ -82,17 +96,29 @@ export function AppShell({ children }: { children: ReactNode }) {
         <Link to="/" className="flex min-w-0 items-center">
           <EvionLogo className="h-6" />
         </Link>
-        <Link
-          to="/profil"
-          aria-label="Dein Profil"
-          className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-primary/12 text-primary"
-        >
-          <User className="h-4.5 w-4.5" />
-        </Link>
+        <div className="flex shrink-0 items-center gap-2">
+          {eintragenSichtbar && (
+            <Button
+              onClick={() => setEintragenOffen(true)}
+              aria-label="Werte eintragen"
+              className="h-11 rounded-full px-4 text-sm font-extrabold [&_svg]:size-5"
+            >
+              <Plus className="h-5 w-5" />
+              <span>Eintragen</span>
+            </Button>
+          )}
+          <Link
+            to="/profil"
+            aria-label="Dein Profil"
+            className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-primary/12 text-primary"
+          >
+            <User className="h-4.5 w-4.5" />
+          </Link>
+        </div>
       </header>
 
       <div className="lg:pl-60">
-        <main className="mx-auto w-full max-w-3xl px-4 pb-[calc(9rem+env(safe-area-inset-bottom))] pt-6 sm:px-6 lg:pb-20">{children}</main>
+        <main className="mx-auto w-full max-w-3xl px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6 sm:px-6 lg:pb-20">{children}</main>
       </div>
 
       {/* Mobile Tab-Bar */}
@@ -120,16 +146,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         </ul>
       </nav>
       )}
-
-      {/* Globaler „+ Eintragen“-Einstieg */}
-      {!pathname.startsWith("/training") && <Button
-        onClick={() => setEintragenOffen(true)}
-        aria-label="Werte eintragen"
-        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-40 h-12 rounded-full px-4 text-sm font-extrabold shadow-lg lg:bottom-6 lg:right-6 [&_svg]:size-5"
-      >
-        <Plus className="h-5 w-5" />
-        <span>Eintragen</span>
-      </Button>}
 
       {eintragenOffen && (
         <div className="fixed inset-0 z-50">
