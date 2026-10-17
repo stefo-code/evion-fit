@@ -1655,10 +1655,10 @@ export const uebungById = new Map(uebungsBibliothek.map((u) => [u.id, u]));
 
 /** Fotos werden nach Geschlecht ausgewählt; ohne Angabe wird das männliche Motiv genutzt. */
 export function bildFuer(u: Pick<LibUebung, "id" | "muster"> & { bildMuster?: boolean }, geschlecht?: string | null) {
-  if (u.bildMuster) return musterBild[u.muster];
   const weiblich = geschlecht === "weiblich";
   const paar = uebungsBilder[u.id];
   if (paar) return weiblich ? paar.w : paar.m;
+  if (u.bildMuster) return musterBild[u.muster];
   const neutral = uebungsBilder["neutral"];
   if (neutral) return weiblich ? neutral.w : neutral.m;
   return musterBild[u.muster];
