@@ -17,3 +17,4 @@
 - Every AI server call is gated client-side by fordereKi() (src/lib/privatsphaere.ts) and sends no names/IDs/emails; age as 5-year group, height/weight rounded.
 
 - Onboarding uses an optional versioned step marker and the shared measurement API; this preserves old drafts and measurement history in the existing local stores.
+- Exercise photo resolution prioritizes an available exercise-specific photo over the legacy bildMuster fallback flag, so new images also appear for existing saved exercises.
